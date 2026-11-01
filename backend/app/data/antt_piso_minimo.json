@@ -1,0 +1,23 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Resolução ANTT 5.933/2023",
+  "piso_eixos_distancia": {
+    "3": 4.90,
+    "4": 5.85,
+    "5": 6.75,
+    "6": 7.60,
+    "7": 8.40,
+    "9": 9.80
+  },
+  "configuracoes_eixos": {
+    "3": "Truck (2+1) ou Cavalo 2+Carreta 1",
+    "4": "Truck 3+Carreta 1 / Cavalo 2+2",
+    "5": "Cavalo 2+Carreta 3 (Bitrem)",
+    "6": "Cavalo 3+Carreta 3 (Rodotrem)",
+    "7": "Bitrem 7 eixos / Rodotrem 7",
+    "9": "Rodotrem 9 eixos"
+  },
+  "fator_atualizacao_anual": "IPCA + variação óleo diesel",
+  "proxima_atualizacao": "2025-07-01"
+}

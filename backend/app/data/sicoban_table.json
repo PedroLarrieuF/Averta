@@ -1,0 +1,41 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Resolução ANTT 5.933/2023 - Anexo III",
+  "faixas_cep": {
+    "01": {"regiao": "Norte I", "ceps_iniciais": ["68", "69"], "capitais": ["Belém", "Macapá", "Manaus"]},
+    "02": {"regiao": "Norte II", "ceps_iniciais": ["66", "67"], "capitais": ["Palmas", "Porto Velho", "Rio Branco", "Boa Vista"]},
+    "03": {"regiao": "Nordeste I", "ceps_iniciais": ["50", "51", "52", "53", "54", "55", "56"], "capitais": ["Recife", "João Pessoa", "Natal", "Maceió", "Aracaju"]},
+    "04": {"regiao": "Nordeste II", "ceps_iniciais": ["57", "58", "59"], "capitais": ["Salvador", "Fortaleza", "Teresina", "São Luís"]},
+    "05": {"regiao": "Centro-Oeste I", "ceps_iniciais": ["73", "74", "75", "76"], "capitais": ["Goiânia", "Brasília", "Campo Grande"]},
+    "06": {"regiao": "Centro-Oeste II", "ceps_iniciais": ["78", "79"], "capitais": ["Cuiabá"]},
+    "07": {"regiao": "Sudeste I", "ceps_iniciais": ["01", "02", "03", "04", "05", "06", "07", "08", "09"], "capitais": ["São Paulo"]},
+    "08": {"regiao": "Sudeste II", "ceps_iniciais": ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"], "capitais": ["Santos", "Campinas"]},
+    "09": {"regiao": "Sudeste III", "ceps_iniciais": ["20", "21", "22", "23", "24", "25", "26", "27", "28"], "capitais": ["Rio de Janeiro"]},
+    "10": {"regiao": "Sudeste IV", "ceps_iniciais": ["29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"], "capitais": ["Vitória", "Belo Horizonte"]},
+    "11": {"regiao": "Sul I", "ceps_iniciais": ["80", "81", "82", "83", "84", "85", "86", "87"], "capitais": ["Curitiba", "Londrina", "Maringá"]},
+    "12": {"regiao": "Sul II", "ceps_iniciais": ["88", "89"], "capitais": ["Florianópolis", "Joinville", "Blumenau"]},
+    "13": {"regiao": "Sul III", "ceps_iniciais": ["90", "91", "92", "93", "94", "95", "96", "97", "98", "99"], "capitais": ["Porto Alegre", "Caxias", "Pelotas"]},
+    "14": {"regiao": "Nordeste III", "ceps_iniciais": ["40", "41", "42", "43", "44", "45", "46", "47", "48", "49"], "capitais": ["Feira de Santana", "Vitória da Conquista"]},
+    "15": {"regiao": "Norte III", "ceps_iniciais": ["65"], "capitais": ["Imperatriz"]},
+    "16": {"regiao": "Sudeste V", "ceps_iniciais": ["30", "31"], "capitais": ["Belo Horizonte (RMBH)"]},
+    "17": {"regiao": "Sudeste VI", "ceps_iniciais": ["32", "33", "34"], "capitais": ["Ipatinga", "Juiz de Fora"]},
+    "18": {"regiao": "Sudeste VII", "ceps_iniciais": ["35", "36", "37", "38", "39"], "capitais": ["Uberlândia", "Uberaba", "Varginha"]},
+    "19": {"regiao": "Centro-Oeste III", "ceps_iniciais": ["70", "71", "72"], "capitais": ["Brasília (DF)"]},
+    "20": {"regiao": "Nordeste IV", "ceps_iniciais": ["55", "56"], "capitais": ["Caruaru", "Campina Grande"]},
+    "21": {"regiao": "Norte IV", "ceps_iniciais": ["69"], "capitais": ["Cruzeiro do Sul"]},
+    "22": {"regiao": "Especial", "ceps_iniciais": [], "capitais": ["Ilhas", "Difícil acesso"]}
+  },
+  "fatores_tipo_carga": {
+    "01": 1.00, "02": 1.30, "03": 1.15, "04": 0.85,
+    "05": 0.80, "06": 1.00, "07": 1.10, "08": 1.50,
+    "09": 1.20, "10": 1.25
+  },
+  "valores_base_exemplos": {
+    "07-09": 1200.00,
+    "07-16": 800.00,
+    "09-10": 600.00,
+    "11-13": 900.00,
+    "01-03": 2500.00
+  }
+}

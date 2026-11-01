@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divergências Detectadas</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <tr>
+            <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 32px 24px; text-align: center;">
+                <img src="{{ logo_url }}" alt="Averta" style="height: 40px; margin-bottom: 16px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Divergências Detectadas</h1>
+            </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+            <td style="padding: 32px 24px;">
+                <p style="font-size: 16px; color: #374151; margin: 0 0 16px;">Olá <strong>{{ client_name }}</strong>,</p>
+
+                <p style="font-size: 16px; color: #374151; margin: 0 0 24px;">
+                    Nossa auditoria encontrou <strong>{{ total_discrepancies }} divergência{{ 's' if total_discrepancies > 1 else '' }}</strong>
+                    no CT-e <strong>{{ document_number }}</strong> do transportador <strong>{{ carrier_name }}</strong>.
+                </p>
+
+                <!-- Discrepancy Table -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 24px;">
+                    <thead>
+                        <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #374151; font-size: 14px;">Tipo</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Valor Esperado</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Valor Cobrado</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Diferença</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in discrepancies %}
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 12px 16px; color: #374151; font-size: 14px;">{{ d.rule_name }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #059669; font-size: 14px; font-weight: 500;">R$ {{ '%.2f'|format(d.expected_value or 0) }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 500;">R$ {{ '%.2f'|format(d.actual_value or 0) }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 600;">R$ {{ '%.2f'|format(d.difference or 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #fef3c7; font-weight: 600;">
+                            <td style="padding: 12px 16px; color: #92400e;">Total a Recuperar</td>
+                            <td></td>
+                            <td></td>
+                            <td style="padding: 12px 16px; text-align: right; color: #92400e;">R$ {{ '%.2f'|format(total_value) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- CTA Button -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center;">
+                            <a href="{{ dashboard_url }}" style="display: inline-block; background-color: #1e3a8a; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                Ver no Dashboard
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="font-size: 14px; color: #9ca3af; margin: 24px 0 0; text-align: center;">
+                    Averta - Auditoria de Frete com Cobrança por Êxito
+                </p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 12px; color: #9ca3af; margin: 0;">
+                    © 2024 Averta. Todos os direitos reservados.<br>
+                    <a href="{{ unsubscribe_url }}" style="color: #9ca3af;">Cancelar inscrição</a>
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

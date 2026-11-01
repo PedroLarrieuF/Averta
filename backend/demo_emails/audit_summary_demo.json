@@ -1,0 +1,228 @@
+{
+  "audit_summary": {
+    "document": {
+      "number": "12345",
+      "serie": "1",
+      "chave_acesso": "35240112345678901234550010000000011234567890",
+      "uf_origem": "SP",
+      "uf_destino": "RJ",
+      "valor_mercadoria": 150000.0,
+      "frete_cobrado": 8500.0,
+      "peso_xml": 15000.0,
+      "peso_faturado": 18000.0,
+      "volume": 12.5,
+      "ncm": "22030000"
+    },
+    "contract": {
+      "id": "contract-demo-001",
+      "number": "CTR-2024-001",
+      "success_fee_pct": 20.0
+    },
+    "carrier": {
+      "id": "carrier-demo-001",
+      "name": "Transportes Rápidos Ltda",
+      "trade_name": "TransRápido"
+    },
+    "total_discrepancies": 11,
+    "total_recoverable": 26287.6,
+    "success_fee_pct": 20.0,
+    "success_fee_value": 5257.52,
+    "net_recovery": 21030.08
+  },
+  "discrepancies": [
+    {
+      "rule_code": "ICMS_DIFAL",
+      "rule_name": "ICMS Diferencial de Alíquota (DIFAL)",
+      "discrepancy_type": "ICMS_DIFFERENTIAL",
+      "expected_value": 10500.0,
+      "actual_value": 5250.0,
+      "difference": 5250.0,
+      "difference_pct": 100.0,
+      "severity": "HIGH",
+      "details": {
+        "uf_origem": "SP",
+        "uf_destino": "RJ",
+        "base_calculo": 150000.0,
+        "aliquota_difal": 5.0,
+        "aliquota_fcp": 2.0
+      }
+    },
+    {
+      "rule_code": "ICMS_FCP",
+      "rule_name": "FCP - Fundo de Combate à Pobreza",
+      "discrepancy_type": "ICMS_FCP",
+      "expected_value": 3000.0,
+      "actual_value": 0.0,
+      "difference": 3000.0,
+      "difference_pct": 100.0,
+      "severity": "HIGH",
+      "details": {
+        "uf_destino": "RJ",
+        "aliquota_fcp": 2.0,
+        "base_calculo": 150000.0
+      }
+    },
+    {
+      "rule_code": "ICMS_ST",
+      "rule_name": "ICMS Substituição Tributária (ST)",
+      "discrepancy_type": "ICMS_ST",
+      "expected_value": 30000.0,
+      "actual_value": 25000.0,
+      "difference": 5000.0,
+      "difference_pct": 20.0,
+      "severity": "HIGH",
+      "details": {
+        "cst": "10",
+        "ncm": "22030000",
+        "uf_origem": "SP",
+        "uf_destino": "RJ",
+        "base_calculo_st": 150000.0,
+        "aliquota_st": 20.0
+      }
+    },
+    {
+      "rule_code": "FRETE_PESO_VALOR",
+      "rule_name": "Frete Peso vs Valor (Faixas)",
+      "discrepancy_type": "FREIGHT_WEIGHT_VALUE",
+      "expected_value": 8640.0,
+      "actual_value": 8500.0,
+      "difference": 140.0,
+      "difference_pct": 1.6,
+      "severity": "HIGH",
+      "details": {
+        "peso": 18000.0,
+        "faixa": "15-30 ton",
+        "valor_kg": 0.48,
+        "valor_minimo": 7000.0
+      }
+    },
+    {
+      "rule_code": "FRETE_CUBAGE",
+      "rule_name": "Frete Cubagem (m³) vs Tabela",
+      "discrepancy_type": "FREIGHT_CUBAGE",
+      "expected_value": 4375.0,
+      "actual_value": 8500.0,
+      "difference": -4125.0,
+      "difference_pct": 48.5,
+      "severity": "MEDIUM",
+      "details": {
+        "volume": 12.5,
+        "faixa": "5-15 m³",
+        "valor_m3": 350.0,
+        "valor_minimo": 2000.0
+      }
+    },
+    {
+      "rule_code": "PESO_REAL_VS_FATURADO",
+      "rule_name": "Peso Real (XML) vs. Peso Faturado",
+      "discrepancy_type": "PESO_REAL_VS_FATURADO",
+      "expected_value": 15000.0,
+      "actual_value": 18000.0,
+      "difference": 3000.0,
+      "difference_pct": 20.0,
+      "severity": "HIGH",
+      "details": {
+        "peso_xml": 15000.0,
+        "peso_faturado": 18000.0,
+        "tolerancia_pct": 5.0
+      }
+    },
+    {
+      "rule_code": "VALOR_MINIMO_FRETE",
+      "rule_name": "Valor Mínimo de Frete (ANTT 5.839/2021)",
+      "discrepancy_type": "VALOR_MINIMO_FRETE",
+      "expected_value": 15792.0,
+      "actual_value": 8500.0,
+      "difference": 7292.0,
+      "difference_pct": 85.8,
+      "severity": "CRITICAL",
+      "details": {
+        "eixos": 6,
+        "distancia_km": 430.0,
+        "piso_por_eixo_km": 4.25,
+        "peso": 18000.0
+      }
+    },
+    {
+      "rule_code": "REDESPACHO_VALIDACAO",
+      "rule_name": "Validação de Redespacho",
+      "discrepancy_type": "REDESPACHO",
+      "expected_value": 8500.0,
+      "actual_value": 11000.0,
+      "difference": 2500.0,
+      "difference_pct": 29.4,
+      "severity": "HIGH",
+      "details": {
+        "total_redespacho": 2500.0,
+        "frete_principal": 8500.0,
+        "quantidade_ctes": 1
+      }
+    },
+    {
+      "rule_code": "PEDAGIO_CONFERENCIA",
+      "rule_name": "Conferência de Pedágio",
+      "discrepancy_type": "TOLL_PLAZA",
+      "expected_value": 78.1,
+      "actual_value": 83.7,
+      "difference": 5.6,
+      "difference_pct": 7.2,
+      "severity": "MEDIUM",
+      "details": {
+        "pedagios_documento": [
+          {
+            "praca": "Pedágio SP-070",
+            "eixos": 6,
+            "valor": 45.5
+          },
+          {
+            "praca": "Pedágio BR-101",
+            "eixos": 6,
+            "valor": 38.2
+          }
+        ],
+        "pedagios_tabela": [
+          {
+            "praca": "Pedágio SP-070",
+            "eixos": 6,
+            "valor": 42.3
+          },
+          {
+            "praca": "Pedágio BR-101",
+            "eixos": 6,
+            "valor": 35.8
+          }
+        ]
+      }
+    },
+    {
+      "rule_code": "AD_VALOREM",
+      "rule_name": "Ad Valorem (Seguro sobre Valor)",
+      "discrepancy_type": "AD_VALOREM",
+      "expected_value": 500.0,
+      "actual_value": 600.0,
+      "difference": 100.0,
+      "difference_pct": 20.0,
+      "severity": "MEDIUM",
+      "details": {
+        "valor_mercadoria": 150000.0,
+        "aliquota": 0.4,
+        "teto": 500.0
+      }
+    },
+    {
+      "rule_code": "GRIS",
+      "rule_name": "GRIS - Gerenciamento de Risco",
+      "discrepancy_type": "GRIS",
+      "expected_value": 180.0,
+      "actual_value": 180.0,
+      "difference": 0.0,
+      "difference_pct": 0.0,
+      "severity": "MEDIUM",
+      "details": {
+        "valor_mercadoria": 150000.0,
+        "aliquota": 0.12,
+        "teto": 200.0
+      }
+    }
+  ]
+}

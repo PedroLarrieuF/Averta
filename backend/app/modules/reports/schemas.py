@@ -1,0 +1,108 @@
+"""Reports module schemas"""
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+from decimal import Decimal
+
+
+class DashboardKPIs(BaseModel):
+    """Main dashboard KPIs"""
+    total_recoverable: float
+    total_recovered: float
+    recovery_rate: float  # percentage
+    total_contests: int
+    active_contests: int
+    conversion_rate: float  # detected -> approved
+    avg_recovery_time_days: float
+    top_carriers_by_volume: List[dict]
+    top_discrepancy_types: List[dict]
+    monthly_trend: List[dict]  # last 12 months
+
+
+class RecoveryReportItem(BaseModel):
+    """Recovery report line item"""
+    contest_id: str
+    contest_number: str
+    client_name: str
+    carrier_name: str
+    contract_number: Optional[str]
+    status: str
+    total_expected: float
+    total_recovered: float
+    success_fee_pct: float
+    success_fee_value: float
+    net_recovery: float
+    created_at: datetime
+    resolved_at: Optional[datetime]
+    # Progressive pricing info
+    pricing_model: str = "FIXED"
+    progressive_month: Optional[int] = None
+
+
+class RecoveryReport(BaseModel):
+    """Recovery report with summary"""
+    items: List[RecoveryReportItem]
+    summary: dict
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class SuccessFeeReportItem(BaseModel):
+    """Success fee report line item"""
+    contract_id: str
+    contract_number: str
+    carrier_name: str
+    client_name: str
+    success_fee_pct: float
+    total_recovered: float
+    success_fee_collected: float
+    net_to_client: float
+    contests_count: int
+    # Progressive pricing info
+    pricing_model: str = "FIXED"
+    progressive_month1_pct: Optional[float] = None
+    progressive_month2_pct: Optional[float] = None
+
+
+class SuccessFeeReport(BaseModel):
+    """Success fee report with summary"""
+    items: List[SuccessFeeReportItem]
+    summary: dict
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class DiscrepancyStats(BaseModel):
+    """Discrepancy statistics"""
+    by_type: List[dict]
+    by_status: List[dict]
+    by_carrier: List[dict]
+    by_client: List[dict]
+    total_detected: int
+    total_approved: int
+    total_recovered: int
+    total_value_detected: float
+    total_value_recovered: float
+
+
+class ExportRequest(BaseModel):
+    """Export request parameters"""
+    report_type: str = Field(..., pattern="^(recovery|success_fee|discrepancies|contests)$")
+    format: str = Field(default="excel", pattern="^(excel|pdf|csv)$")
+    client_id: Optional[str] = None
+    carrier_id: Optional[str] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    status: Optional[List[str]] = None
+    include_details: bool = True
+
+
+class ExportResponse(BaseModel):
+    """Export response"""
+    file_url: str
+    filename: str
+    expires_at: datetime

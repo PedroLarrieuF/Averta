@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Semanal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <tr>
+            <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 32px 24px; text-align: center;">
+                <img src="{{ logo_url }}" alt="Averta" style="height: 40px; margin-bottom: 16px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Relatório Semanal de Auditoria</h1>
+                <p style="color: #dbeafe; margin: 8px 0 0; font-size: 14px;">{{ period }}</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 32px 24px;">
+                <p style="font-size: 16px; color: #374151; margin: 0 0 24px;">Olá <strong>{{ client_name }}</strong>,</p>
+
+                <!-- KPI Cards -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                    <tr>
+                        <td style="width: 25%; padding: 0 8px;">
+                            <div style="background: #f0f9ff; border-radius: 12px; padding: 16px; text-align: center;">
+                                <p style="margin: 0 0 4px; font-size: 12px; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Documentos Auditados</p>
+                                <p style="margin: 0; font-size: 24px; font-weight: 700; color: #0369a1;">{{ documents_audited }}</p>
+                            </div>
+                        </td>
+                        <td style="width: 25%; padding: 0 8px;">
+                            <div style="background: #fef3c7; border-radius: 12px; padding: 16px; text-align: center;">
+                                <p style="margin: 0 0 4px; font-size: 12px; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Divergências</p>
+                                <p style="margin: 0; font-size: 24px; font-weight: 700; color: #92400e;">{{ discrepancies_found }}</p>
+                            </div>
+                        </td>
+                        <td style="width: 25%; padding: 0 8px;">
+                            <div style="background: #ecfdf5; border-radius: 12px; padding: 16px; text-align: center;">
+                                <p style="margin: 0 0 4px; font-size: 12px; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px;">A Recuperar</p>
+                                <p style="margin: 0; font-size: 24px; font-weight: 700; color: #065f46;">R$ {{ '%.2f'|format(total_recoverable) }}</p>
+                            </div>
+                        </td>
+                        <td style="width: 25%; padding: 0 8px;">
+                            <div style="background: #f5f3ff; border-radius: 12px; padding: 16px; text-align: center;">
+                                <p style="margin: 0 0 4px; font-size: 12px; color: #6b21a8; text-transform: uppercase; letter-spacing: 0.5px;">Taxa de Sucesso</p>
+                                <p style="margin: 0; font-size: 24px; font-weight: 700; color: #6b21a8;">{{ success_rate }}%</p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Top Carriers -->
+                {% if top_carriers %}
+                <h3 style="font-size: 16px; color: #374151; margin: 0 0 16px; font-weight: 600;">Top Transportadores com Divergências</h3>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 24px;">
+                    <thead>
+                        <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #374151; font-size: 14px;">Transportador</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Divergências</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in top_carriers %}
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 12px 16px; color: #374151; font-size: 14px;">{{ c.name }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #92400e; font-size: 14px; font-weight: 500;">{{ c.count }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 500;">R$ {{ '%.2f'|format(c.value) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <!-- Top Discrepancy Types -->
+                {% if top_discrepancy_types %}
+                <h3 style="font-size: 16px; color: #374151; margin: 0 0 16px; font-weight: 600;">Principais Tipos de Divergência</h3>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 24px;">
+                    <thead>
+                        <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #374151; font-size: 14px;">Tipo</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Quantidade</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in top_discrepancy_types %}
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 12px 16px; color: #374151; font-size: 14px;">{{ d.type }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #92400e; font-size: 14px; font-weight: 500;">{{ d.count }}</td>
+                            <td style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 500;">R$ {{ '%.2f'|format(d.value) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center;">
+                            <a href="{{ dashboard_url }}" style="display: inline-block; background-color: #1e3a8a; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                Ver Relatório Completo
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="font-size: 13px; color: #9ca3af; margin: 24px 0 0; text-align: center;">
+                    Relatórios em PDF e Excel estão anexos a este e-mail.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 12px; color: #9ca3af; margin: 0;">© 2024 Averta. Todos os direitos reservados.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Decreto 9.209/2017, Manual CT-e 3.00, Convênio ICMS 188/2017",
+  "tipos_complementar": {
+    "2": {"nome": "Substituição", "severidade": "HIGH", "permite_multiplos": false},
+    "3": {"nome": "Anulação", "severidade": "CRITICAL", "permite_multiplos": false},
+    "4": {"nome": "Complemento de Valor", "severidade": "MEDIUM", "permite_multiplos": true}
+  },
+  "validacoes_obrigatorias": {
+    "refCTe_obrigatorio": true,
+    "refCTe_deve_existir": true,
+    "refCTe_nao_pode_estar_anulado": true,
+    "substituicao_apenas_uma_vez": true,
+    "complemento_valor_nao_negativo": true,
+    "complemento_frete_requer_aditivo": true
+  }
+}

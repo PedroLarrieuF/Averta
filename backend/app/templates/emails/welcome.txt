@@ -1,0 +1,21 @@
+Olá {{ client_name }},
+
+Bem-vindo à Averta! Sua conta foi criada com sucesso.
+
+Próximos passos:
+1. Acesse a plataforma e configure seus transportadores
+2. Importe seus contratos e tabelas de frete
+3. Faça upload dos primeiros CT-es/NF-es para auditoria
+4. Acompanhe as divergências e recupere valores
+
+{% if temp_password %}
+Senha Temporária: {{ temp_password }}
+Altere sua senha no primeiro acesso.
+{% endif %}
+
+Acessar: {{ login_url }}
+
+Dúvidas? {{ support_email }}
+
+---
+Averta - Auditoria de Frete com Cobrança por Êxito
