@@ -403,6 +403,7 @@ model Discrepancy {
   type             DiscrepancyType
   status           DiscrepancyStatus  @default(DETECTED)
   ruleCode         String
+  ruleVersion      Int                @default(1)
   ruleDescription  String
   expectedValue    Float
   actualValue      Float
@@ -591,4 +592,26 @@ model SystemConfig {
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// RULES ENGINE
+// ============================================
+
+model Rule {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  name          String
+  type          DiscrepancyType
+  severity      String
+  configJson    Json             @default("{}")
+  version       Int              @default(1)
+  isActive      Boolean          @default(true)
+  description   String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([code])
+  @@index([type])
+  @@index([isActive])
 }

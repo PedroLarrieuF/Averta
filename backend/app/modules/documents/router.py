@@ -13,6 +13,7 @@ from app.core.dependencies import (
     ClientIdDep,
     PaginationDep,
 )
+from app.core.rate_limit import upload_limiter
 from app.modules.documents.schemas import (
     DocumentCreate,
     DocumentUpdate,
@@ -98,6 +99,7 @@ async def import_documents(
     status_code=status.HTTP_200_OK,
     summary="Upload XML files",
 )
+@upload_limiter
 async def upload_documents(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,

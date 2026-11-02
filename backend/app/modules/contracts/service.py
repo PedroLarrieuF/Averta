@@ -15,6 +15,7 @@ from app.modules.contracts.schemas import (
 )
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
+from app.services.rules_engine_v2 import get_engine_instance
 
 logger = structlog.get_logger()
 
@@ -209,6 +210,13 @@ class ContractsService(BaseService):
                 "rules": data.rules,
             }
         )
+
+        # Invalidate rules engine cache for freight-related rules
+        engine = get_engine_instance()
+        if engine:
+            await engine.invalidate_freight_table_cache()
+            logger.info("rules_cache_invalidated_after_freight_table_create", table_id=table.id)
+
         logger.info("freight_table_created", id=table.id, contract_id=contract_id, created_by=user_id)
         return FreightTableResponse(
             id=table.id,
@@ -248,6 +256,13 @@ class ContractsService(BaseService):
             where={"id": table_id},
             data=update_data,
         )
+
+        # Invalidate rules engine cache for freight-related rules
+        engine = get_engine_instance()
+        if engine:
+            await engine.invalidate_freight_table_cache()
+            logger.info("rules_cache_invalidated_after_freight_table_update", table_id=table_id)
+
         logger.info("freight_table_updated", id=table_id, company_id=company_id)
         return FreightTableResponse(
             id=table.id,

@@ -17,6 +17,23 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 **Routing:** `frontend/src/App.tsx` - All routes defined with Protected/Public wrappers
 **Layouts:** `MainLayout.tsx` (authenticated), `AuthLayout.tsx` (public)
 
+---
+
+## Backend API Contract (Actual Endpoints)
+
+| Module | Endpoints | Status |
+|--------|-----------|--------|
+| **Auth** | `POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me` | ✅ Ready |
+| **Documents** | `POST /documents/upload`, `GET /documents`, `GET /documents/{id}`, `POST /documents/{id}/reprocess` | ✅ Ready |
+| **Discrepancies** | `GET /discrepancies`, `GET /discrepancies/summary`, `PATCH /discrepancies/bulk-status`, `POST /discrepancies/{id}/review` | ✅ Ready |
+| **Contests** | `POST /contests`, `GET /contests`, `GET /contests/{id}`, `POST /contests/{id}/send`, `PATCH /contests/{id}/negotiate`, `POST /contests/{id}/payments` | ✅ Ready |
+| **Reports** | `GET /reports/dashboard`, `GET /reports/pdf`, `GET /reports/excel`, `POST /reports/schedule` | ✅ Ready |
+| **Settings** | Companies, Users, Carriers, Contracts, Notifications CRUD | ✅ Ready |
+
+**Base URL:** `/api/v1` (proxied via Vite to `http://localhost:8000`)
+
+---
+
 ## Current Pages State (2026-11-01)
 
 | Page | File | Status | Card |
@@ -148,7 +165,26 @@ POST   /contests/{id}/payments      # record payment
 
 **Contracts Tab:**
 - Contract CRUD: carrier, validity, success_fee_pct, minimum_value
-- **Freight Table Editor** - complex grid for fare rules by route/weight
+- **Freight Table Editor** - Complex editable grid for fare rules by route/weight
+
+### Freight Table Editor Specs (Complex Component)
+```typescript
+// Features needed:
+// 1. Editable grid (like Excel) - rows: routes (UF origem → UF destino), columns: weight brackets
+// 2. Weight brackets: 0-500kg, 500-1000kg, 1000-2000kg, 2000-5000kg, 5000-10000kg, 10000+kg
+// 3. Cell values: freight value (currency), aliquota ICMS %, FCP %
+// 4. Actions: add row (route), duplicate row, delete row, bulk edit column
+// 5. Validation: required fields, positive values, ICMS % ≤ 100
+// 6. Import/Export: CSV template download/upload
+// 7. Versioning: track changes, show diff
+
+// Tech: @tanstack/react-table v8 + custom cell editors
+// Or: ag-Grid Community (if complex enough)
+```
+
+---
+
+## Sprint 3+ Pages
 
 **Notifications Tab:**
 - Email/SMS/Slack preferences per event type

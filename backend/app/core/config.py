@@ -80,6 +80,12 @@ class Settings(BaseSettings):
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW: int = 60
+    RATE_LIMIT_AUTH_REQUESTS: int = 10
+    RATE_LIMIT_UPLOAD_REQUESTS: int = 5
+    RATE_LIMIT_API_REQUESTS: int = 100
+    RATE_LIMIT_REPORTS_REQUESTS: int = 20
+    RATE_LIMIT_DISCREPANCIES_REQUESTS: int = 50
+    RATE_LIMIT_CONTESTS_REQUESTS: int = 30
 
     # Logging
     LOG_LEVEL: str = "INFO"

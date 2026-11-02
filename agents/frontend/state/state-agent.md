@@ -20,6 +20,52 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 
 ---
 
+## Backend Response Format (Standardized)
+
+```typescript
+// Success Response
+interface ApiResponse<T> {
+  data: T;
+  meta?: { timestamp: string; requestId: string };
+}
+
+// Error Response (always this shape)
+interface ApiError {
+  message: string;      // Human readable
+  code: string;         // ERROR_CODE for programmatic handling
+  details?: Record<string, any>;  // Field errors, etc.
+  statusCode: number;   // HTTP status
+}
+
+// Common Error Codes
+enum ErrorCode {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
+  NOT_FOUND = 'NOT_FOUND',
+  CONFLICT = 'CONFLICT',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  RATE_LIMITED = 'RATE_LIMITED',
+}
+```
+
+### Pagination Response
+```typescript
+interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    page: number;
+    size: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+```
+
+---
+
 ## Current State (2026-11-01)
 
 ### ✅ Already Built
@@ -331,6 +377,10 @@ export interface Discrepancy {
   reviewed_by: string | null
 }
 
+export type DiscrepancyStatus = 'open' | 'approved' | 'rejected' | 'under_review' | 'contested'
+export type DiscrepancySeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+export type DiscrepancyType = 'ICMS' | 'FREIGHT' | 'SICOBAN' | 'CTE_COMPLEMENTAR' | 'REDESPACHO' | 'TOLL' | 'AD_VALOREM' | 'GRIS' | 'OTHER'
+
 export interface DiscrepancySummary {
   total: number
   by_status: Record<Discrepancy['status'], number>
@@ -356,6 +406,9 @@ export interface Contest {
   created_at: string
   updated_at: string
 }
+
+export type ContestStatus = 'draft' | 'sent' | 'negotiating' | 'accepted' | 'rejected' | 'paid'
+export type DocumentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'reprocessing'
 
 export interface Payment {
   id: string

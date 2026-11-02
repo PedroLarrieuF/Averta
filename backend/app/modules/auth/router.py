@@ -5,8 +5,8 @@ from prisma import Prisma
 from app.core.dependencies import (
     get_database,
     CurrentUserDep,
-    RateLimitDep,
 )
+from app.core.rate_limit import auth_limiter
 from app.core.exceptions import UnauthorizedError
 from app.modules.auth.schemas import (
     LoginRequest,
@@ -34,8 +34,8 @@ def get_auth_service(db: Prisma = Depends(get_database)) -> AuthService:
     response_model=AuthResponse,
     status_code=status.HTTP_200_OK,
     summary="User login",
-    dependencies=[RateLimitDep],
 )
+@auth_limiter
 async def login(
     data: LoginRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -49,8 +49,8 @@ async def login(
     response_model=AuthResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Register new company and admin user",
-    dependencies=[RateLimitDep],
 )
+@auth_limiter
 async def register(
     data: RegisterRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -64,8 +64,8 @@ async def register(
     response_model=TokenResponse,
     status_code=status.HTTP_200_OK,
     summary="Refresh access token",
-    dependencies=[RateLimitDep],
 )
+@auth_limiter
 async def refresh(
     data: RefreshRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -110,8 +110,8 @@ async def change_password(
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Request password reset",
-    dependencies=[RateLimitDep],
 )
+@auth_limiter
 async def forgot_password(
     data: ForgotPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
@@ -129,8 +129,8 @@ async def forgot_password(
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Reset password with token",
-    dependencies=[RateLimitDep],
 )
+@auth_limiter
 async def reset_password(
     data: ResetPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),

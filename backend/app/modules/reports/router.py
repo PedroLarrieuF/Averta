@@ -12,6 +12,7 @@ from app.core.dependencies import (
     CompanyIdDep,
     PaginationDep,
 )
+from app.core.rate_limit import reports_limiter
 from app.modules.reports.schemas import (
     DashboardKPIs,
     RecoveryReport,
@@ -35,6 +36,7 @@ def get_reports_service(db: Prisma = Depends(get_database)) -> ReportsService:
     status_code=status.HTTP_200_OK,
     summary="Get dashboard KPIs",
 )
+@reports_limiter
 async def get_dashboard(
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -50,6 +52,7 @@ async def get_dashboard(
     status_code=status.HTTP_200_OK,
     summary="Get recovery report",
 )
+@reports_limiter
 async def get_recovery_report(
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -75,6 +78,7 @@ async def get_recovery_report(
     status_code=status.HTTP_200_OK,
     summary="Get success fee report",
 )
+@reports_limiter
 async def get_success_fee_report(
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -99,6 +103,7 @@ async def get_success_fee_report(
     status_code=status.HTTP_200_OK,
     summary="Get discrepancy statistics",
 )
+@reports_limiter
 async def get_discrepancy_stats(
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -114,6 +119,7 @@ async def get_discrepancy_stats(
     status_code=status.HTTP_200_OK,
     summary="Export report",
 )
+@reports_limiter
 async def export_report(
     data: ExportRequest,
     current_user: RequireManager,

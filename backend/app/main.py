@@ -21,6 +21,8 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
     StructlogMiddleware,
 )
+from app.core.rate_limit import init_rate_limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Module routers
 from app.modules.auth.router import router as auth_router
@@ -35,6 +37,7 @@ from app.modules.discrepancies.router import router as discrepancies_router
 from app.modules.contests.router import router as contests_router
 from app.modules.reports.router import router as reports_router
 from app.modules.notifications.router import router as notifications_router
+from app.modules.rules.router import router as rules_router
 # from app.modules.audit.router import router as audit_router
 
 
@@ -94,6 +97,9 @@ app.add_middleware(
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
+# Initialize rate limiter (must be before exception handlers)
+init_rate_limiter(app)
+
 # Exception Handlers
 from fastapi.exceptions import RequestValidationError
 from prisma.errors import PrismaError
@@ -104,6 +110,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(PrismaError, prisma_exception_handler)
 app.add_exception_handler(JWTError, jwt_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 # Custom Swagger UI (if needed)
@@ -149,6 +156,7 @@ app.include_router(discrepancies_router, prefix=settings.API_PREFIX)
 app.include_router(contests_router, prefix=settings.API_PREFIX)
 app.include_router(reports_router, prefix=settings.API_PREFIX)
 app.include_router(notifications_router, prefix=settings.API_PREFIX)
+app.include_router(rules_router, prefix=settings.API_PREFIX)
 # app.include_router(audit_router, prefix=settings.API_PREFIX)
 
 

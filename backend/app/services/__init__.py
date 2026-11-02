@@ -1,5 +1,8 @@
 """Services package"""
-from app.services.xml_parser import xml_parser
+# XML Parser - import module
+from app.services import xml_parser
+
+# Rules Engine v2
 from app.services.rules_engine_v2 import (
     RulesEngineV2,
     RuleContext,
@@ -7,7 +10,10 @@ from app.services.rules_engine_v2 import (
     DiscrepancyType,
     BaseRule,
     create_engine_v2,
+    get_engine_instance,
 )
+
+# Critical Rules
 from app.services.rules_critical import (
     ICMSDifferentialRule,
     FCPRule,
@@ -24,10 +30,11 @@ from app.services.rules_critical import (
     TollPlazaRule,
     AdValoremRule,
     GRISRule,
+    MLAnomalyRule,
 )
-from app.services.pdf_generator import pdf_generator
-from app.services.storage import storage_service
-from app.services.email_service import email_service
+
+# Other Services - import modules (avoid module-level instantiation)
+from app.services import pdf_generator
 
 __all__ = [
     # XML Parser
@@ -39,6 +46,7 @@ __all__ = [
     "DiscrepancyType",
     "BaseRule",
     "create_engine_v2",
+    "get_engine_instance",
     # Critical Rules
     "ICMSDifferentialRule",
     "FCPRule",
@@ -55,8 +63,7 @@ __all__ = [
     "TollPlazaRule",
     "AdValoremRule",
     "GRISRule",
+    "MLAnomalyRule",
     # Other Services
     "pdf_generator",
-    "storage_service",
-    "email_service",
 ]

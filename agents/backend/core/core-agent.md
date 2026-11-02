@@ -27,23 +27,95 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 - REST endpoints following existing patterns
 - Pydantic schemas for request/response
 - Structured error handling (AppException hierarchy)
-- OpenAPI documentation
+- OpenAPI documentation at `/docs` (Swagger UI)
 
 ### ✅ Database Operations
 - Prisma schema modifications
 - Migrations (`prisma migrate dev` / `db push`)
 - Type-safe queries with Prisma Client Python
-- Soft delete patterns (when implemented)
+- Soft delete patterns (when implemented - Card #20)
+- **Indexes**: `company_id`, `status`, `created_at` on all models
 
 ### ✅ Celery Tasks
-- Document processing pipeline
+- Document processing pipeline (`app/tasks/documents.py`)
 - Background jobs with proper retry/acks_late
-- Flower monitoring
+- Flower monitoring at port 5555
+- **Priority queues**: `high`, `default`, `low`
+- **Idempotency**: Use `task_id` based on document hash
 
 ### ✅ Testing
 - Unit tests with pytest-asyncio
 - Integration tests with httpx.AsyncClient
 - Coverage targets: ≥80%
+
+---
+
+## Technical Debt (Must Address)
+
+| ID | File | Issue | Effort | Card |
+|----|------|-------|--------|------|
+| TD-001 | `app/services/xml_parser.py` | NF-e 4.00 namespace frágil; migrar para `lxml.etree` | M | #12 |
+| TD-002 | `app/services/rules_engine_v2.py` | Cache Redis stub (`_cache = None`) | M | #05 |
+| TD-003 | `app/services/pdf_generator.py` | Bloqueia event loop; usar `run_in_threadpool` | S | #14 |
+| TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | M | #04 |
+| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | #13 |
+
+---
+
+## Key Implementation Details
+
+### XML Parser (NF-e 4.00) - TD-001
+```python
+# Current: xml.etree.ElementTree (fragile namespaces)
+# Target: lxml.etree with proper namespace handling
+from lxml import etree
+
+NSMAP = {
+    'nfe': 'http://www.portalfiscal.inf.br/nfe',
+    'ds': 'http://www.w3.org/2000/09/xmldsig#'
+}
+```
+
+### PDF Generator - TD-003
+```python
+# Current: synchronous reportlab (blocks event loop)
+# Fix: use run_in_threadpool
+from starlette.concurrency import run_in_threadpool
+
+async def generate_pdf(data: dict) -> bytes:
+    return await run_in_threadpool(_sync_generate_pdf, data)
+```
+
+### Multi-tenancy Middleware
+```python
+# app/core/middleware.py - CompanyContextMiddleware
+# Adds company_id to request.state from JWT claims
+# All Prisma queries MUST filter by company_id
+```
+
+---
+
+## Sprint 1 Cards Details
+
+### Card #04: Rate Limiter Redis (slowapi)
+- Replace in-memory with Redis sliding window
+- `slowapi` + `redis.asyncio`
+- Config: `100/minute` per IP, `1000/minute` per user
+
+### Card #05: Rules Engine Redis Cache
+- Cache rule configs + reference data (ICMS, SICOBAN)
+- TTL: 1h for rules, 24h for reference data
+- Invalidate on rule update via webhook/event
+
+### Card #12: XML Parser Namespace Fix
+- Migrate `xml_parser.py` to `lxml.etree`
+- Handle NF-e 4.00 namespaces properly
+- Add tests for CTe + NFe parsing
+
+### Card #06: Deprecate NestJS
+- Archive `packages/backend/` 
+- Update docs, CI/CD, README
+- Verify no imports remain
 
 ## Current Sprint Focus (Ready Cards)
 | Card | Title | Estimate | Dependencies |

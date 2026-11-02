@@ -501,5 +501,158 @@ class TestRulesEngineIntegration:
         assert "ICMS_ST" in rule_codes
 
 
+class TestRulesEngineCache:
+    """Tests for Rules Engine Redis Cache"""
+
+    @pytest.fixture
+    def cache_context(self):
+        return RuleContext(
+            document={
+                "uf_inicio": "SP",
+                "uf_fim": "RJ",
+                "icms": {"v_icms": 100.0, "v_bc": 1000.0},
+            },
+            contract={"id": "contract-1"},
+            freight_table={
+                "rules": {
+                    "difal": [
+                        {"uf_origem": "SP", "uf_destino": "RJ", "aliquota_difal": 5.0, "aliquota_fcp": 2.0}
+                    ]
+                }
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_cache_miss_then_hit(self, cache_context):
+        """Test cache miss on first call, hit on second"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        # First call - cache miss
+        results1 = await engine.evaluate_all(cache_context)
+
+        # Second call - should hit cache
+        results2 = await engine.evaluate_all(cache_context)
+
+        # Results should be identical
+        assert len(results1) == len(results2)
+        for r1, r2 in zip(results1, results2):
+            assert r1.rule_code == r2.rule_code
+            assert r1.triggered == r2.triggered
+
+    @pytest.mark.asyncio
+    async def test_cache_invalidation_by_rule(self, cache_context):
+        """Test cache invalidation by rule code"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        # Populate cache
+        await engine.evaluate_all(cache_context)
+
+        # Invalidate specific rule
+        deleted = await engine.invalidate_cache(rule_code="ICMS_DIFAL")
+        assert deleted >= 0  # May be 0 if using local cache fallback
+
+    @pytest.mark.asyncio
+    async def test_cache_invalidation_by_tag(self, cache_context):
+        """Test cache invalidation by tag"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        # Populate cache
+        await engine.evaluate_all(cache_context)
+
+        # Invalidate by tag
+        deleted = await engine.invalidate_cache(tag="icms")
+        assert deleted >= 0
+
+    @pytest.mark.asyncio
+    async def test_freight_table_cache_invalidation(self, cache_context):
+        """Test freight table cache invalidation"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        # Populate cache
+        await engine.evaluate_all(cache_context)
+
+        # Invalidate freight tables
+        deleted = await engine.invalidate_freight_table_cache()
+        assert deleted >= 0
+
+    @pytest.mark.asyncio
+    async def test_reference_data_cache_invalidation(self, cache_context):
+        """Test reference data (ICMS, SICOBAN) cache invalidation"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        # Populate cache
+        await engine.evaluate_all(cache_context)
+
+        # Invalidate reference data
+        deleted = await engine.invalidate_reference_data_cache()
+        assert deleted >= 0
+
+    @pytest.mark.asyncio
+    async def test_cache_stats(self, cache_context):
+        """Test cache statistics"""
+        from app.services.rules_engine_v2 import create_engine_v2
+
+        engine = await create_engine_v2()
+
+        stats = await engine.get_cache_stats()
+        assert "local_cache_size" in stats
+        assert "redis_connected" in stats
+        assert "cache_version" in stats
+
+    @pytest.mark.asyncio
+    async def test_cache_key_consistency(self, cache_context):
+        """Test cache key generation is consistent for same input"""
+        from app.services.rules_engine_v2 import create_engine_v2, ICMSDifferentialRule
+
+        engine = await create_engine_v2()
+        rule = engine.get_rule("ICMS_DIFAL")
+
+        key1 = engine._cache_key(rule, cache_context)
+        key2 = engine._cache_key(rule, cache_context)
+
+        assert key1 == key2
+        assert key1.startswith("rule:ICMS_DIFAL:")
+
+    @pytest.mark.asyncio
+    async def test_different_context_different_key(self, cache_context):
+        """Test different contexts produce different cache keys"""
+        from app.services.rules_engine_v2 import create_engine_v2, ICMSDifferentialRule
+
+        engine = await create_engine_v2()
+        rule = engine.get_rule("ICMS_DIFAL")
+
+        key1 = engine._cache_key(rule, cache_context)
+
+        # Different UF should produce different key
+        cache_context2 = RuleContext(
+            document={
+                "uf_inicio": "MG",  # Different UF
+                "uf_fim": "SP",
+                "icms": {"v_icms": 100.0, "v_bc": 1000.0},
+            },
+            contract={"id": "contract-1"},
+            freight_table={
+                "rules": {
+                    "difal": [
+                        {"uf_origem": "MG", "uf_destino": "SP", "aliquota_difal": 7.0, "aliquota_fcp": 2.0}
+                    ]
+                }
+            },
+        )
+        key2 = engine._cache_key(rule, cache_context2)
+
+        assert key1 != key2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

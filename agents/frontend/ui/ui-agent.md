@@ -17,6 +17,50 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 **Component Library:** `frontend/src/components/` - 8 components built on Radix UI primitives
 **Layouts:** `frontend/src/layouts/MainLayout.tsx`, `AuthLayout.tsx`
 
+---
+
+## Design System Tokens (from `index.css`)
+
+### Colors (CSS Variables - supports dark mode)
+```css
+:root {
+  /* Primary */
+  --color-primary-50: #eff6ff;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  
+  /* Semantic */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Neutral */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-900: #111827;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-gray-50: #111827;
+    --color-gray-900: #f9fafb;
+    /* ... inverted */
+  }
+}
+```
+
+### Spacing & Typography
+```css
+--space-1: 0.25rem;  --space-4: 1rem;  --space-8: 2rem;
+--text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem;
+--radius-md: 0.375rem; --radius-lg: 0.5rem;
+```
+
+---
+
 ## Current UI State (2026-11-01)
 
 ### ✅ Already Built (8 Components)
@@ -77,15 +121,15 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 
 ### Card #07: Design System Enhancements (SPRINT 1)
 - **New Components Needed:**
-  - Tooltip (Radix Tooltip)
-  - Toast (Radix Toast / Sonner)
-  - Tabs (Radix Tabs)
-  - Select (Radix Select)
-  - Pagination
-  - EmptyState
-  - KPICard (already has CSS, need component)
-  - Breadcrumb
-  - DataTable enhancements (column resize, density)
+  - Tooltip (Radix Tooltip) - for info icons, truncated text
+  - Toast (Sonner preferred over Radix Toast) - global notifications
+  - Tabs (Radix Tabs) - Settings tabs, Report types
+  - Select (Radix Select) - dropdowns with search, multi-select
+  - Pagination - for all list pages (Documents, Discrepancies, Contests)
+  - EmptyState - illustration + message + action button
+  - KPICard - reuse `.kpi-card` CSS, add trend indicator
+  - Breadcrumb - navigation hierarchy
+  - DataTable enhancements - column resize, row density, sticky header
 
 ### Card #08: Documents Page (SPRINT 1)
 - **UI Components:** File upload (react-dropzone), Table with document list, Modal for detail, Badges for status

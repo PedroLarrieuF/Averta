@@ -159,44 +159,24 @@ def get_client_id(current_user: CurrentUserDep) -> Optional[str]:
 ClientIdDep = Annotated[Optional[str], Depends(get_client_id)]
 
 
-# Rate limiting (simple in-memory, use Redis for production)
-class RateLimiter:
-    def __init__(self, requests: int = 100, window: int = 60):
-        self.requests = requests
-        self.window = window
-        self._cache: dict[str, list[float]] = {}
-
-    async def __call__(self, request: Request):
-        if settings.ENVIRONMENT == "test":
-            return
-
-        client_ip = request.client.host if request.client else "unknown"
-        key = f"{request.url.path}:{client_ip}"
-        import time
-        now = time.time()
-
-        if key not in self._cache:
-            self._cache[key] = []
-
-        # Clean old entries
-        self._cache[key] = [ts for ts in self._cache[key] if now - ts < self.window]
-
-        if len(self._cache[key]) >= self.requests:
-            raise HTTPException(
-                status_code=429,
-                detail="Rate limit exceeded",
-            )
-
-        self._cache[key].append(now)
+# Rate limiting - Redis-backed (slowapi)
+# The actual rate limiting is handled by slowapi middleware via limiter.limit() decorator
+# This dependency is kept for backward compatibility and can be used to check rate limit status
+async def check_rate_limit(request: Request) -> None:
+    """
+    Rate limit check dependency.
+    Actual limiting is done by slowapi decorators on routes.
+    This can be used for custom logic if needed.
+    """
+    # In test environment, skip rate limiting
+    if settings.ENVIRONMENT == "test":
+        return
+    # slowapi handles the actual limiting via decorators
+    # This is a placeholder for any custom logic
+    pass
 
 
-# Standard rate limiter
-rate_limiter = RateLimiter(
-    requests=settings.RATE_LIMIT_REQUESTS,
-    window=settings.RATE_LIMIT_WINDOW,
-)
-
-RateLimitDep = Annotated[None, Depends(rate_limiter)]
+RateLimitDep = Annotated[None, Depends(check_rate_limit)]
 
 
 # Request ID for tracing

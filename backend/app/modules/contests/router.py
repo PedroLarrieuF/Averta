@@ -13,6 +13,7 @@ from app.core.dependencies import (
     PaginationDep,
     SortDep,
 )
+from app.core.rate_limit import contests_limiter
 from app.modules.contests.schemas import (
     ContestCreate,
     ContestUpdate,
@@ -48,6 +49,7 @@ def get_contests_service(db: Prisma = Depends(get_database)) -> ContestsService:
     status_code=status.HTTP_201_CREATED,
     summary="Create new contest",
 )
+@contests_limiter
 async def create_contest(
     data: ContestCreate,
     current_user: RequireAuditor,
@@ -64,6 +66,7 @@ async def create_contest(
     status_code=status.HTTP_200_OK,
     summary="List contests",
 )
+@contests_limiter
 async def list_contests(
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -89,6 +92,7 @@ async def list_contests(
     status_code=status.HTTP_200_OK,
     summary="Get contest by ID with relations",
 )
+@contests_limiter
 async def get_contest(
     contest_id: str,
     current_user: RequireManager,
@@ -126,6 +130,7 @@ async def update_contest(
     status_code=status.HTTP_200_OK,
     summary="Generate contest letter PDF",
 )
+@contests_limiter
 async def generate_pdf(
     contest_id: str,
     data: ContestGeneratePDFRequest,
@@ -149,6 +154,7 @@ async def generate_pdf(
     status_code=status.HTTP_200_OK,
     summary="Send contest to carrier",
 )
+@contests_limiter
 async def send_contest(
     contest_id: str,
     data: ContestSendRequest,

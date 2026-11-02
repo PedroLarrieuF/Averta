@@ -275,10 +275,18 @@ describe('DocumentsPage', () => {
 
 ```bash
 cd frontend
-pnpm test              # All tests pass
-pnpm test:coverage     # Meets thresholds (70/70/60)
-pnpm test:ui           # Visual debugging
+pnpm test              # All tests pass (72 currently)
+pnpm test:coverage     # Meets thresholds (70/70/60) - currently ~66% on tested files
+pnpm test:ui           # Visual debugging at http://localhost:51204
 ```
+
+### Coverage Status (2026-11-01)
+- **Overall**: ~66% lines (only tested files counted)
+- **helpers.ts**: 100% (37 tests)
+- **auth-storage.ts**: 100% (16 tests) 
+- **Button.tsx**: 100% (11 tests)
+- **MSW handlers**: 100% (8 tests)
+- **Excluded**: ComingSoon pages, main.tsx, test files
 
 ### Testing Standards
 - [ ] Every new component has test file

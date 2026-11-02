@@ -1,13 +1,165 @@
-"""Critical Rules Implementation - 6 critical + complementary CT-e rules"""
+"""Critical Rules Implementation - 6 critical + complementary CT-e rules + ML Anomaly Detection"""
 from typing import Optional, List, Dict
 from decimal import Decimal
 import structlog
+import httpx
 
 from app.services.rules_engine_v2 import (
     BaseRule, RuleContext, DiscrepancyResult, DiscrepancyType
 )
 
 logger = structlog.get_logger()
+
+
+# ============================================
+# ML ANOMALY DETECTION RULE
+# ============================================
+
+class MLAnomalyRule(BaseRule):
+    """ML Anomaly Detection using Isolation Forest.
+
+    Detects anomalous discrepancies that deterministic rules miss,
+    based on historical patterns learned from auditor feedback.
+    """
+    rule_code = "ML_ANOMALY"
+    rule_name = "ML Anomaly Detection (Isolation Forest)"
+    discrepancy_type = DiscrepancyType.OTHER
+    severity = "MEDIUM"
+    relevance_tags = ["ml", "anomaly", "freight"]
+
+    def __init__(self, config: dict | None = None):
+        super().__init__(config or {})
+        self.threshold = self.config.get("anomaly_threshold", -0.5)
+        self.endpoint = self.config.get("ml_endpoint", "http://localhost:8001/ml/anomaly-score")
+        self.timeout = self.config.get("timeout", 5.0)
+
+    async def evaluate(self, context: RuleContext) -> DiscrepancyResult:
+        # Extract features from context
+        features = self._extract_features(context)
+
+        # Call ML inference endpoint
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    self.endpoint,
+                    json={"features": features},
+                )
+                response.raise_for_status()
+                result = response.json()
+                score = result["anomaly_score"]
+                is_anomaly = result["is_anomaly"]
+        except httpx.TimeoutException:
+            logger.warning("ml_inference_timeout", rule_code=self.rule_code)
+            return self._create_result(
+                triggered=False,
+                details={"error": "ML inference timeout", "fallback": True},
+            )
+        except httpx.HTTPStatusError as e:
+            logger.warning("ml_inference_http_error", rule_code=self.rule_code, status=e.response.status_code)
+            return self._create_result(
+                triggered=False,
+                details={"error": f"ML inference HTTP error: {e.response.status_code}", "fallback": True},
+            )
+        except Exception as e:
+            logger.exception("ml_inference_error", rule_code=self.rule_code, error=str(e))
+            return self._create_result(
+                triggered=False,
+                details={"error": f"ML inference error: {str(e)}", "fallback": True},
+            )
+
+        triggered = is_anomaly
+
+        # Determine severity based on anomaly score
+        if score < -0.7:
+            self.severity = "HIGH"
+        elif score < -0.3:
+            self.severity = "MEDIUM"
+        else:
+            self.severity = "LOW"
+
+        return self._create_result(
+            triggered=triggered,
+            expected=0,  # No expected value for ML
+            actual=score,
+            details={
+                "anomaly_score": score,
+                "threshold": self.threshold,
+                "is_anomaly": is_anomaly,
+                "features": features,
+            },
+        )
+
+    def _extract_features(self, context: RuleContext) -> dict:
+        doc = context.document
+        metadata = context.metadata
+
+        # Hash categorical fields
+        rule_code = metadata.get("rule_code", "")
+        carrier_id = doc.get("carrier_id", "") or doc.get("carrierId", "")
+        client_id = doc.get("client_id", "") or doc.get("clientId", "")
+
+        rule_type_hash = hash(rule_code) % 10000
+        carrier_id_hash = hash(carrier_id) % 10000
+        client_id_hash = hash(client_id) % 10000
+
+        # UF encoding
+        UF_ENCODING = {
+            "AC": 1, "AL": 2, "AP": 3, "AM": 4, "BA": 5,
+            "CE": 6, "DF": 7, "ES": 8, "GO": 9, "MA": 10,
+            "MT": 11, "MS": 12, "MG": 13, "PA": 14, "PB": 15,
+            "PR": 16, "PE": 17, "PI": 18, "RJ": 19, "RN": 20,
+            "RS": 21, "RO": 22, "RR": 23, "SC": 24, "SP": 25,
+            "SE": 26, "TO": 27,
+        }
+
+        uf_origem = doc.get("uf_inicio", "") or doc.get("ufOrigem", "") or doc.get("uf_origem", "")
+        uf_destino = doc.get("uf_fim", "") or doc.get("ufDestino", "") or doc.get("uf_destino", "")
+        uf_origem_encoded = UF_ENCODING.get(uf_origem.upper() if uf_origem else "", 0)
+        uf_destino_encoded = UF_ENCODING.get(uf_destino.upper() if uf_destino else "", 0)
+
+        # Document type
+        DOCUMENT_TYPE_ENCODING = {
+            "CTE": 1, "NFE": 2, "CTE_COMPLEMENTAR": 3, "NFE_COMPLEMENTAR": 4,
+            "INVOICE": 5, "SPREADSHEET": 6, "CONTRACT": 7, "OTHER": 8,
+        }
+        doc_type = doc.get("type", "OTHER")
+        if hasattr(doc_type, "value"):
+            doc_type = doc_type.value
+        document_type_encoded = DOCUMENT_TYPE_ENCODING.get(str(doc_type).upper(), 8)
+
+        # Severity
+        SEVERITY_ENCODING = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+        severity = metadata.get("severity", "MEDIUM")
+        severity_encoded = SEVERITY_ENCODING.get(severity.upper() if isinstance(severity, str) else "MEDIUM", 1)
+
+        # Numeric features
+        value = doc.get("total_value", 0) or doc.get("totalValue", 0) or 0
+        weight = doc.get("weight", 0) or 0
+        volume = doc.get("volume", 0) or 0
+        diff_pct = metadata.get("difference_pct", 0) or metadata.get("differencePct", 0) or 0
+        distance_km = doc.get("distancia_km", 0) or doc.get("distanceKm", 0) or 0
+        eixos = doc.get("modal_rodoviario_veiculo_eixos", 0) or doc.get("modalRodoviarioVeiculoEixos", 0) or 0
+
+        has_icms = 1 if (doc.get("icms_value", None) or doc.get("icmsValue", None)) else 0
+        has_freight_value = 1 if (doc.get("freight_value", None) or doc.get("freightValue", None)) else 0
+
+        return {
+            "rule_type_hash": float(rule_type_hash),
+            "carrier_id_hash": float(carrier_id_hash),
+            "client_id_hash": float(client_id_hash),
+            "value": float(value),
+            "weight": float(weight),
+            "volume": float(volume),
+            "uf_origem_encoded": float(uf_origem_encoded),
+            "uf_destino_encoded": float(uf_destino_encoded),
+            "diff_pct": float(diff_pct),
+            "severity_encoded": float(severity_encoded),
+            "document_type_encoded": float(document_type_encoded),
+            "distance_km": float(distance_km),
+            "eixos": float(eixos),
+            "has_icms": float(has_icms),
+            "has_freight_value": float(has_freight_value),
+        }
 
 
 # ============================================

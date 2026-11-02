@@ -13,6 +13,7 @@ from app.core.dependencies import (
     ClientIdDep,
     PaginationDep,
 )
+from app.core.rate_limit import discrepancies_limiter
 from app.modules.discrepancies.schemas import (
     DiscrepancyCreate,
     DiscrepancyUpdate,
@@ -54,6 +55,7 @@ async def create_discrepancy(
     status_code=status.HTTP_200_OK,
     summary="List discrepancies",
 )
+@discrepancies_limiter
 async def list_discrepancies(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
@@ -85,6 +87,7 @@ async def list_discrepancies(
     status_code=status.HTTP_200_OK,
     summary="Get discrepancy summary",
 )
+@discrepancies_limiter
 async def get_summary(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
@@ -106,6 +109,7 @@ async def get_summary(
     status_code=status.HTTP_200_OK,
     summary="Get discrepancy by ID",
 )
+@discrepancies_limiter
 async def get_discrepancy(
     discrepancy_id: str,
     current_user: CurrentUserDep,
@@ -142,6 +146,7 @@ async def update_discrepancy(
     status_code=status.HTTP_200_OK,
     summary="Bulk update discrepancy status",
 )
+@discrepancies_limiter
 async def bulk_update_status(
     discrepancy_ids: List[str],
     status: DiscrepancyStatus,

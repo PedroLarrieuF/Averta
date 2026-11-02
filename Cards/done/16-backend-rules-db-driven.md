@@ -6,8 +6,9 @@ type: feature
 agent: backend
 sprint: 4
 estimate: L
-status: backlog
+status: done
 created: 2026-11-01
+completed: 2026-11-02
 reviewed_by: techlead
 ---
 

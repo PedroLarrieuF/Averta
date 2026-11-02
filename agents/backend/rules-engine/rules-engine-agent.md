@@ -14,11 +14,22 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 ## Project Context
 
 **Engine:** `app/services/rules_engine_v2.py` - Factory pattern with tag-based O(tag) filtering
-**Rules:** `app/services/rules_critical.py` - 17 rules implemented
+**Rules:** `app/services/rules_critical.py` - 17 rules implemented (docs mention 17, table shows 15 - needs clarification)
 **Data:** `app/data/icms_rules.json`, `app/data/sicoban_table.json`
 **Tests:** `tests/test_rules_critical.py` - 50+ tests
 
-## Current Rules (17 Implemented)
+---
+
+## ⚠️ Rules Discrepancy Note
+
+**Documentation says "17 rules"** but the table below maps **15 rules**. 
+- 2 rules may be: `SICOBAN_TABLE_SIMULATED` (legacy) + `GRIS_ALTERNATIVE` (variant)
+- **Awaiting PO documents** (regulatory research) for full 17-rule scope clarification
+- Current 15 rules cover: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS
+
+---
+
+## Current Rules (15 Mapped + 2 Pending)
 
 | Code | Name | Type | Severity | Tags |
 |------|------|------|----------|------|
@@ -37,6 +48,8 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 | PEDAGIO_CONFERENCIA | Conferência Pedágio | TOLL_PLAZA | MEDIUM | toll |
 | AD_VALOREM | Ad Valorem (seguro valor) | AD_VALOREM | MEDIUM | advalorem |
 | GRIS | Gerenciamento Risco | GRIS | MEDIUM | gris |
+| **PENDING** | *(from PO docs)* | TBD | TBD | TBD |
+| **PENDING** | *(from PO docs)* | TBD | TBD | TBD |
 
 ## Backlog Cards
 
