@@ -1,17 +1,13 @@
 import { forwardRef, ReactNode } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Check, ChevronRight, Circle } from 'lucide-react'
+import { Check, Circle } from 'lucide-react'
 import { cn } from '../utils/helpers'
-
-interface DropdownMenuProps {
-  children: ReactNode
-}
 
 export const DropdownMenuRoot = DropdownMenu.Root
 export const DropdownMenuTrigger = DropdownMenu.Trigger
 export const DropdownMenuPortal = DropdownMenu.Portal
 
-interface DropdownMenuContentProps extends DropdownMenu.ContentProps {
+interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.Content> {
   align?: 'start' | 'center' | 'end'
   sideOffset?: number
 }
@@ -37,7 +33,7 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
 
 DropdownMenuContent.displayName = DropdownMenu.Content.displayName
 
-interface DropdownMenuItemProps extends DropdownMenu.ItemProps {
+interface DropdownMenuItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.Item> {
   inset?: boolean
   shortcut?: string
   icon?: ReactNode
@@ -65,7 +61,7 @@ export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps
 
 DropdownMenuItem.displayName = DropdownMenu.Item.displayName
 
-interface DropdownMenuCheckboxItemProps extends DropdownMenu.CheckboxItemProps {
+interface DropdownMenuCheckboxItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.CheckboxItem> {
   children: ReactNode
 }
 
@@ -92,7 +88,7 @@ export const DropdownMenuCheckboxItem = forwardRef<HTMLDivElement, DropdownMenuC
 
 DropdownMenuCheckboxItem.displayName = DropdownMenu.CheckboxItem.displayName
 
-interface DropdownMenuRadioGroupProps extends DropdownMenu.RadioGroupProps {}
+interface DropdownMenuRadioGroupProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.RadioGroup> {}
 
 export const DropdownMenuRadioGroup = forwardRef<HTMLDivElement, DropdownMenuRadioGroupProps>(
   ({ className, children, ...props }, ref) => (
@@ -104,7 +100,7 @@ export const DropdownMenuRadioGroup = forwardRef<HTMLDivElement, DropdownMenuRad
 
 DropdownMenuRadioGroup.displayName = DropdownMenu.RadioGroup.displayName
 
-interface DropdownMenuRadioItemProps extends DropdownMenu.RadioItemProps {
+interface DropdownMenuRadioItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.RadioItem> {
   children: ReactNode
 }
 
@@ -130,11 +126,11 @@ export const DropdownMenuRadioItem = forwardRef<HTMLDivElement, DropdownMenuRadi
 
 DropdownMenuRadioItem.displayName = DropdownMenu.RadioItem.displayName
 
-export const DropdownMenuLabel = forwardRef<HTMLDivElement, DropdownMenu.LabelProps>(
-  ({ className, inset, ...props }, ref) => (
+export const DropdownMenuLabel = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<typeof DropdownMenu.Label>>(
+  ({ className, ...props }, ref) => (
     <DropdownMenu.Label
       ref={ref}
-      className={cn('px-2 py-1.5 text-sm font-semibold text-secondary-900', inset && 'pl-8', className)}
+      className={cn('px-2 py-1.5 text-sm font-semibold text-secondary-900', className)}
       {...props}
     />
   )
@@ -142,7 +138,7 @@ export const DropdownMenuLabel = forwardRef<HTMLDivElement, DropdownMenu.LabelPr
 
 DropdownMenuLabel.displayName = DropdownMenu.Label.displayName
 
-export const DropdownMenuSeparator = forwardRef<HTMLDivElement, DropdownMenu.SeparatorProps>(
+export const DropdownMenuSeparator = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<typeof DropdownMenu.Separator>>(
   ({ className, ...props }, ref) => (
     <DropdownMenu.Separator
       ref={ref}

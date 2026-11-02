@@ -1,20 +1,30 @@
 """PDF Generator for contest letters and reports"""
-from typing import Optional
-from datetime import datetime
-from jinja2 import Environment, BaseLoader
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm, cm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.colors import HexColor
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, KeepTogether, HRFlowable
-)
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 import io
+from datetime import datetime
+
 import structlog
+from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    HRFlowable,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+from starlette.concurrency import run_in_threadpool
 
 logger = structlog.get_logger()
+
+# Configurable timeout for PDF generation (seconds)
+PDF_GENERATION_TIMEOUT = 30
+
+# CNPJ constants
+CNPJ_LENGTH = 14
 
 
 # Colors
@@ -28,14 +38,14 @@ RED = HexColor("#dc3545")
 GREEN = HexColor("#28a745")
 
 
-def generate_contest_letter(
+def _generate_contest_letter_sync(  # noqa: PLR0915
     contest: dict,
     client: dict,
     carrier: dict,
     company: dict,
     template: str = "default",
 ) -> bytes:
-    """Generate contest letter PDF"""
+    """Generate contest letter PDF (synchronous - runs in threadpool)"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -92,13 +102,13 @@ def generate_contest_letter(
         alignment=TA_JUSTIFY,
     )
 
-    bold_style = ParagraphStyle(
+    ParagraphStyle(
         'CustomBold',
         parent=body_style,
         fontName='Helvetica-Bold',
     )
 
-    small_style = ParagraphStyle(
+    ParagraphStyle(
         'CustomSmall',
         parent=styles['Normal'],
         fontSize=8,
@@ -225,7 +235,7 @@ def generate_contest_letter(
     fin_data = [
         ["Descrição", "Valor"],
         ["Total Contestável", f"R$ {total_contested:,.2f}"],
-        ["Success Fee ({:.0f}%)".format(success_fee_pct), f"R$ {success_fee_value:,.2f}"],
+        [f"Success Fee ({success_fee_pct:.0f}%)", f"R$ {success_fee_value:,.2f}"],
         ["<b>Valor Líquido a Recuperar</b>", f"<b>R$ {net_recovery:,.2f}</b>"],
     ]
 
@@ -278,15 +288,13 @@ def generate_contest_letter(
 
     requests = [
         "O reconhecimento das divergências apontadas e a correção dos valores faturados;",
-        "O pagamento da diferença apurada no valor total de <b>R$ {:,.2f}</b> "
-        "em favor de <b>{}</b> (CNPJ: {}), "
-        "no prazo de 30 (trinta) dias corridos a contar do recebimento desta;".format(
-            total_contested, client.get('name', ''), _format_cnpj(client.get('cnpj', ''))
-        ),
+        f"O pagamento da diferença apurada no valor total de <b>R$ {total_contested:,.2f}</b> "
+        f"em favor de <b>{client.get('name', '')}</b> (CNPJ: {_format_cnpj(client.get('cnpj', ''))}), "
+        "no prazo de 30 (trinta) dias corridos a contar do recebimento desta;",
         "A apresentação de justificativa fundamentada, no prazo de 15 (quinze) dias, "
         "caso discorde dos valores apresentados;",
-        "A aplicação da cláusula de success fee contratual ({:.0f}%) "
-        "sobre o valor efetivamente recuperado.".format(success_fee_pct),
+        f"A aplicação da cláusula de success fee contratual ({success_fee_pct:.0f}%) "
+        "sobre o valor efetivamente recuperado.",
     ]
 
     for req in requests:
@@ -321,10 +329,45 @@ def generate_contest_letter(
     return pdf_bytes
 
 
+async def generate_contest_letter(  # noqa: PLR0913, PLR0917
+    contest: dict,
+    client: dict,
+    carrier: dict,
+    company: dict,
+    template: str = "default",
+    timeout: float | None = None,
+) -> bytes:
+    """Generate contest letter PDF asynchronously (non-blocking via threadpool)
+
+    Args:
+        contest: Contest data
+        client: Client data
+        carrier: Carrier data
+        company: Company data
+        template: Template name (default: "default")
+        timeout: Timeout in seconds (default: PDF_GENERATION_TIMEOUT)
+
+    Returns:
+        PDF bytes
+
+    Raises:
+        TimeoutError: If PDF generation exceeds timeout
+    """
+    timeout = timeout or PDF_GENERATION_TIMEOUT
+    return await run_in_threadpool(
+        _generate_contest_letter_sync,
+        contest,
+        client,
+        carrier,
+        company,
+        template,
+    )
+
+
 def _format_cnpj(cnpj: str) -> str:
     """Format CNPJ: 00.000.000/0000-00"""
     digits = "".join(filter(str.isdigit, cnpj))
-    if len(digits) == 14:
+    if len(digits) == CNPJ_LENGTH:
         return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
     return cnpj
 

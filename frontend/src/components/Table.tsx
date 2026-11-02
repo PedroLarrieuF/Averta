@@ -1,7 +1,7 @@
-import { forwardRef, ReactNode, HTMLAttributes } from 'react'
+import { ReactNode, HTMLAttributes } from 'react'
 import { cn } from '../utils/helpers'
 
-interface Column<T> {
+export interface Column<T> {
   key: string
   header: string
   render?: (row: T, index: number) => ReactNode
@@ -17,6 +17,8 @@ interface TableProps<T> extends HTMLAttributes<HTMLTableElement> {
   emptyMessage?: string
   striped?: boolean
   hoverable?: boolean
+  isLoading?: boolean
+  onRowClick?: (row: T) => void
 }
 
 export function Table<T>({
@@ -27,6 +29,8 @@ export function Table<T>({
   emptyMessage = 'Nenhum registro encontrado',
   striped = true,
   hoverable = true,
+  isLoading = false,
+  onRowClick,
   className,
   children,
   ...props
@@ -50,7 +54,17 @@ export function Table<T>({
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
+          {isLoading ? (
+            columns.map((_, colIndex) => (
+              <tr key={`loading-${colIndex}`}>
+                <td colSpan={columns.length} className="px-4 py-8 text-center">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-secondary-200 rounded w-3/4 mx-auto" />
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : data.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-8 text-center text-secondary-500">
                 {emptyMessage}
@@ -63,12 +77,14 @@ export function Table<T>({
                 className={cn(
                   rowClassName?.(row, rowIndex),
                   striped && rowIndex % 2 === 1 && 'bg-secondary-50',
-                  hoverable && 'hover:bg-secondary-50'
+                  hoverable && 'hover:bg-secondary-50',
+                  onRowClick && 'cursor-pointer'
                 )}
+                onClick={() => onRowClick?.(row)}
               >
                 {columns.map((column) => (
                   <td key={column.key} className={cn(column.className)}>
-                    {column.render ? column.render(row, rowIndex) : (row as Record<string, unknown>)[column.key]}
+                    {column.render ? column.render(row, rowIndex) : String((row as Record<string, unknown>)[column.key] ?? '')}
                   </td>
                 ))}
               </tr>
@@ -84,7 +100,11 @@ export function Table<T>({
 interface PaginationProps {
   currentPage: number
   totalPages: number
+  totalItems?: number
+  pageSize?: number
   onPageChange: (page: number) => void
+  onPageSizeChange?: (size: number) => void
+  pageSizeOptions?: number[]
   showPageNumbers?: boolean
   maxPageNumbers?: number
 }
@@ -92,7 +112,11 @@ interface PaginationProps {
 export function Pagination({
   currentPage,
   totalPages,
+  totalItems: _totalItems,
+  pageSize: _pageSize,
   onPageChange,
+  onPageSizeChange: _onPageSizeChange,
+  pageSizeOptions: _pageSizeOptions,
   showPageNumbers = true,
   maxPageNumbers = 5,
 }: PaginationProps) {

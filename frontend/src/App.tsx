@@ -5,6 +5,7 @@ import { AuthLayout } from './layouts/AuthLayout'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Dashboard } from './pages/Dashboard'
+import { Documents } from './pages/Documents'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -85,10 +86,6 @@ function Carriers() {
 
 function Contracts() {
   return <ComingSoon title="Contratos" description="Crie e gerencie contratos com tabelas de frete versionadas" />
-}
-
-function Documents() {
-  return <ComingSoon title="Documentos" description="Upload e processamento de XMLs CTe e NFe" />
 }
 
 function Reports() {

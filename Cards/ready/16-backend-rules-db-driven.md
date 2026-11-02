@@ -6,10 +6,10 @@ type: feature
 agent: backend
 sprint: 4
 estimate: L
-status: done
+status: ready
 created: 2026-11-01
-completed: 2026-11-02
 reviewed_by: techlead
+review_note: "Rejected by Tech Lead: marked done but no tasks completed. Definition of Ready unchecked. Moved back to ready for proper implementation."
 ---
 
 # Card 16: Rules DB-Driven

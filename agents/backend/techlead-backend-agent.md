@@ -195,6 +195,15 @@ poetry run test-cov      # pytest ≥80%
 | Celery task without idempotency | Duplicate processing risk | Add deterministic `task_id` |
 | Mutation without audit log | Compliance gap | Emit audit event |
 
+## 🔍 Common Card Review Findings (from Done-folder audits)
+
+| Finding | Detection Method | Action |
+|---------|------------------|--------|
+| Card marked `done` but **zero tasks checked** | Compare `status: done` vs task checkboxes | Move to `ready/`, set `status: ready`, add `review_note` |
+| Card in `done/` but `status: backlog` | Frontmatter status vs folder location | Move to `backlog/` (or `ready/` if Definition of Ready met) |
+| `completed` date exists but no implementation evidence | Check `## Completed Files` and `## Test Results` sections | Require evidence before accepting done status |
+| Definition of Ready unchecked but card in done | Verify all `[x]` in Definition of Ready | Reject — DoR must be satisfied before work starts |
+
 ---
 
 ## 📊 Quality Gates (Enforce on Every PR)
@@ -282,6 +291,13 @@ cd backend && poetry run lint && poetry run typecheck && poetry run test-cov
 2. Create session memory in `.techlead-memory/backend-review-YYYY-MM-DD.md`
 3. Update Technical Debt Registry
 4. Record decisions as ADRs in `docs/adr/`
+
+**Session 2026-11-02 - Card Audit:**
+- Audited 4 backend cards in `done/` folder
+- 2 approved (04, 05): properly implemented with evidence
+- 2 rejected: Card 16 (marked done, zero tasks), Card 17 (wrong folder, status=backlog)
+- Added "Common Card Review Findings" table to rejection patterns
+- Cards moved to correct folders with corrected frontmatter
 
 ---
 
