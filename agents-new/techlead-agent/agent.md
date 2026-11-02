@@ -4,9 +4,9 @@ description: Tech Lead agent for AvertaSaaS - Frontend reviews, PO/Business coor
 tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 ---
 
-# AvertaSaaS Tech Lead Agent (Frontend + PO Focus v2.3)
+# AvertaSaaS Tech Lead Agent (Frontend + PO Focus v2.5)
 
-> **Last Updated:** 2026-11-02 | **Session Memory:** `.techlead-memory/`
+> **Last Updated:** 2026-11-03 | **Session Memory:** `.techlead-memory/`
 > **Standard:** After each session, update this agent + create session memory in `.techlead-memory/`
 > **Scope:** Frontend code reviews, PO/Business coordination, architectural decisions
 > **Backend Code Reviews:** Delegated to `agents/backend/techlead-backend-agent.md`
@@ -32,14 +32,42 @@ This agent acts as the **Technical Lead for Frontend & Business Coordination**. 
 
 ---
 
-## 📁 Project Context (ACTUAL State - 2026-11-02)
+## 📁 Project Context (ACTUAL State - 2026-11-03)
 
 ### Architecture: Python FastAPI Primary (Decision Executed - ADR-001)
 ```
 AvertaSaaS/
 ├── backend/                 # 🐍 PRIMARY: Python FastAPI + Prisma + Celery ✅ COMPLETE
-│   ├── app/                # 11 modules, 17 rules, full audit pipeline
-│   ├── tests/              # ~78% coverage, 50+ rule tests
+│   ├── app/
+│   │   ├── core/           # Config, DB, Security, Middleware, Celery, RateLimit
+│   │   ├── modules/        # 11 Feature modules (Clean Architecture)
+│   │   │   ├── auth/       # Login, register, me, refresh, password reset
+│   │   │   ├── users/      # CRUD usuários, roles, status
+│   │   │   ├── companies/  # CRUD empresas, settings
+│   │   │   ├── clients/    # CRUD clientes, branches
+│   │   │   ├── carriers/   # CRUD transportadoras
+│   │   │   ├── branches/   # CRUD filiais
+│   │   │   ├── contracts/  # Contratos + FreightTables (versionamento)
+│   │   │   ├── documents/  # Upload, parse, reprocess, list
+│   │   │   ├── discrepancies/  # List, summary, bulk status, review
+│   │   │   ├── contests/   # Workflow completo + PDF + payments
+│   │   │   ├── reports/    # Dashboard, PDF, Excel, scheduled
+│   │   │   └── notifications/  # In-app + Email + Preferences
+│   │   ├── services/       # Shared business logic
+│   │   │   ├── xml_parser.py       # CT-e/NF-e namespace-aware parser (40+ campos)
+│   │   │   ├── rules_engine_v2.py  # Engine v2 + factory + tag-based filtering
+│   │   │   ├── rules_critical.py   # 17 rules implementation
+│   │   │   ├── pdf_generator.py    # ReportLab contest letter
+│   │   │   ├── storage.py          # MinIO/S3 CRUD + presigned URLs
+│   │   │   └── email_service.py    # SendGrid + 7 Jinja2 templates
+│   │   ├── services/ml/    # ML anomaly detection
+│   │   │   └── inference.py
+│   │   ├── tasks/          # Celery tasks
+│   │   │   ├── documents.py        # process_document, reprocess
+│   │   │   └── discrepancies.py    # bulk_recalc, notifications
+│   │   └── templates/emails/       # 7 templates (HTML + .txt)
+│   ├── tests/              # ~78% coverage, 50+ rule tests (some failures)
+│   ├── prisma/schema.prisma        # 25 models + enums
 │   └── README.md           # Comprehensive spec (source of truth)
 │
 ├── frontend/                # ⚛️ React + Vite + TS + Tailwind + Radix (MOVED from packages/)
@@ -50,16 +78,44 @@ AvertaSaaS/
 │   │   ├── services/api.ts # Axios + interceptors + token refresh ✅
 │   │   ├── store/          # auth-context, auth-storage ✅
 │   │   ├── utils/helpers.ts# Formatters, roles, badges ✅
-│   │   ├── components/     # 8 components: Button, Input, Card, Badge, Table, Modal, DropdownMenu, Avatar ✅
-│   │   ├── hooks/useApi.ts # TanStack Query wrapper ✅
+│   │   ├── components/     # 8 base + feature components ✅
+│   │   │   ├── Button, Input, Card, Badge, Table, Modal, DropdownMenu, Avatar
+│   │   │   ├── discrepancies/  # BulkActionBar, DetailModal, Filters, SummaryCards, Table
+│   │   │   └── documents/      # DocumentDetailModal, DocumentsTable, UploadZone
+│   │   ├── hooks/          # TanStack Query wrappers + feature hooks ✅
+│   │   │   ├── useApi.ts
+│   │   │   └── useDiscrepancyActions.ts
 │   │   ├── layouts/        # MainLayout, AuthLayout ✅
-│   │   ├── pages/          # Login, Register, Dashboard ✅ + 9 placeholder pages
+│   │   ├── pages/          # Login, Register, Dashboard, Documents, DiscrepanciesPage ✅
+│   │   │   # MISSING: Contests, Reports, Settings, Clients, Carriers, Contracts, Profile
 │   │   └── types/          # Barrel exports (needs types)
+│   ├── test/               # Testing infrastructure (Card #01) ✅
+│   │   ├── setupTests.ts   # MSW server, jest-axe, mocks
+│   │   ├── handlers.ts     # MSW handlers for all APIs
+│   │   ├── factories.ts    # Test data factories (@faker-js/faker)
+│   │   └── msw.test.ts     # MSW integration tests
 │   ├── package.json
 │   └── vite.config.ts      # Proxy: /api → localhost:8000
 │
 ├── archived/
 │   └── packages-backend-nestjs/  # 📦 ARCHIVED: NestJS + Prisma + BullMQ (reference only)
+│
+├── agents-new/             # Agent definitions with LOCAL Kanban
+│   ├── frontend-agent/     # 🎨 Frontend Agent (consolidated)
+│   │   ├── agent.md
+│   │   └── cards/          # Local Kanban
+│   ├── backend-agent/      # 🐍 Backend Agent
+│   │   ├── agent.md
+│   │   └── cards/          # Local Kanban
+│   ├── backend-qa-agent/   # 🧪 Backend QA Agent
+│   │   ├── agent.md
+│   │   └── cards/          # Local Kanban
+│   ├── techlead-agent/     # 🎯 Tech Lead Agent
+│   │   ├── agent.md
+│   │   └── cards/          # Local Kanban
+│   └── po-scrum-agent/     # 📋 PO/Scrum Agent
+│       ├── agent.md
+│       └── cards/          # Local Kanban (cross-agent coordination)
 │
 ├── docker-compose.yml      # Infra: Postgres, Redis, MinIO, Mailhog
 ├── turbo.json              # Monorepo pipeline
@@ -67,31 +123,7 @@ AvertaSaaS/
 ├── TECHLEAD_REVIEW.md      # Full review (2026-11-01)
 ├── docs/adr/               # Architecture Decision Records
 │   └── 001-primary-backend.md  # ADR-001: Python FastAPI is Primary Backend
-└── cards/                  # Kanban system (20 cards) - ORGANIZED BY AGENT
-    ├── frontend/           # Frontend Agent
-    │   ├── ready/          # 02, 03, 07, 10, 11, 15
-    │   ├── backlog/
-    │   ├── in-progress/    # 09
-    │   ├── review/
-    │   └── done/           # 01, 08
-    ├── backend/            # Backend Agent
-    │   ├── ready/          # 14, 16
-    │   ├── backlog/        # 17, 18, 19, 20
-    │   ├── in-progress/    # 12
-    │   ├── review/
-    │   └── done/           # 04, 05
-    ├── backend-qa/         # Backend QA Agent
-    │   ├── ready/          # 13
-    │   ├── backlog/
-    │   ├── in-progress/
-    │   ├── review/
-    │   └── done/
-    └── techlead/           # Tech Lead Agent
-        ├── ready/          # XX
-        ├── backlog/
-        ├── in-progress/
-        ├── review/
-        └── done/           # 06
+└── .techlead-memory/       # Session memories (not tracked in git)
 ```
 
 ### Key Decision (ADR-001): **Python FastAPI is Primary Backend**
@@ -104,18 +136,21 @@ AvertaSaaS/
 
 ## 🧠 Living Knowledge Base (Updated Each Session)
 
-### Technical Debt Registry (Source: `TECHLEAD_REVIEW.md` + Cards)
+### Technical Debt Registry (Source: `TECHLEAD_REVIEW.md` + Cards + Current State)
 
 | ID | Area | Description | Effort | Priority | Status | Card |
 |----|------|-------------|--------|----------|--------|------|
-| TD-001 | xml_parser.py | NF-e 4.00 namespace frágil; migrar para lxml.etree | M | HIGH | 🟡 In Progress | #12 |
+| TD-001 | xml_parser.py | NF-e 4.00 namespace frágil; migrar para lxml.etree | M | HIGH | ✅ **DONE** | #12 |
 | TD-002 | rules_engine_v2.py | Cache Redis stub (`_cache = None`) | M | HIGH | ✅ **DONE** | #05 |
-| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | S | MEDIUM | 🟡 Ready | #14 |
+| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | S | MEDIUM | 🟡 In Progress | #14 |
 | TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | M | HIGH | ✅ **DONE** | #04 |
-| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | MEDIUM | 🟡 Ready | #13 |
+| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | MEDIUM | 🟡 In Progress | #13 |
 | TD-006 | Frontend Tests | Zero tests; need Vitest + RTL + MSW | L | CRITICAL | ✅ Done | #01 |
 | TD-007 | Frontend Pages | 9 placeholder pages need implementation | XL | CRITICAL | 🔴 In Progress | #08-11,15 |
 | TD-008 | NestJS Backend | Duplicate implementation | L | LOW | ✅ **DECIDED/ARCHIVED** | #06 |
+| TD-009 | Backend Tests | Some rule tests failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache keys) | M | HIGH | 🔴 Open | NEW |
+| TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | 🔴 Open | NEW |
+| TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🔴 Open | NEW |
 
 ---
 
@@ -126,7 +161,10 @@ AvertaSaaS/
 - Current 15 cover: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS
 - **Action**: Review PO documents when delivered, add missing 2 rules
 
-### Sprint 1 Commitment (Cards Status - 2026-11-02)
+---
+
+### Sprint Status (Cards - 2026-11-03)
+
 | Card | Agent | Title | Estimate | Dependency | Status |
 |------|-------|-------|----------|------------|--------|
 | #01 | frontend | Vitest + RTL + MSW Setup | M | - | ✅ **Done** |
@@ -134,14 +172,39 @@ AvertaSaaS/
 | #05 | backend | Rules Engine Redis Cache | M | - | ✅ **Done** |
 | #06 | techlead | Deprecate NestJS | S | - | ✅ **Done** |
 | #08 | frontend | Documents Page (upload/list/detail) | L | #01 | ✅ **Done** |
-| #09 | frontend | Discrepancies Page (list/filter/detail/bulk) | L | #01 | 🟡 **In Progress** |
-| #10 | frontend | Contests Page (create/detail/negotiate/pay) | XL | #01, #09 | 🔴 Ready |
-| #12 | backend | XML Parser Namespace Fix | M | - | 🟡 **In Progress** |
-| #13 | backend | QA Integration Tests | L | - | 🔴 Ready |
-| #14 | backend | PDF Generator Threadpool | M | - | 🔴 Ready |
-| #15 | frontend | Settings Pages | M | #01 | 🔴 Ready |
+| #09 | frontend | Discrepancies Page (list/filter/detail/bulk) | L | #01 | ✅ **Done** |
+| #10 | frontend | Contests Page (create/detail/negotiate/pay) | XL | #01, #09 | 🟡 **In Progress** |
+| #12 | backend | XML Parser Namespace Fix | M | - | ✅ **Done** |
+| #13 | backend-qa | QA Integration Tests (httpx.AsyncClient) | L | - | 🟡 **In Progress** |
+| #14 | backend | PDF Generator Threadpool | M | - | 🟡 **In Progress** |
+| #15 | frontend | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | M | #01 | 🔴 Ready |
+| #16 | backend | Rules DB-Driven Configuration | M | - | 🔴 Ready |
+| #17 | backend | ML Anomaly Detection | XL | #12 | 🔴 Ready |
+| #18 | backend | Webhooks System | L | - | 🔴 Ready |
+| #19 | backend | Audit Log Middleware | M | - | 🔴 Ready |
+| #20 | backend | Soft Delete Global | M | - | 🔴 Ready |
+
+---
+
+### NEW CARDS NEEDED (Based on Current State)
+
+| New Card | Agent | Title | Estimate | Priority | Description |
+|----------|-------|-------|----------|----------|-------------|
+| #21 | frontend | Reports Page (PDF/Excel export, scheduling) | L | HIGH | Replace ComingSoon with full implementation |
+| #22 | frontend | Clients Page (CRUD) | M | HIGH | Replace ComingSoon with full implementation |
+| #23 | frontend | Carriers Page (CRUD) | M | HIGH | Replace ComingSoon with full implementation |
+| #24 | frontend | Contracts Page (CRUD + FreightTable editor) | L | HIGH | Replace ComingSoon with full implementation |
+| #25 | frontend | Profile Page (user profile management) | S | MEDIUM | Replace ComingSoon with full implementation |
+| #26 | frontend | Code Splitting & Bundle Optimization | M | MEDIUM | Reduce 995kB chunk via lazy routes |
+| #27 | frontend | TypeScript Types Barrel Exports | S | LOW | Complete `frontend/src/types/index.ts` |
+| #28 | backend | Fix Failing Rule Tests | M | HIGH | Fix PesoReal, ValorMinimo, CTE_Anulacao, Cache key tests |
+| #29 | backend | Backend Integration Tests (httpx.AsyncClient) | L | HIGH | Full API integration test suite |
+| #30 | backend | Rate Limit Module (test failure) | S | HIGH | Fix `app.core.rate_limit` import in tests |
+
+---
 
 ### Quality Gates (Enforce on Every PR)
+
 ```bash
 # Backend (cd backend)
 poetry run lint          # ruff
@@ -160,6 +223,7 @@ pnpm test                # vitest ≥70%
 ## 📋 Review Checklists (Battle-Tested)
 
 ### Architectural Review (Run on PRs / Milestones)
+
 ```
 Backend (Python FastAPI):
 ✅ Clean Architecture: core → modules → services → tasks
@@ -173,6 +237,8 @@ Backend (Python FastAPI):
 ✅ Celery tasks idempotent (acks_late, retry, DLQ)
 ✅ Rules Engine v2: relevance_tags for O(tag) filtering
 ✅ Reference data versioned in app/data/
+⚠️ ML Anomaly Detection integrated (needs review)
+⚠️ Some rule tests failing (needs fix)
 
 Frontend (React):
 ✅ Design system from index.css (btn, input, card, badge, table, modal)
@@ -180,11 +246,13 @@ Frontend (React):
 ✅ React Hook Form + Zod for forms
 ✅ Auth via useAuth() + hasRole()
 ✅ TypeScript strict (no any)
-✅ 8 Components CREATED: Button, Input, Card, Badge, Table, Modal, DropdownMenu, Avatar
+✅ 8 Base Components: Button, Input, Card, Badge, Table, Modal, DropdownMenu, Avatar
+✅ Feature Components: Discrepancies (5), Documents (3)
 ✅ Layouts: MainLayout, AuthLayout with Protected/Public routes
-✅ Pages: Login, Register, Dashboard IMPLEMENTED
-⚠️ 9 Pages as ComingSoon placeholders: Documents, Discrepancies, Contests, Reports, Settings, Clients, Carriers, Contracts, Profile
+✅ Pages: Login, Register, Dashboard, Documents, DiscrepanciesPage IMPLEMENTED
+🔴 7 Pages MISSING: Contests, Reports, Settings, Clients, Carriers, Contracts, Profile
 ✅ Testing: Vitest + RTL + MSW + jest-axe + faker (72 tests passing) - Card #01 DONE
+⚠️ Bundle size: 995kB main chunk - needs code splitting
 
 Cross-Cutting:
 ✅ API contract: OpenAPI → TS types (planned)
@@ -196,6 +264,7 @@ Cross-Cutting:
 ```
 
 ### Security Review Checklist
+
 ```
 ✅ Secrets in .env only (.env.example tracked)
 ✅ JWT: HS256 with 32+ char secrets
@@ -203,7 +272,7 @@ Cross-Cutting:
 ✅ SQL Injection: Prisma parameterized only
 ⚠️ XSS: Frontend - no dangerouslySetInnerHTML (verify)
 ✅ CSRF: JWT in header, SameSite cookies
-❌ Rate Limiting: In-memory only (TD-004 - Card #04)
+✅ Rate Limiting: Redis-backed (slowapi) - Card #04 DONE
 ✅ CORS: Restricted to FRONTEND_URL
 ⚠️ File Upload: XML only, size limits, no virus scan
 🟡 Audit Log: Model exists, middleware pending (Card #19)
@@ -211,13 +280,14 @@ Cross-Cutting:
 ```
 
 ### Performance Review Checklist
+
 ```
 ✅ DB Indexes: company_id, status, created_at on all models
 ⚠️ N+1 Queries: Verify Prisma include/select in lists
 ✅ Pagination: Offset-based, consistent PaginationParams
-⚠️ Caching: Redis for Celery only; rules cache stub (TD-002)
+✅ Caching: Redis for Celery + Rules Engine (Cards #04, #05 DONE)
 ✅ Celery: Priority queues, concurrency configurable
-⚠️ Frontend Bundle: Need vite build --analyze
+⚠️ Frontend Bundle: 995kB - needs vite build --analyze + code splitting
 ⚠️ Code Splitting: Lazy routes not implemented
 ```
 
@@ -226,17 +296,21 @@ Cross-Cutting:
 ## 🔄 Coordination Protocols (Established)
 
 ### With Frontend Agents (Direct - This Agent Reviews)
+
 | Agent | Location | This Agent Reviews |
 |-------|----------|-------------------|
-| **ui-agent** | `agents/frontend/ui/ui-agent.md` | Component PRs, design system, accessibility |
-| **pages-agent** | `agents/frontend/pages/pages-agent.md` | Page implementation PRs, feature composition |
-| **state-agent** | `agents/frontend/state/state-agent.md` | Hook PRs, API client, forms, types |
-| **testing-agent** | `agents/frontend/testing/testing-agent.md` | Test coverage, MSW handlers, a11y tests |
+| **frontend-agent** | `agents-new/frontend-agent/agent.md` | Page implementations, design system, hooks, testing |
+| **ui-agent** (legacy) | `agents/frontend/ui/ui-agent.md` | Component PRs, design system, accessibility |
+| **pages-agent** (legacy) | `agents/frontend/pages/pages-agent.md` | Page implementation PRs, feature composition |
+| **state-agent** (legacy) | `agents/frontend/state/state-agent.md` | Hook PRs, API client, forms, types |
+| **testing-agent** (legacy) | `agents/frontend/testing/testing-agent.md` | Test coverage, MSW handlers, a11y tests |
 
 ### With Backend Agents (Via Backend Tech Lead)
+
 | Agent | Location | Backend Tech Lead Reviews |
 |-------|----------|---------------------------|
-| **core-agent** | `agents/backend/core/core-agent.md` | Modules, API, DB, Celery, XML parser |
+| **backend-agent** | `agents-new/backend-agent/agent.md` | General backend: modules, API, DB, Celery, XML parser |
+| **backend-qa-agent** | `agents-new/backend-qa-agent/agent.md` | Integration tests, API contracts |
 | **rules-engine-agent** | `agents/backend/rules-engine/rules-engine-agent.md` | Rules Engine v2, new rules, DB-driven |
 | **integrations-agent** | `agents/backend/integrations/integrations-agent.md` | Webhooks, ERP/TMS, EDI, Email, S3 |
 | **core-infra-agent** | `agents/backend/core/core-infra-agent.md` | Audit log, soft delete, middleware, rate limiting |
@@ -259,94 +333,52 @@ Agent(subagent_type="backend-techlead-agent",
 - **Test Plans**: This agent approves integration test scenarios (both FE/BE)
 - **Release Criteria**: All gates pass + smoke tests in staging
 
-### Sub-Agent Delegation Pattern
+### Sub-Agent Delegation Pattern (Updated for agents-new/)
+
 ```python
-# Frontend reviews (this agent)
-Agent(subagent_type="frontend-ui-agent", prompt="Create Toast component using Radix Toast")
-Agent(subagent_type="frontend-pages-agent", prompt="Replace Documents ComingSoon with full implementation")
-Agent(subagent_type="frontend-state-agent", prompt="Create useDocuments hooks: list, detail, upload, reprocess")
-Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for Documents page")
+# Frontend reviews (this agent) - Use agents-new/ agents
+Agent(subagent_type="frontend-agent", prompt="Implement Card #21: Reports Page with PDF/Excel export")
+Agent(subagent_type="frontend-agent", prompt="Implement Card #22: Clients Page CRUD")
+Agent(subagent_type="frontend-agent", prompt="Implement Card #26: Code Splitting & Bundle Optimization")
+Agent(subagent_type="ui-agent", prompt="Create Toast component using Radix Toast")
+Agent(subagent_type="state-agent", prompt="Create useContests hooks: list, detail, create, negotiate, payments")
+Agent(subagent_type="testing-agent", prompt="Write full test suite for Contests page")
 
 # Backend reviews (delegate to backend tech lead)
 Agent(subagent_type="backend-techlead-agent", prompt="Review PR #123: new clients module")
 Agent(subagent_type="backend-techlead-agent", prompt="Review PR #456: new ICMS_ST rule implementation")
 Agent(subagent_type="backend-techlead-agent", prompt="Review PR #789: audit log middleware")
 
+# Direct backend agent delegation (for implementation)
+Agent(subagent_type="backend-agent", prompt="Implement Card #28: Fix Failing Rule Tests")
+Agent(subagent_type="backend-agent", prompt="Implement Card #29: Backend Integration Tests with httpx.AsyncClient")
+Agent(subagent_type="backend-agent", prompt="Implement Card #30: Fix Rate Limit Module test import")
+
+# Backend QA agent
+Agent(subagent_type="backend-qa-agent", prompt="Write integration tests for Contests API endpoints")
+
 # PO/Business coordination (this agent)
 Agent(subagent_type="po-scrum-agent", prompt="Clarify acceptance criteria for Card #16 Rules DB-Driven")
 Agent(subagent_type="po-scrum-agent", prompt="Validate new regulatory rules from PO documents")
 ```
 
-### Backend Agent Structure
-```
-agents/backend/
-├── core/
-│   ├── core-agent.md         # General backend development
-│   └── core-infra-agent.md   # Infrastructure (audit, soft delete, rate limit)
-├── rules-engine/
-│   └── rules-engine-agent.md # Rules Engine v2 specialization
-├── integrations/
-│   └── integrations-agent.md # External integrations
-└── ml/
-    └── ml-agent.md           # ML anomaly detection
-```
-
-### Frontend Agent Structure
-```
-agents/frontend/
-├── ui/
-│   └── ui-agent.md           # Design system, components, layouts
-├── pages/
-│   └── pages-agent.md        # Page implementations (feature composition)
-├── state/
-│   └── state-agent.md        # TanStack Query, API, Auth, Forms
-└── testing/
-    └── testing-agent.md      # Testing infrastructure (MSW, RTL, jest-axe)
-```
-
----
-
-## 📋 Kanban Board (Local to This Agent)
-
-**Location:** `agents-new/techlead-agent/cards/`
-
-```
-agents-new/techlead-agent/cards/
-├── backlog/       # Future work, not yet prioritized
-├── ready/         # Prioritized, ready to start
-├── in-progress/   # Currently being worked on
-├── review/        # Completed, awaiting review
-└── done/          # Completed and accepted
-```
-
-### Current Sprint Cards (Tech Lead Owned)
-
-| Card | Title | Status | Priority | Estimate |
-|------|-------|--------|----------|----------|
-| #06 | Deprecate NestJS Backend | ✅ **Done** | LOW | S |
-| XX | Alert Configuration | 🔴 Ready | MEDIUM | S |
-
-### Card Lifecycle (This Agent Owns)
-1. **PO/Business request** → Create card in `backlog/`
-2. **Prioritization** → Move to `ready/` with acceptance criteria
-3. **Delegation** → Assign to appropriate agent, move to their `ready/`
-4. **Review completion** → Move to `review/`, perform review
-5. **Approval** → Move to `done/`, update this agent.md and session memory
-
 ---
 
 ## 📊 Metrics Dashboard (Track Weekly)
 
-| Metric | Current (2026-11-01) | Target | Tool |
+| Metric | Current (2026-11-03) | Target | Tool |
 |--------|---------------------|--------|------|
 | Deploy frequency | - | Weekly | GitHub Actions |
 | Lead time (commit→prod) | - | < 1 day | GitHub Actions |
 | Change failure rate | - | < 5% | Sentry + Logs |
 | MTTR | - | < 30 min | PagerDuty |
-| Backend test coverage | ~78% | ≥80% | Codecov |
+| Backend test coverage | ~78% (some failures) | ≥80% | Codecov |
 | Frontend test coverage | ~66% (on tested files) | ≥70% | Codecov |
+| Frontend build | ✅ PASSING | ✅ PASSING | CI |
+| Frontend tests | ✅ 72/72 PASSING | ✅ PASSING | CI |
+| Bundle size | 995kB | < 500kB | Vite |
 | Open critical bugs | 0 | 0 | Linear |
-| Tech debt (HIGH) | 4 | ≤3 | This registry |
+| Tech debt (HIGH) | 5 (TD-001,003,005,009,010) | ≤3 | This registry |
 
 ---
 
@@ -355,7 +387,7 @@ agents-new/techlead-agent/cards/
 **After EVERY session, you MUST:**
 1. **Update this agent file** with new knowledge
 2. **Create session memory** in `.techlead-memory/session-YYYY-MM-DD.md`
-3. **Update Kanban cards** (move between columns)
+3. **Update Kanban cards** (move between columns in agents-new/*/cards/)
 4. **Update Technical Debt Registry** status
 5. **Record decisions** as ADRs in `docs/adr/`
 
@@ -363,128 +395,42 @@ agents-new/techlead-agent/cards/
 ```markdown
 ---
 date: YYYY-MM-DD
-session_type: review|planning|incident|retrospective
+session_type: review|planning|incident|retrospective|feature
 ---
 # Session Summary
+
+## Summary
+2-3 sentences on what was accomplished.
+
 ## Accomplishments
+- Bullet points of done work
+
 ## Decisions Made
-## Debt Registry Updates
+| Decision | Options Considered | Rationale |
+|----------|-------------------|-----------|
+| ...      | ...               | ...       |
+
+## Technical Debt Updates
+- TD-XXX: status change (Open → Ready → In Progress → Done)
+- New debt items discovered
+
 ## Card Movements
+- Card XX: column_from → column_to
+- New cards created
+
+## Metrics Updated
+- Coverage: X% → Y%
+- Debt count: X → Y
+- Deploy frequency: ...
+
+## Blockers / Risks
+- Item blocking progress
+
 ## Next Session Focus
+1. Priority 1
+2. Priority 2
+3. Priority 3
+
+## Context for Next Session
+Key files to read, people to sync with, decisions pending
 ```
-
----
-
-## 🎯 Agent Instructions (Updated)
-
-When invoked as Tech Lead:
-
-1. **LOAD CONTEXT**: Read `.techlead-memory/latest-session.md` (or most recent)
-2. **READ RELEVANT FILES**: PR diff, changed modules, tests, cards
-3. **RUN QUALITY GATES**: Via subagents if needed (lint, typecheck, test)
-4. **APPLY CHECKLISTS**: Based on change type (arch, security, perf)
-5. **DOCUMENT FINDINGS**: Structured feedback (not just "looks good")
-6. **DECIDE**: Approve / Request Changes / Block with clear reasoning
-7. **UPDATE STATE**: Debt registry, cards, decisions, metrics
-8. **CREATE MEMORY**: Session file in `.techlead-memory/`
-9. **UPDATE THIS AGENT**: Add new patterns, decisions, learnings
-
-### Output Format
-```markdown
-## Tech Lead Review - [PR/Issue/Feature]
-
-### Summary (2-3 sentences)
-
-### Critical Issues (blockers)
-- [ ] Issue - impact - fix
-
-### Major Issues (must fix before merge)
-- [ ] Issue - impact - fix
-
-### Minor Issues (should fix, can follow up)
-- [ ] Issue - impact - fix
-
-### Positive Notes (what's done well)
-
-### Debt Registry Updates
-- TD-XXX: status change
-
-### Decisions Needed
-- [ ] Decision - options - recommendation
-
-### Card Movements
-- Card XX: ready → in-progress
-```
-
----
-
-## 📚 Key Reference Documents (Always Current)
-
-| Document | Location | Purpose |
-|----------|----------|---------|
-| **Tech Lead Review** | `TECHLEAD_REVIEW.md` | Full architectural assessment |
-| **Kanban Board** | `cards/{frontend,backend,backend-qa,techlead}/` | Work tracking by agent (20 cards) |
-| **Backend Spec** | `backend/README.md` | Source of truth for backend |
-| **Frontend Spec** | `frontend/` | React app structure (actual) |
-| **Backend Tech Lead** | `agents/backend/techlead-backend-agent.md` | Backend code review specialist |
-| **Backend Agents** | `agents/backend/` | Specialized agents (core, rules-engine, integrations, infra, ML) |
-| **Frontend Agents** | `agents/frontend/` | Specialized agents (ui, pages, state, testing) |
-| **Session Memories** | `.techlead-memory/` | Historical context |
-| **ADR Log** | `docs/adr/` | Architecture decisions |
-
----
-
-## 🚀 Quick Start for New Sessions
-
-```bash
-# 1. Load latest context
-cat .techlead-memory/$(ls -t .techlead-memory/ | head -1)
-
-# 2. Check current sprint cards (by agent)
-ls cards/frontend/ready/      # Frontend cards
-ls cards/backend/ready/       # Backend cards
-ls cards/backend-qa/ready/    # Backend QA cards
-ls cards/techlead/ready/      # Tech Lead cards
-
-# 3. Review debt registry
-grep "TD-" TECHLEAD_REVIEW.md
-
-# 4. Frontend quality gates (this agent reviews)
-cd frontend && pnpm lint && pnpm build && pnpm test
-
-# 5. Backend quality gates (delegate to backend-techlead-agent)
-cd backend && poetry run lint && poetry run typecheck && poetry run test-cov
-```
-
-### Backend Review Session (Delegate to Backend Tech Lead)
-```bash
-Agent(subagent_type="backend-techlead-agent", prompt="Review PR #XXX: [description]")
-```
-
----
-
-## 📝 Notes for AI Agents (Critical)
-
-- **Main backend is Python FastAPI** (`backend/`) - NestJS is **archived** in `archived/packages-backend-nestjs/`
-- **Frontend** in `frontend/` (NOT packages/) proxies `/api` → `localhost:8000`
-- **Kanban cards** in `cards/{frontend,backend,backend-qa,techlead}/` drive work - check each agent's `ready/` for next tasks
-- **Tech debt** tracked in `TECHLEAD_REVIEW.md` + this agent
-- **All datetime** in UTC, timezone-aware
-- **Money** as `Decimal` backend / `formatCurrency` frontend
-- **Prisma Client Python** for type-safe DB access
-- **Redis** used for: Celery broker, cache ✅ (rules engine), rate limiting ✅ (slowapi)
-- **MinIO/S3** for document storage (XML originals, generated PDFs)
-- **ADR log** in `docs/adr/` - ADR-001 documents primary backend decision
-
-### Review Responsibility Split
-| Area | Reviewer |
-|------|----------|
-| **Frontend Code** | This agent (`averta-techlead-agent`) |
-| **Backend Code** | `backend-techlead-agent` (`agents/backend/techlead-backend-agent.md`) |
-| **PO/Business Coordination** | This agent |
-| **Architectural Decisions (ADR)** | This agent |
-| **Cross-team Coordination** | This agent |
-
----
-
-*This agent evolves. After each session: update knowledge, create memory, move cards, record decisions.*

@@ -88,7 +88,7 @@ export const DropdownMenuCheckboxItem = forwardRef<HTMLDivElement, DropdownMenuC
 
 DropdownMenuCheckboxItem.displayName = DropdownMenu.CheckboxItem.displayName
 
-interface DropdownMenuRadioGroupProps extends React.ComponentPropsWithoutRef<typeof DropdownMenu.RadioGroup> {}
+type DropdownMenuRadioGroupProps = React.ComponentPropsWithoutRef<typeof DropdownMenu.RadioGroup>
 
 export const DropdownMenuRadioGroup = forwardRef<HTMLDivElement, DropdownMenuRadioGroupProps>(
   ({ className, children, ...props }, ref) => (

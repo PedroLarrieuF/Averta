@@ -4,7 +4,7 @@ description: Specialized agent for AvertaSaaS backend development (Python FastAP
 tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents
 ---
 
-# AvertaSaaS Backend Agent (Python FastAPI)
+# AvertaSaaS Backend Agent (Python FastAPI) - v2.2
 
 ## Project Context
 
@@ -85,16 +85,19 @@ agents-new/backend-agent/cards/
 └── done/          # Completed and accepted
 ```
 
-### Current Sprint Cards
+### Current Sprint Cards (2026-11-03)
 
 | Card | Title | Status | Priority | Estimate |
 |------|-------|--------|----------|----------|
 | #04 | Rate Limiter Redis (slowapi) | ✅ **Done** | HIGH | M |
 | #05 | Rules Engine Redis Cache | ✅ **Done** | HIGH | M |
-| #12 | XML Parser Namespace Fix (NF-e 4.00) | 🟡 **In Progress** | HIGH | M |
-| #13 | Integration Tests (httpx.AsyncClient) | 🔴 Ready | MEDIUM | L |
-| #14 | PDF Generator Threadpool | 🔴 Ready | MEDIUM | M |
+| #12 | XML Parser Namespace Fix (NF-e 4.00) | ✅ **Done** | HIGH | M |
+| #13 | Integration Tests (httpx.AsyncClient) | 🟡 In Progress | MEDIUM | L |
+| #14 | PDF Generator Threadpool | 🟡 In Progress | MEDIUM | M |
 | #16 | Rules DB-Driven Configuration | 🔴 Ready | MEDIUM | L |
+| #28 | Fix Failing Rule Tests | 🔴 Ready | HIGH | M |
+| #29 | Backend Integration Tests (httpx.AsyncClient) | 🔴 Ready | HIGH | L |
+| #30 | Fix Rate Limit Module Test Import | 🔴 Ready | HIGH | S |
 
 ### Backlog Cards
 
@@ -267,6 +270,21 @@ Enums: `UserRole`, `UserStatus`, `DocumentStatus`, `DocumentType`, `DiscrepancyS
 - `test_engine_filtering` (tag-based relevance)
 - `test_full_audit` (documento com 5+ divergências)
 
+### ⚠️ CURRENT TEST FAILURES (2026-11-03)
+
+The following tests are FAILING and need to be fixed (Card #28):
+
+| Test | File | Issue |
+|------|------|-------|
+| `test_peso_real_vs_faturado` | `test_rules_critical.py` | Rule logic / tolerance calculation |
+| `test_valor_minimo_frete` | `test_rules_critical.py` | ANTT table lookup / calculation |
+| `test_cte_anulacao_without_ref` | `test_rules_critical.py` | CT-e complementar logic |
+| `test_engine_cache_consistency` | `test_rules_critical.py` | Redis cache key generation |
+| `test_rules_engine_integration` | `test_rules_critical.py` | Full audit flow |
+| `test_rate_limit_import` | `tests/...` | `app.core.rate_limit` module import error |
+
+**Action Required:** Fix these 6 failing tests before proceeding with new features.
+
 ## CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
 
 1. **lint-and-test** - ruff, mypy, pytest + coverage → Codecov
@@ -274,26 +292,30 @@ Enums: `UserRole`, `UserStatus`, `DocumentStatus`, `DocumentType`, `DiscrepancyS
 3. **deploy-staging** (develop) - kubectl/Helm staging
 4. **deploy-production** (main, manual) - Blue/green production
 
-## Known Technical Debt
+## Known Technical Debt (Updated 2026-11-03)
 
-1. **xml_parser.py** - Namespace handling frágil para NF-e 4.00; migrar para `lxml.etree` com `register_namespace`
-2. **rules_engine_v2.py** - Cache Redis não implementado (stub `_cache = None`)
-3. **pdf_generator.py** - Bloqueia event loop; usar `run_in_threadpool` para >10 páginas
-4. **In-memory rate limit** - Não funciona em múltiplas réplicas
-5. **Testes de integração** - Faltam `httpx.AsyncClient` tests para rotas autenticadas
+| ID | Area | Description | Status |
+|----|------|-------------|--------|
+| TD-001 | xml_parser.py | NF-e 4.00 namespace frágil; migrar para lxml.etree | ✅ **DONE** (Card #12) |
+| TD-002 | rules_engine_v2.py | Cache Redis stub (`_cache = None`) | ✅ **DONE** (Card #05) |
+| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | 🟡 In Progress (Card #14) |
+| TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | ✅ **DONE** (Card #04) |
+| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | 🟡 In Progress (Card #13, #29) |
+| TD-009 | Rules Tests | 6 tests failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | 🔴 Open (Card #28) |
+| TD-010 | Rate Limit Module | `app.core.rate_limit` import failing in tests | 🔴 Open (Card #30) |
 
 ## Future Roadmap (from README)
 
 ### Short Term (1-2 sprints)
-- Rate Limiting Redis (slowapi + sliding window)
-- Webhooks para ERP/TMS externo
-- Audit Log completo (middleware automático)
-- Soft Delete Global (deleted_at + BaseService filter)
+- Rate Limiting Redis (slowapi + sliding window) ✅ DONE
+- Webhooks para ERP/TMS externo (Card #18)
+- Audit Log completo (middleware automático) (Card #19)
+- Soft Delete Global (deleted_at + BaseService filter) (Card #20)
 - OpenAPI Examples
 
 ### Medium Term (1-2 months)
-- Rules DB-Driven (CRUD no painel + JSON logic + versionamento)
-- ML Anomaly Detection (Isolation Forest sobre difference_pct histórico)
+- Rules DB-Driven (CRUD no painel + JSON logic + versionamento) (Card #16)
+- ML Anomaly Detection (Isolation Forest sobre difference_pct histórico) (Card #17)
 - Multi-modal Freight (aéreo, marítimo, ferroviário)
 - EDI/Integração TMS (parser layout Carga/Descarga)
 - Advanced Scheduling (Celery Beat dynamic via admin UI)
@@ -352,5 +374,9 @@ When working on the backend:
 - XML parsing uses `lxml` with namespace awareness for CT-e/NF-e
 - PDF generation uses ReportLab (blocking - consider threadpool for large docs)
 - Email templates use Jinja2 with both HTML and text versions
-- Redis used for: Celery broker, cache (planned), rate limiting (planned)
+- Redis used for: Celery broker, cache (Cards #04, #05 DONE), rate limiting
 - MinIO/S3 for document storage (XML originals, generated PDFs)
+
+---
+
+*This agent owns backend implementation. After each card: update this file, move card, commit.*

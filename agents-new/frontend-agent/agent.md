@@ -4,15 +4,16 @@ description: Dedicated 100% Frontend Agent for AvertaSaaS - React + Vite + TypeS
 tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 ---
 
-# AvertaSaaS Frontend Agent (Dedicated v2.2 - Testing Setup Complete)
+# AvertaSaaS Frontend Agent (Dedicated v2.3 - 5/12 Pages Complete)
 
 > **Location:** `frontend/` (moved from `packages/frontend/` on 2026-11-01)
 > **Mission:** Complete the frontend for freight audit SaaS - replace all placeholder pages with full implementations
 > **Standard:** After each card completion, update this agent + move card to `review/`
+> **Last Updated:** 2026-11-03
 
 ---
 
-## 🎯 ACTUAL Current State (2026-11-01)
+## 🎯 ACTUAL Current State (2026-11-03)
 
 ### ✅ Already Built (DO NOT REBUILD)
 | Area | Status | Files |
@@ -20,32 +21,33 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 | **Routing & Layouts** | ✅ COMPLETE | `App.tsx`, `MainLayout`, `AuthLayout`, Protected/Public routes |
 | **Auth Pages** | ✅ COMPLETE | `Login.tsx`, `Register.tsx` (with forms, validation) |
 | **Dashboard** | ✅ COMPLETE | `Dashboard.tsx` (KPI cards, charts placeholder) |
+| **Documents Page** | ✅ COMPLETE (Card #08) | `Documents.tsx` + `DocumentsTable`, `UploadZone`, `DocumentDetailModal` |
+| **Discrepancies Page** | ✅ COMPLETE (Card #09) | `DiscrepanciesPage.tsx` + 5 components (Table, Filters, DetailModal, SummaryCards, BulkActionBar) |
 | **Design System Components** | ✅ COMPLETE | `Button`, `Input`, `Card`, `Badge`, `Table`, `Modal`, `DropdownMenu`, `Avatar` |
 | **Auth System** | ✅ COMPLETE | `auth-context.tsx`, `auth-storage.ts`, `useAuth()` hook |
 | **API Client** | ✅ COMPLETE | `api.ts` (axios + interceptors + token refresh) |
 | **Utilities** | ✅ COMPLETE | `helpers.ts` (formatters, roles, badges, cn) |
-| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper) |
-| **Placeholder Pages** | ✅ SCAFFOLDED | Discrepancies, Contests, Clients, Carriers, Contracts, Documents, Reports, Settings, Profile |
-| **Testing Infrastructure** | ✅ COMPLETE (Card #01) | Vitest + RTL + MSW + jest-axe + @faker-js/faker |
+| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper), `useDiscrepancyActions.ts` |
+| **Testing Infrastructure** | ✅ COMPLETE (Card #01) | Vitest + RTL + MSW + jest-axe + @faker-js/faker (72 tests passing) |
 
 ### 🔴 NEEDS IMPLEMENTATION (Replace Placeholders)
 | Page | Card | Priority | Current State |
 |------|------|----------|---------------|
-| **Documents** | #08 | 🔴 CRITICAL | `ComingSoon` - needs upload, list, detail |
-| **Discrepancies** | #09 | 🔴 CRITICAL | `ComingSoon` - needs list, filters, detail, bulk actions |
 | **Contests** | #10 | 🔴 CRITICAL | `ComingSoon` - needs create, detail, negotiate, payments |
 | **Reports** | #11 | 🟡 HIGH | `ComingSoon` - needs PDF/Excel export, scheduling |
 | **Settings** | #15 | 🟡 HIGH | `ComingSoon` - needs Company, Users, Carriers, Contracts, Notifications |
-| **Clients** | - | 🟡 HIGH | `ComingSoon` - needs CRUD |
-| **Carriers** | - | 🟡 HIGH | `ComingSoon` - needs CRUD |
-| **Contracts** | - | 🟡 HIGH | `ComingSoon` - needs CRUD + FreightTable editor |
-| **Profile** | - | 🟢 MEDIUM | `ComingSoon` - needs profile management |
+| **Clients** | #22 | 🟡 HIGH | `ComingSoon` - needs CRUD |
+| **Carriers** | #23 | 🟡 HIGH | `ComingSoon` - needs CRUD |
+| **Contracts** | #24 | 🟡 HIGH | `ComingSoon` - needs CRUD + FreightTable editor |
+| **Profile** | #25 | 🟢 MEDIUM | `ComingSoon` - needs profile management |
 
 ### 🟡 NEEDS ENHANCEMENT
 | Area | Card | Current State |
 |------|------|---------------|
 | **Dashboard Charts** | #03 | Placeholder - needs Recharts implementation |
 | **Design System** | #07 | Components exist but need: Tooltip, Toast, Tabs, Select, Pagination, EmptyState, KPICard |
+| **Bundle Optimization** | #26 | 995kB main chunk - needs code splitting / lazy routes |
+| **TypeScript Types** | #27 | Missing barrel exports in `frontend/src/types/index.ts` |
 
 ---
 
@@ -67,14 +69,18 @@ agents-new/frontend-agent/cards/
 | Card | Title | Status | Priority | Estimate |
 |------|-------|--------|----------|----------|
 | #01 | QA Setup: Vitest + RTL + MSW | ✅ **Done** | CRITICAL | M |
-| #02 | Build Auth Pages (Login/Register) | 🔴 Ready | CRITICAL | M |
 | #03 | Build Dashboard with Charts | 🔴 Ready | HIGH | M |
 | #07 | Build Design System Components | 🔴 Ready | HIGH | L |
-| #08 | Documents Page (upload/list/detail) | ✅ **Done** | CRITICAL | L |
-| #09 | Discrepancies Page (list/filter/detail/bulk) | 🟡 **In Progress** | CRITICAL | L |
 | #10 | Contests Page (create/detail/negotiate/pay) | 🔴 Ready | CRITICAL | XL |
 | #11 | Reports Page (PDF/Excel export, scheduling) | 🔴 Ready | HIGH | L |
-| #15 | Settings Pages (Company/Users/Carriers/Contracts) | 🔴 Ready | HIGH | M |
+| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | 🔴 Ready | HIGH | M |
+| #21 | Reports Page (NEW - detailed spec) | 🔴 Ready | HIGH | L |
+| #22 | Clients Page (CRUD) | 🔴 Ready | HIGH | M |
+| #23 | Carriers Page (CRUD) | 🔴 Ready | HIGH | M |
+| #24 | Contracts Page (CRUD + FreightTable editor) | 🔴 Ready | HIGH | L |
+| #25 | Profile Page (user profile management) | 🔴 Ready | MEDIUM | S |
+| #26 | Code Splitting & Bundle Optimization | 🔴 Ready | MEDIUM | M |
+| #27 | TypeScript Types Barrel Exports | 🔴 Ready | LOW | S |
 
 ### Card Lifecycle (This Agent Owns)
 1. **Tech Lead assigns** → Card moved to `ready/`
@@ -84,7 +90,7 @@ agents-new/frontend-agent/cards/
 
 ---
 
-## 📁 Project Structure (Actual)
+## 📁 Project Structure (Actual - 2026-11-03)
 
 ```
 frontend/
@@ -108,10 +114,21 @@ frontend/
 │   │   ├── Table.tsx               # sortable, pagination ready
 │   │   ├── Modal.tsx               # Dialog + AlertDialog (Radix)
 │   │   ├── DropdownMenu.tsx        # Radix DropdownMenu
-│   │   └── Avatar.tsx              # Radix Avatar
+│   │   ├── Avatar.tsx              # Radix Avatar
+│   │   ├── discrepancies/          # Feature components (Card #09) ✅
+│   │   │   ├── DiscrepanciesTable.tsx
+│   │   │   ├── DiscrepancyFilters.tsx
+│   │   │   ├── DiscrepancyDetailModal.tsx
+│   │   │   ├── DiscrepancySummaryCards.tsx
+│   │   │   └── BulkActionBar.tsx
+│   │   └── documents/              # Feature components (Card #08) ✅
+│   │       ├── DocumentsTable.tsx
+│   │       ├── UploadZone.tsx
+│   │       └── DocumentDetailModal.tsx
 │   ├── hooks/
 │   │   ├── index.ts                # Barrel exports
-│   │   └── useApi.ts               # TanStack Query wrapper ✅
+│   │   ├── useApi.ts               # TanStack Query wrapper ✅
+│   │   └── useDiscrepancyActions.ts # Bulk actions, review, export ✅
 │   ├── layouts/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── MainLayout.tsx          # Sidebar + header + outlet ✅
@@ -121,12 +138,12 @@ frontend/
 │   │   ├── Login.tsx               # Form + validation ✅
 │   │   ├── Register.tsx            # Multi-step form ✅
 │   │   ├── Dashboard.tsx           # KPI grid + chart placeholders ✅
-│   │   ├── Discrepancies.tsx       # 🔴 ComingSoon
+│   │   ├── Documents.tsx           # Upload + List + Detail ✅ (Card #08)
+│   │   ├── DiscrepanciesPage.tsx   # List + Filters + Detail + Bulk ✅ (Card #09)
 │   │   ├── Contests.tsx            # 🔴 ComingSoon
 │   │   ├── Clients.tsx             # 🔴 ComingSoon
 │   │   ├── Carriers.tsx            # 🔴 ComingSoon
 │   │   ├── Contracts.tsx           # 🔴 ComingSoon
-│   │   ├── Documents.tsx           # 🔴 ComingSoon
 │   │   ├── Reports.tsx             # 🔴 ComingSoon
 │   │   ├── Settings.tsx            # 🔴 ComingSoon
 │   │   └── Profile.tsx             # 🔴 ComingSoon
@@ -137,7 +154,7 @@ frontend/
 │   │   ├── factories.ts            # Test data factories (@faker-js/faker)
 │   │   └── msw.test.ts             # MSW integration tests
 │   └── types/
-│       └── index.ts                # Barrel exports (needs types)
+│       └── index.ts                # Barrel exports (needs types) - Card #27
 ├── index.html
 ├── package.json
 ├── vite.config.ts                  # Proxy: /api → localhost:8000
@@ -145,64 +162,6 @@ frontend/
 ├── tsconfig.json
 ├── tsconfig.node.json
 └── vitest.config.ts                # Vitest config with coverage thresholds
-```
-
----
-
-## 📁 Project Structure (Actual)
-
-```
-frontend/
-├── src/
-│   ├── main.tsx                    # QueryClient, AuthProvider, BrowserRouter
-│   ├── App.tsx                     # Routes + Protected/Public wrappers ✅
-│   ├── index.css                   # Design system (Tailwind + CSS vars) ✅
-│   ├── services/
-│   │   └── api.ts                  # Axios + interceptors + token refresh ✅
-│   ├── store/
-│   │   ├── auth-context.tsx        # React Context + useAuth() ✅
-│   │   └── auth-storage.ts         # localStorage tokens ✅
-│   ├── utils/
-│   │   └── helpers.ts              # Formatters, roles, badges ✅
-│   ├── components/                 # Design system ✅
-│   │   ├── index.ts                # Barrel exports
-│   │   ├── Button.tsx              # variants: primary/secondary/ghost/danger
-│   │   ├── Input.tsx               # label, error, disabled
-│   │   ├── Card.tsx                # header, body, footer
-│   │   ├── Badge.tsx               # variants: success/warning/danger/primary/secondary
-│   │   ├── Table.tsx               # sortable, pagination ready
-│   │   ├── Modal.tsx               # Dialog + AlertDialog (Radix)
-│   │   ├── DropdownMenu.tsx        # Radix DropdownMenu
-│   │   └── Avatar.tsx              # Radix Avatar
-│   ├── hooks/
-│   │   ├── index.ts                # Barrel exports
-│   │   └── useApi.ts               # TanStack Query wrapper ✅
-│   ├── layouts/
-│   │   ├── index.ts                # Barrel exports
-│   │   ├── MainLayout.tsx          # Sidebar + header + outlet ✅
-│   │   └── AuthLayout.tsx          # Centered card layout ✅
-│   ├── pages/
-│   │   ├── index.ts                # Barrel exports
-│   │   ├── Login.tsx               # Form + validation ✅
-│   │   ├── Register.tsx            # Multi-step form ✅
-│   │   ├── Dashboard.tsx           # KPI grid + chart placeholders ✅
-│   │   ├── Discrepancies.tsx       # 🔴 ComingSoon
-│   │   ├── Contests.tsx            # 🔴 ComingSoon
-│   │   ├── Clients.tsx             # 🔴 ComingSoon
-│   │   ├── Carriers.tsx            # 🔴 ComingSoon
-│   │   ├── Contracts.tsx           # 🔴 ComingSoon
-│   │   ├── Documents.tsx           # 🔴 ComingSoon
-│   │   ├── Reports.tsx             # 🔴 ComingSoon
-│   │   ├── Settings.tsx            # 🔴 ComingSoon
-│   │   └── Profile.tsx             # 🔴 ComingSoon
-│   └── types/
-│       └── index.ts                # Barrel exports (needs types)
-├── index.html
-├── package.json
-├── vite.config.ts                  # Proxy: /api → localhost:8000
-├── tailwind.config.js
-├── tsconfig.json
-└── tsconfig.node.json
 ```
 
 ---
@@ -269,6 +228,21 @@ pnpm test:coverage    # Coverage report
 <Avatar src={url} fallback="JD" />
 ```
 
+### Feature Components (Recently Added)
+```tsx
+// Discrepancies (Card #09)
+<DiscrepanciesTable discrepancies={data} onSort={} onPageChange={} />
+<DiscrepancyFilters onFilterChange={} />
+<DiscrepancyDetailModal discrepancy={} isOpen={} onClose={} />
+<DiscrepancySummaryCards summary={} />
+<BulkActionBar selectedIds={} onBulkAction={} />
+
+// Documents (Card #08)
+<DocumentsTable documents={} onSort={} onPageChange={} onDetail={} />
+<UploadZone onUpload={} />
+<DocumentDetailModal document={} isOpen={} onClose={} />
+```
+
 ### Utility Functions (from `utils/helpers.ts`)
 ```typescript
 cn()                    // clsx + tailwind-merge
@@ -310,36 +284,42 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 | **Contests** | `POST /contests`, `GET /contests`, `GET /contests/{id}`, `POST /contests/{id}/send`, `PATCH /contests/{id}/negotiate`, `POST /contests/{id}/payments` | ✅ Ready |
 | **Reports** | `GET /reports/dashboard`, `GET /reports/pdf`, `GET /reports/excel`, `POST /reports/schedule` | ✅ Ready |
 | **Settings** | Companies, Users, Carriers, Contracts, Notifications CRUD | ✅ Ready |
+| **Clients** | CRUD endpoints | ✅ Ready |
+| **Carriers** | CRUD endpoints | ✅ Ready |
+| **Contracts** | CRUD + FreightTable endpoints | ✅ Ready |
 
 ---
 
 ## 🎯 Updated Card Execution Order (Based on Actual State)
 
 ### ✅ COMPLETED (Remove from Kanban)
-- ~~Card #01: Vitest + RTL + MSW Setup~~ → **DONE** (72 tests passing, coverage working)
-- ~~Card #02: Auth Pages~~ → **DONE** (Login, Register exist)
-- ~~Card #03: Dashboard~~ → **PARTIAL** (Dashboard exists, needs Recharts)
-- ~~Card #07: Design System~~ → **MOSTLY DONE** (8 components exist)
+- Card #01: Vitest + RTL + MSW Setup → **DONE** (72 tests passing, coverage working)
+- Card #02: Auth Pages → **DONE** (Login, Register exist)
+- Card #08: Documents Page → **DONE** (Upload + List + Detail + components)
+- Card #09: Discrepancies Page → **DONE** (List + Filters + Detail + Bulk + components)
 
 ### 🔴 SPRINT 1 PRIORITY (Start Here)
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
-| **#08** | Documents Page | Replace `ComingSoon` → Upload + List + Detail |
-| **#09** | Discrepancies Page | Replace `ComingSoon` → List + Filters + Detail + Bulk |
 | **#10** | Contests Page | Replace `ComingSoon` → Create + Detail + Negotiate + Payments |
+| **#11** | Reports Page | Replace `ComingSoon` → PDF/Excel export + Scheduling |
+| **#15** | Settings Pages | Replace `ComingSoon` → Company/Users/Carriers/Contracts/Notifications |
 
 ### 🟡 SPRINT 2
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
-| **#11** | Reports Page | Replace `ComingSoon` → PDF/Excel export + Scheduling |
-| **#15** | Settings Pages | Replace `ComingSoon` → Company/Users/Carriers/Contracts/Notifications |
+| **#22** | Clients Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
+| **#23** | Carriers Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
+| **#24** | Contracts Page | Replace `ComingSoon` → CRUD + FreightTable editor |
+| **#25** | Profile Page | Replace `ComingSoon` → User profile management |
 | **#03** | Dashboard Charts | Add Recharts to existing Dashboard |
+| **#07** | Design System Enhancements | Tooltip, Toast, Tabs, Select, Pagination, EmptyState, KPICard |
 
-### 🟢 SPRINT 3+
+### 🟢 SPRINT 3+ (Technical Debt)
 | Card | Title |
 |------|-------|
-| Clients, Carriers, Contracts, Profile pages | Replace `ComingSoon` |
-| Design System enhancements | Tooltip, Toast, Tabs, Select, Pagination |
+| #26 | Code Splitting & Bundle Optimization (995kB → <500kB) |
+| #27 | TypeScript Types Barrel Exports |
 
 ---
 
@@ -376,7 +356,7 @@ pnpm test:coverage # Coverage thresholds (70% lines, 70% functions, 60% branches
 | Agent | Location | When to Delegate |
 |-------|----------|------------------|
 | **ui-agent** | `agents/frontend/ui/ui-agent.md` | New components, design system, charts, accessibility |
-| **pages-agent** | `agents/frontend/pages/pages-agent.md` | Page implementations (Documents, Discrepancies, Contests, etc.) |
+| **pages-agent** | `agents/frontend/pages/pages-agent.md` | Page implementations (Contests, Reports, Settings, Clients, etc.) |
 | **state-agent** | `agents/frontend/state/state-agent.md` | New hooks, API endpoints, Zod schemas, TypeScript types |
 | **testing-agent** | `agents/frontend/testing/testing-agent.md` | Component tests, hook tests, integration tests, a11y |
 
@@ -385,14 +365,14 @@ pnpm test:coverage # Coverage thresholds (70% lines, 70% functions, 60% branches
 # New design system component
 Agent(subagent_type="frontend-ui-agent", prompt="Create Toast component using Radix Toast")
 
-# Implement Documents page
-Agent(subagent_type="frontend-pages-agent", prompt="Replace Documents ComingSoon with full implementation")
+# Implement Contests page
+Agent(subagent_type="frontend-pages-agent", prompt="Replace Contests ComingSoon with full implementation: list, create, detail, negotiate, payments")
 
-# Create hooks for Discrepancies
-Agent(subagent_type="frontend-state-agent", prompt="Create useDiscrepancies hooks: list, summary, bulk, review")
+# Create hooks for Contests
+Agent(subagent_type="frontend-state-agent", prompt="Create useContests hooks: list, detail, create, negotiate, payments")
 
-# Write tests for Contests page
-Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for Contests page: components, hooks, integration")
+# Write tests for Reports page
+Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for Reports page: components, hooks, integration")
 ```
 
 ---
@@ -416,18 +396,17 @@ Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for 
 # 1. Check current card
 ls cards/frontend/in-progress/ || ls cards/frontend/ready/ | head -5
 
-# 2. START WITH CARD #09 (Discrepancies Page) - Card #08 is DONE
-cat cards/frontend/ready/09-frontend-discrepancies-pages.md
+# 2. START WITH CARD #10 (Contests Page)
+cat cards/frontend/ready/10-frontend-contests-pages.md
 
 # 3. Run dev server
 cd frontend && pnpm dev
 ```
 
-**Next Priority:** Card #09 - Discrepancies Page (list, filters, detail, bulk actions)
+**Next Priority:** Card #10 - Contests Page (create, detail, negotiate, payments)
 - Uses: MSW handlers, factories, design system components
-- API: `/api/v1/discrepancies` endpoints
-- Components needed: Table, Modal, Badge, Filters, BulkActionBar
-```
+- API: `/api/v1/contests` endpoints
+- Components needed: Table, Modal, Badge, Filters, Forms, PDF preview
 
 ---
 
@@ -436,8 +415,9 @@ cd frontend && pnpm dev
 | Document | Purpose |
 |----------|---------|
 | `cards/frontend/done/01-frontend-qa-setup-vitest-rtl-msw.md` | **START HERE** - Card #01 (DONE) |
-| `cards/frontend/in-progress/09-frontend-discrepancies-pages.md` | **CURRENT** - Card #09 |
-| `cards/frontend/ready/10-frontend-contests-pages.md` | **NEXT** - Card #10 |
+| `cards/frontend/done/08-frontend-documents-pages.md` | **DONE** - Card #08 Documents |
+| `cards/frontend/done/09-frontend-discrepancies-pages.md` | **DONE** - Card #09 Discrepancies |
+| `cards/frontend/ready/10-frontend-contests-pages.md` | **NEXT** - Card #10 Contests |
 | `TECHLEAD_REVIEW.md` | Full architectural review |
 | `frontend/src/index.css` | Complete design system |
 | `frontend/src/utils/helpers.ts` | All utilities |
