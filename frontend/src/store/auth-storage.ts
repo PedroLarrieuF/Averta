@@ -69,7 +69,7 @@ export async function refreshAccessToken(): Promise<string> {
     throw new Error('No refresh token available')
   }
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/refresh`, {
+  const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken: tokens.refreshToken }),

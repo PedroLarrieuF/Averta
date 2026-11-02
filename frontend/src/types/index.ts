@@ -258,6 +258,15 @@ export interface DashboardKPIs {
   }
 }
 
+export interface DiscrepancySummary {
+  total: number
+  by_status: Record<DiscrepancyStatus, number>
+  by_severity: Record<DiscrepancySeverity, number>
+  by_rule: Record<DiscrepancyType, number>
+  total_recovered: number
+  total_contested: number
+}
+
 export interface PaginatedResponse<T> {
   data: T[]
   meta: {

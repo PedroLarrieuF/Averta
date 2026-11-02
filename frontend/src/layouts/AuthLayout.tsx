@@ -1,6 +1,4 @@
-import { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
-import { cn } from '../utils/helpers'
 
 interface AuthLayoutProps {
   title?: string

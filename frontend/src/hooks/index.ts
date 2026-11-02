@@ -44,3 +44,10 @@ export {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from './useApi'
+
+export {
+  useBulkUpdateDiscrepancyStatus,
+  useReviewDiscrepancy,
+  useBulkReviewDiscrepancies,
+  useCreateContestFromDiscrepancies,
+} from './useDiscrepancyActions'

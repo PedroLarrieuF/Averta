@@ -33,3 +33,10 @@ export { PageHeader, PageTitle, PageSubtitle } from './PageHeader'
 export { UploadZone } from './documents/UploadZone'
 export { DocumentsTable } from './documents/DocumentsTable'
 export { DocumentDetailModal } from './documents/DocumentDetailModal'
+
+// Discrepancies components
+export { DiscrepancyTable } from './discrepancies/DiscrepancyTable'
+export { DiscrepancyFilters } from './discrepancies/DiscrepancyFilters'
+export { DiscrepancySummaryCards } from './discrepancies/DiscrepancySummaryCards'
+export { DiscrepancyDetailModal } from './discrepancies/DiscrepancyDetailModal'
+export { BulkActionBar } from './discrepancies/BulkActionBar'

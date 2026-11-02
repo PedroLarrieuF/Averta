@@ -3,7 +3,7 @@ import { cn } from '../utils/helpers'
 
 export interface Column<T> {
   key: string
-  header: string
+  header: string | ReactNode
   render?: (row: T, index: number) => ReactNode
   className?: string
   headerClassName?: string

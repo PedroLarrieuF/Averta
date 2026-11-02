@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { User } from '../store/auth-storage'
-import { getUser, isAuthenticated } from '../store/auth-storage'
+import { getUser, isAuthenticated, getAuthTokens, clearAuthTokens } from '../store/auth-storage'
 import { hasRole, Role } from '../utils/helpers'
 
 interface AuthContextType {
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkAuth])
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/login`, {
+    const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (data: RegisterData) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/register`, {
+    const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const tokens = getAuthTokens()
       if (tokens?.refreshToken) {
-        await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/logout`, {
+        await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

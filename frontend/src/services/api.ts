@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
-import { getAuthTokens, setAuthTokens, clearAuthTokens, refreshAccessToken } from '../store/auth-storage'
+import { getAuthTokens, clearAuthTokens, refreshAccessToken } from '../store/auth-storage'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api/v1'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,9 +14,9 @@ export const api = axios.create({
 // Request interceptor - add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const { accessToken } = getAuthTokens()
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`
+    const tokens = getAuthTokens()
+    if (tokens?.accessToken) {
+      config.headers.Authorization = `Bearer ${tokens.accessToken}`
     }
     return config
   },

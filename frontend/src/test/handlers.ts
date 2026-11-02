@@ -1,13 +1,19 @@
 import { http, HttpResponse, delay } from 'msw'
 import { factory, manyOf } from './factories'
+import type { User, Company, Carrier, Contract, Contest, Payment } from './factories'
 
 const API_BASE = '/api/v1'
+
+interface Cookies {
+  access_token?: string
+  refresh_token?: string
+}
 
 // ===== AUTH HANDLERS =====
 const authHandlers = [
   http.post(`${API_BASE}/auth/login`, async ({ request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as { email: string; password: string }
     const { email, password } = body
 
     if (email === 'admin@averta.com' && password === 'admin123') {
@@ -38,7 +44,7 @@ const authHandlers = [
 
   http.post(`${API_BASE}/auth/register`, async ({ request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as { email: string }
     return HttpResponse.json({
       access_token: 'mock-access-token-new',
       refresh_token: 'mock-refresh-token-new',
@@ -50,7 +56,7 @@ const authHandlers = [
 
   http.post(`${API_BASE}/auth/refresh`, async ({ cookies }) => {
     await delay(50)
-    const refreshToken = cookies.refresh_token
+    const refreshToken = (cookies as unknown as Cookies).refresh_token
     if (!refreshToken) {
       return HttpResponse.json({ detail: 'Refresh token não fornecido' }, { status: 401 })
     }
@@ -68,7 +74,7 @@ const authHandlers = [
 
   http.get(`${API_BASE}/auth/me`, async ({ cookies }) => {
     await delay(50)
-    const accessToken = cookies.access_token
+    const accessToken = (cookies as unknown as Cookies).access_token
     if (!accessToken) {
       return HttpResponse.json({ detail: 'Não autenticado' }, { status: 401 })
     }
@@ -207,7 +213,7 @@ const discrepanciesHandlers = [
 
   http.patch(`${API_BASE}/discrepancies/bulk-status`, async ({ request }) => {
     await delay(150)
-    const body = await request.json()
+    const body = await request.json() as { ids: string[]; status: string }
     const { ids, status } = body
     return HttpResponse.json({
       updated: ids.length,
@@ -218,7 +224,7 @@ const discrepanciesHandlers = [
   http.post(`${API_BASE}/discrepancies/:id/review`, async ({ params, request }) => {
     await delay(150)
     const { id } = params
-    const body = await request.json()
+    const body = await request.json() as { status?: 'PENDING' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECTED' | 'CONTESTED' }
     return HttpResponse.json(factory.discrepancy({ id: id as string, status: body.status || 'UNDER_REVIEW' }))
   }),
 ]
@@ -253,7 +259,7 @@ const contestsHandlers = [
 
   http.post(`${API_BASE}/contests`, async ({ request }) => {
     await delay(200)
-    const body = await request.json()
+    const body = await request.json() as Partial<Contest>
     return HttpResponse.json(factory.contest({ ...body, status: 'DRAFT' }), { status: 201 })
   }),
 
@@ -272,14 +278,14 @@ const contestsHandlers = [
   http.patch(`${API_BASE}/contests/:id/negotiate`, async ({ params, request }) => {
     await delay(200)
     const { id } = params
-    const body = await request.json()
+    const body = await request.json() as Partial<Contest>
     return HttpResponse.json(factory.contest({ id: id as string, ...body, status: 'NEGOTIATING' }))
   }),
 
   http.post(`${API_BASE}/contests/:id/payments`, async ({ params, request }) => {
     await delay(200)
     const { id } = params
-    const body = await request.json()
+    const body = await request.json() as Partial<Payment>
     return HttpResponse.json(factory.payment({ contest_id: id as string, ...body }), { status: 201 })
   }),
 ]
@@ -344,7 +350,7 @@ const reportsHandlers = [
 
   http.post(`${API_BASE}/reports/schedule`, async ({ request }) => {
     await delay(200)
-    const body = await request.json()
+    const body = await request.json() as Record<string, unknown>
     return HttpResponse.json({
       id: crypto.randomUUID(),
       ...body,
@@ -367,7 +373,7 @@ const settingsHandlers = [
   }),
   http.post(`${API_BASE}/settings/companies`, async ({ request }) => {
     await delay(150)
-    const body = await request.json()
+    const body = await request.json() as Partial<Company>
     return HttpResponse.json(factory.company(body), { status: 201 })
   }),
   http.get(`${API_BASE}/settings/companies/:id`, async ({ params }) => {
@@ -376,7 +382,7 @@ const settingsHandlers = [
   }),
   http.patch(`${API_BASE}/settings/companies/:id`, async ({ params, request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as Partial<Company>
     return HttpResponse.json(factory.company({ id: params.id as string, ...body }))
   }),
   http.delete(`${API_BASE}/settings/companies/:id`, async () => {
@@ -395,7 +401,7 @@ const settingsHandlers = [
   }),
   http.post(`${API_BASE}/settings/users`, async ({ request }) => {
     await delay(150)
-    const body = await request.json()
+    const body = await request.json() as Partial<User>
     return HttpResponse.json(factory.user(body), { status: 201 })
   }),
   http.get(`${API_BASE}/settings/users/:id`, async ({ params }) => {
@@ -404,7 +410,7 @@ const settingsHandlers = [
   }),
   http.patch(`${API_BASE}/settings/users/:id`, async ({ params, request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as Partial<User>
     return HttpResponse.json(factory.user({ id: params.id as string, ...body }))
   }),
   http.delete(`${API_BASE}/settings/users/:id`, async () => {
@@ -423,7 +429,7 @@ const settingsHandlers = [
   }),
   http.post(`${API_BASE}/settings/carriers`, async ({ request }) => {
     await delay(150)
-    const body = await request.json()
+    const body = await request.json() as Partial<Carrier>
     return HttpResponse.json(factory.carrier(body), { status: 201 })
   }),
   http.get(`${API_BASE}/settings/carriers/:id`, async ({ params }) => {
@@ -432,7 +438,7 @@ const settingsHandlers = [
   }),
   http.patch(`${API_BASE}/settings/carriers/:id`, async ({ params, request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as Partial<Carrier>
     return HttpResponse.json(factory.carrier({ id: params.id as string, ...body }))
   }),
   http.delete(`${API_BASE}/settings/carriers/:id`, async () => {
@@ -451,7 +457,7 @@ const settingsHandlers = [
   }),
   http.post(`${API_BASE}/settings/contracts`, async ({ request }) => {
     await delay(150)
-    const body = await request.json()
+    const body = await request.json() as Partial<Contract>
     return HttpResponse.json(factory.contract(body), { status: 201 })
   }),
   http.get(`${API_BASE}/settings/contracts/:id`, async ({ params }) => {
@@ -460,7 +466,7 @@ const settingsHandlers = [
   }),
   http.patch(`${API_BASE}/settings/contracts/:id`, async ({ params, request }) => {
     await delay(100)
-    const body = await request.json()
+    const body = await request.json() as Partial<Contract>
     return HttpResponse.json(factory.contract({ id: params.id as string, ...body }))
   }),
   http.delete(`${API_BASE}/settings/contracts/:id`, async () => {

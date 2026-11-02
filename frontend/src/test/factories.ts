@@ -376,8 +376,8 @@ export const factory = {
 
 // ===== FACTORY HELPERS =====
 
-export function manyOf<T>(factoryFn: (overrides?: Partial<T>) => T, count: number, overrides?: Partial<T>): T[] {
-  return Array.from({ length: count }, (_, i) => factoryFn({ ...overrides, id: `${overrides?.id || 'auto'}-${i}` } as Partial<T>))
+export function manyOf<T extends { id: string }>(factoryFn: (overrides?: Partial<T>) => T, count: number, overrides?: Partial<T>): T[] {
+  return Array.from({ length: count }, (_, i) => factoryFn({ ...overrides, id: `${(overrides as any)?.id || 'auto'}-${i}` } as Partial<T>))
 }
 
 export function oneOf<T>(factoryFn: (overrides?: Partial<T>) => T, overrides?: Partial<T>): T {

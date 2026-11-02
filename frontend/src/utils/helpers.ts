@@ -164,7 +164,6 @@ export function getStatusBadge(status: string): { variant: string; label: string
     NEGOTIATING: { variant: 'badge-warning', label: 'Negociando' },
     ACCEPTED: { variant: 'badge-success', label: 'Aceita' },
     PARTIAL: { variant: 'badge-warning', label: 'Parcial' },
-    REJECTED: { variant: 'badge-danger', label: 'Rejeitada' },
     EXPIRED: { variant: 'badge-secondary', label: 'Expirada' },
     // Document
     PENDING: { variant: 'badge-secondary', label: 'Pendente' },

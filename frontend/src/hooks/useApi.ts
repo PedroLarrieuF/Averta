@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query'
-import { api, handleApiError } from '../services/api'
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query'
+import { api } from '../services/api'
 import type {
   User,
   Company,
@@ -11,6 +11,7 @@ import type {
   Contest,
   Notification,
   DashboardKPIs,
+  DiscrepancySummary,
   PaginatedResponse,
   LoginRequest,
   LoginResponse,
@@ -150,7 +151,7 @@ export function useUpdateCompany() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Company> }) =>
       apiClient.patch<Company>(`/companies/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all })
     },
@@ -190,7 +191,7 @@ export function useUpdateClient() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Client> }) =>
       apiClient.patch<Client>(`/clients/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.all() })
     },
@@ -240,7 +241,7 @@ export function useUpdateCarrier() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Carrier> }) =>
       apiClient.patch<Carrier>(`/carriers/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.carriers.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.carriers.all() })
     },
@@ -332,10 +333,10 @@ export function useDiscrepancy(id: string, options?: UseQueryOptions<Discrepancy
   })
 }
 
-export function useDiscrepancySummary(params?: Record<string, unknown>, options?: UseQueryOptions<DashboardKPIs>) {
+export function useDiscrepancySummary(params?: Record<string, unknown>, options?: UseQueryOptions<DiscrepancySummary>) {
   return useQuery({
     queryKey: queryKeys.discrepancies.summary(params),
-    queryFn: () => apiClient.get<DashboardKPIs>('/discrepancies/summary', params),
+    queryFn: () => apiClient.get<DiscrepancySummary>('/discrepancies/summary', params),
     ...options,
   })
 }
@@ -345,7 +346,7 @@ export function useUpdateDiscrepancy() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Discrepancy> }) =>
       apiClient.patch<Discrepancy>(`/discrepancies/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.discrepancies.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.discrepancies.all() })
       queryClient.invalidateQueries({ queryKey: queryKeys.discrepancies.summary() })
@@ -399,7 +400,7 @@ export function useUpdateContest() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Contest> }) =>
       apiClient.patch<Contest>(`/contests/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all() })
     },

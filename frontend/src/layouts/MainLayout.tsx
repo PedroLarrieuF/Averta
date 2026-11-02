@@ -1,8 +1,8 @@
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/auth-context'
 import { cn } from '../utils/helpers'
-import { Avatar } from '../components'
+import { Avatar, Badge } from '../components'
 import {
   LayoutDashboard,
   FileText,
@@ -37,7 +37,6 @@ export function MainLayout() {
   const { user, logout, hasAnyRole } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   const filteredNav = navigation.filter((item) =>
     user && hasAnyRole(item.roles as any[])
@@ -174,13 +173,13 @@ export function MainLayout() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <NavLink to="/profile" onClick={() => setUserMenuOpen(false)} className="w-full">
+                    <NavLink to="/profile" className="w-full">
                       <UserIcon className="h-4 w-4" />
                       Perfil
                     </NavLink>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <NavLink to="/settings" onClick={() => setUserMenuOpen(false)} className="w-full">
+                    <NavLink to="/settings" className="w-full">
                       <Settings className="h-4 w-4" />
                       Configurações
                     </NavLink>

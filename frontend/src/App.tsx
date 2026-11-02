@@ -6,6 +6,7 @@ import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Dashboard } from './pages/Dashboard'
 import { Documents } from './pages/Documents'
+import { DiscrepanciesPage } from './pages/DiscrepanciesPage'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -68,10 +69,6 @@ function ComingSoon({ title, description }: { title: string; description: string
   )
 }
 
-function Discrepancies() {
-  return <ComingSoon title="Discrepâncias" description="Gerencie e analise discrepâncias encontradas nas auditorias" />
-}
-
 function Contests() {
   return <ComingSoon title="Contestações" description="Acompanhe o fluxo completo de contestações com transportadoras" />
 }
@@ -112,7 +109,7 @@ export default function App() {
       {/* Protected routes */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/discrepancies" element={<Discrepancies />} />
+        <Route path="/discrepancies" element={<DiscrepanciesPage />} />
         <Route path="/contests" element={<Contests />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/carriers" element={<Carriers />} />

@@ -1,12 +1,11 @@
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import '@testing-library/jest-dom'
-import { toHaveNoViolations } from 'jest-axe'
 import { setupServer } from 'msw/node'
 import { handlers } from './handlers'
 
-// Extend Vitest expect with jest-axe matchers
-expect.extend(toHaveNoViolations)
+// Note: jest-axe matcher extension temporarily disabled due to Vitest compatibility
+// Use axe-core directly in tests if needed: const { default: axe } = await import('axe-core')
 
 // MSW Server Setup
 export const server = setupServer(...handlers)
