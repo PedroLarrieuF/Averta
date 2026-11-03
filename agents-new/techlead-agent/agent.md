@@ -162,6 +162,19 @@ AvertaSaaS/
 - Current 15 cover: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS
 - **Action**: Review PO documents when delivered, add missing 2 rules
 
+### 🔍 NF-e Rules Gap (Discovered 2026-11-03)
+
+**RuleCode enum defines 17 NF-e rules** (lines 36-57 in `rules_engine_v2.py`) but **ZERO are implemented** in `rules_critical.py`.
+
+| Priority | Count | Rules | Card | Status |
+|----------|-------|-------|------|--------|
+| **CRITICAL** | 5 | ICMS_CALCULO, ICMS_ST, DIFAL, FRETE_NA_BASE, CTE_CROSS | #34 | 🟡 Ready |
+| **HIGH** | 7 | FCP, CFOP_FRETE, CFOP_INTERSTADUAL, NCM_CEST, VALOR_TOTAL, TRANSPORTADORA, DESTINATARIO | #35 | 🟡 Ready |
+| **MEDIUM** | 6 | PESO_VOLUME, COMPLEMENTAR, CARTA_CORRECAO, CANCELAMENTO, INUTILIZACAO, REGIME_ESPECIAL | #36 | 🟡 Ready |
+| **TOTAL** | **18** | (17 NF-e + 1 OTHER) | | |
+
+**Note**: The 15 implemented rules are DIFFERENT from NF-e rules - they cover general freight/ICMS/CT-e logic. The 17 NF-e specific rules are completely missing implementations.
+
 ---
 
 ### Sprint Status (Cards - 2026-11-03)
@@ -195,6 +208,17 @@ AvertaSaaS/
 | #28 | backend | Fix Failing Rule Tests | M | HIGH | ✅ **Done** |
 | #29 | backend | Backend Integration Tests (httpx.AsyncClient) | L | HIGH | 🔴 Ready |
 | #30 | backend | Rate Limit Module (test failure) | S | HIGH | ✅ **Done** |
+| #31 | techlead | Documentation Update | S | - | ✅ **Done** |
+| #32 | po-scrum | Sprint Planning (Sprint 3) | M | - | 🟡 Ready |
+| #33 | backend | Fix Linting Issues (ruff) | M | - | 🟡 Ready |
+| #34 | backend | NF-e Critical Rules (5 rules) | L | #28, #30 | 🟡 Ready |
+| #35 | backend | NF-e High Priority Rules (7 rules) | L | #34 | 🟡 Ready |
+| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | #35 | 🟡 Ready |
+| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | - | 🟡 Ready |
+| #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | #34, #35, #36 | 🟡 Ready |
+| #39 | frontend | Dashboard Charts (Recharts) | M | - | 🟡 Ready |
+| #40 | frontend | Design System Enhancements | M | - | 🟡 Ready |
+| #41 | backend | PDF Generator Threadpool (TD-003) | M | - | 🟡 Ready |
 
 ---
 
@@ -202,13 +226,17 @@ AvertaSaaS/
 
 | New Card | Agent | Title | Estimate | Priority | Description |
 |----------|-------|-------|----------|----------|-------------|
-| #31 | techlead | Documentation Update (ADR, README, agent files) | S | MEDIUM | Update docs after recent completions |
-| #32 | po-scrum | Sprint Planning (Sprint 3) | M | HIGH | Plan next sprint with remaining cards |
-| #33 | backend | Fix Linting Issues (ruff) | M | MEDIUM | Fix 200+ ruff issues across backend |
-| #34 | frontend | Dashboard Charts (Recharts implementation) | M | HIGH | Replace placeholder charts in Dashboard |
-| #35 | frontend | Design System Enhancements (Tooltip, Toast, Pagination) | M | MEDIUM | Add missing design system components |
-| #36 | backend | PDF Generator Threadpool | M | MEDIUM | Use run_in_threadpool for ReportLab (TD-003) |
-| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | HIGH | Complete Card #13 / #29 |
+| #31 | techlead | Documentation Update (ADR, README, agent files) | S | MEDIUM | Update docs after recent completions | ✅ **Done** |
+| #32 | po-scrum | Sprint Planning (Sprint 3) | M | HIGH | Plan next sprint with remaining cards | 🟡 Ready |
+| #33 | backend | Fix Linting Issues (ruff) | M | MEDIUM | Fix 200+ ruff issues across backend | 🟡 Ready |
+| #34 | backend | NF-e Critical Rules (5 rules) | L | CRITICAL | Implement 5 CRITICAL NF-e audit rules | 🟡 Ready |
+| #35 | backend | NF-e High Priority Rules (7 rules) | L | HIGH | Implement 7 HIGH NF-e audit rules | 🟡 Ready |
+| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | MEDIUM | Implement 6 MEDIUM NF-e audit rules | 🟡 Ready |
+| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | HIGH | Complete Card #13 / #29 | 🟡 Ready |
+| #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | HIGH | NF-e audit UI: rules list, discrepancies, config | 🟡 Ready |
+| #39 | frontend | Dashboard Charts (Recharts implementation) | M | HIGH | Replace placeholder charts in Dashboard | 🟡 Ready |
+| #40 | frontend | Design System Enhancements (Tooltip, Toast, Pagination) | M | MEDIUM | Add missing design system components | 🟡 Ready |
+| #41 | backend | PDF Generator Threadpool | M | MEDIUM | Use run_in_threadpool for ReportLab (TD-003) | 🟡 Ready |
 
 ---
 
@@ -387,7 +415,7 @@ Agent(subagent_type="po-scrum-agent", prompt="Validate new regulatory rules from
 | Frontend tests | ✅ 72/72 PASSING | ✅ PASSING | CI |
 | Bundle size | 995kB | < 500kB | Vite |
 | Open critical bugs | 0 | 0 | Linear |
-| Tech debt (HIGH) | 4 (TD-003,005,010,012) | ≤3 | This registry |
+| Tech debt (HIGH) | 5 (TD-003,005,010,012, NF-e rules) | ≤3 | This registry |
 
 ---
 
