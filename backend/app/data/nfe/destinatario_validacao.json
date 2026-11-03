@@ -1,0 +1,74 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2020.001, Convênio ICMS 174/2023, LGPD Lei 13.709/2018",
+  "destinatario_obrigatorio": true,
+  "campos_obrigatorios": {
+    "CNPJ": "se pessoa juridica",
+    "CPF": "se pessoa fisica",
+    "xNome": "razao social ou nome completo",
+    "enderDest": {
+      "xLgr": "logradouro",
+      "nro": "numero",
+      "xCpl": "complemento (opcional)",
+      "xBairro": "bairro",
+      "cMun": "codigo IBGE municipio",
+      "xMun": "nome municipio",
+      "UF": "sigla UF",
+      "CEP": "CEP 8 digitos",
+      "cPais": "1058 (Brasil)",
+      "xPais": "BRASIL",
+      "fone": "telefone (opcional)"
+    }
+  },
+  "indIEDest": {
+    "1": {"desc": "Contribuinte ICMS", "IE_obrigatoria": true, "validar_IE": true},
+    "2": {"desc": "Isento ICMS", "IE_obrigatoria": false, "IE_valor": "ISENTO"},
+    "9": {"desc": "Nao Contribuinte", "IE_obrigatoria": false, "IE_valor": "NAO_CONTRIBUINTE", "exige_difal_fcp": true}
+  },
+  "validacoes_cnpj_cpf": {
+    "apenas_um": "CNPJ OU CPF, nunca ambos",
+    "cnpj_valido": "modulo 11",
+    "cpf_valido": "modulo 11",
+    "cnpj_diferente_emitente": "CNPJ destinatario != CNPJ emitente",
+    "cpf_diferente_emitente": "se emitente PF, CPF destinatario != CPF emitente"
+  },
+  "validacao_IE": {
+    "por_UF": "cada UF tem algoritmo proprio",
+    "sem_IE_se_indIEDest_2_9": "se indIEDest = 2 ou 9, IE nao informada ou 'ISENTO'/'NAO_CONTRIBUINTE'",
+    "IE_obrigatoria_se_1": "se indIEDest = 1, IE obrigatoria e valida"
+  },
+  "validacao_endereco": {
+    "cMun_valido": "codigo IBGE existente",
+    "xMun_confere_cMun": "nome municipio corresponde ao cMun",
+    "UF_confere_cMun": "UF do cMun corresponde ao UF informado",
+    "CEP_valido": "formato 00000-000 ou 00000000",
+    "CEP_confere_UF": "CEP pertence a UF informada"
+  },
+  "consumidor_final": {
+    "indFinal": "1 = consumidor final, 0 = nao",
+    "indFinal_1_indIEDest_9": "se consumidor final, geralmente indIEDest = 9",
+    "CPF_CNPJ_consumidor": "CPF se PF, CNPJ se PJ (mesmo isento)"
+  },
+  "regras_especiais": {
+    "operacao_interstadual_indIEDest_9": "DIFAL + FCP obrigatorios",
+    "operacao_interstadual_indIEDest_1": "DIFAL se aliquota_interna > aliquota_interstadual",
+    "operacao_interna": "indIEDest nao afeta ICMS proprio",
+    "entrega_diferente_destinatario": "enderEntrega opcional, se informado validar igual enderDest",
+    "retirada_diferente_emitente": "enderRetirada opcional, se informado validar"
+  },
+  "lgpd": {
+    "dados_sensiveis": "CPF/CNPJ/IE/endereco sao dados pessoais",
+    "finalidade": "uso exclusivo emissao NFe e obrigações fiscais",
+    "retencao": "conforme legislação tributaria (5 anos)"
+  },
+  "erros_comuns": [
+    "CNPJ/CPF invalido",
+    "IE invalida para UF/indIEDest",
+    "indIEDest = 9 mas IE informada",
+    "indIEDest = 1 mas IE nao informada",
+    "cMun nao confere com xMun/UF",
+    "CEP invalido ou nao confere UF",
+    "Destinatario = Emitente (CNPJ/CPF)"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 09/2007 (CTe), 07/2005 (NFe), NT 2016.002, NT 2020.001, Convênio ICMS 52/2017",
+  "relacao_nfe_cte": {
+    "regra_geral": "NFe com frete (modFrete 0,1,2,3) deve ter CTe correspondente",
+    "vinculo": "CTe/infCte/infDoc/infNFe/chaveNFe",
+    "um_para_um": "cada NFe com frete -> pelo menos 1 CTe",
+    "um_para_muitos": "1 CTe pode cobrir varias NFe (mesmo emitente/destinatario/rota)"
+  },
+  "validacoes_criticas": {
+    "nfe_com_frete_sem_cte": "ERRO: NFe modFrete in [0,1,2,3] sem CTe autorizado referenciando",
+    "cte_sem_nfe_referenciada": "AVISO: CTe emitido sem NFe referenciada (pode ser servico transporte puro)",
+    "valores_divergentes": "vPrest (CTe) vs vFrete (NFe) - tolerancia 5%",
+    "tomador_divergente": "tomador CTe deve ser emitente (modFrete 0/3) ou destinatario (modFrete 1/4) da NFe",
+    "emitente_cte": "emitente CTe = transportadora NFe"
+  },
+  "modfrete_cte_mapping": {
+    "0": {"tomador_cte": "emitente_nfe", "pagamento": "por_conta_emitente"},
+    "1": {"tomador_cte": "destinatario_nfe", "pagamento": "por_conta_destinatario"},
+    "2": {"tomador_cte": "terceiros_nfe", "pagamento": "por_conta_terceiros"},
+    "3": {"tomador_cte": "emitente_nfe", "pagamento": "proprio_emitente"},
+    "4": {"tomador_cte": "destinatario_nfe", "pagamento": "proprio_destinatario"}
+  },
+  "validacoes_valores": {
+    "vTPrest_cte": "valor total prestacao servico transporte",
+    "vFrete_nfe": "valor frete informado na NFe",
+    "tolerancia": "abs(vTPrest - vFrete) / vFrete <= 0.05",
+    "vRec_cte": "valor a receber (pode diferir se adiantamento)",
+    "comp_cte": "componentes: vTPrest = vRec + vOutros - vDesc"
+  },
+  "validacoes_datas": {
+    "cte_apos_nfe": "dhEmi_cte >= dhEmi_nfe",
+    "cte_antes_entrega": "dhEmi_cte <= data_prevista_entrega",
+    "prazo_emissao_cte": "ate 5 dias uteis apos saida mercadoria (algumas UFs)"
+  },
+  "validacoes_icms_cte": {
+    "icms_cte": "ICMS do servico transporte (CST 00/20/90)",
+    "icms_nfe": "ICMS da mercadoria",
+    "difal_fcp_transporte": "se interestadual + tomador nao contribuinte, DIFAL/FCP no CTe",
+    "base_cte": "vTPrest (nao vFrete da NFe)"
+  },
+  "mdfe_vinculo": {
+    "obrigatorio_se": "transporte interestadual ou carga fracionada multipla UF",
+    "vinculo_cte": "MDFe/infMDFe/infCTe/chaveCTe",
+    "encerramento": "MDFe deve ser encerrado apos entrega"
+  },
+  "regras_especiais": {
+    "redespacho": "CTe redespacho referencia CTe anterior, NFe referencia CTe original",
+    "subcontratacao": "transportadora subcontratada emite CTe, tomador = transportadora principal",
+    "coleta_entrega": "CTe pode ter varios tomadores (coleta/entrega)",
+    "nfe_sem_frete": "modFrete 9 -> nao exige CTe",
+    "nfe_frete_proprio": "modFrete 3/4 -> CTe emitido pelo proprio emitente/destinatario"
+  },
+  "erros_comuns": [
+    "NFe com frete sem CTe correspondente",
+    "CTe valor diverge vFrete NFe (>5%)",
+    "Tomador CTe nao confere com modFrete NFe",
+    "CTe emitido antes da NFe",
+    "CTe emitente != transportadora NFe",
+    "MDFe nao emitido para interestadual",
+    "CTe cancelado mas NFe mantem frete"
+  ]
+}

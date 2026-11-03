@@ -1,0 +1,132 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "AvertaSaaS Rules Engine v2 - Configuracao NF-e",
+  "engine": {
+    "nome": "AvertaSaaS NF-e Rules Engine",
+    "versao": "2.0.0",
+    "modo": "hibrido (cache Redis + DB fallback)",
+    "tags_nfe": ["NFE", "ICMS", "ST", "DIFAL", "FCP", "FRETE", "CTE_CROSS", "COMPLEMENTAR", "CANCELAMENTO", "REGIME_ESPECIAL", "VALIDACAO"]
+  },
+  "cache": {
+    "redis_ttl_seconds": 3600,
+    "chave_prefixo": "nfe:rules:",
+    "invalidacao": "evento_atualizacao_parametro",
+    "warmup_startup": true
+  },
+  "regras_criticas": [
+    "ICMS_CALCULO",
+    "ICMS_ST",
+    "DIFAL",
+    "FRETE_NA_BASE",
+    "CTE_CROSS"
+  ],
+  "regras_alta": [
+    "FCP",
+    "CFOP_FRETE",
+    "CFOP_INTERSTADUAL",
+    "NCM_CEST",
+    "VALOR_TOTAL",
+    "TRANSPORTADORA",
+    "DESTINATARIO"
+  ],
+  "regras_media": [
+    "PESO_VOLUME",
+    "COMPLEMENTAR",
+    "CARTA_CORRECAO",
+    "CANCELAMENTO",
+    "INUTILIZACAO",
+    "REGIME_ESPECIAL"
+  ],
+  "thresholds": {
+    "diferenca_valor_pct": 0.02,
+    "diferenca_peso_pct": 0.05,
+    "diferenca_frete_pct": 0.05,
+    "diferenca_icms_pct": 0.01,
+    "peso_zero_permitido": ["servicos", "imateriais"],
+    "frete_zero_modfrete": [9],
+    "vNF_tolerancia": 0.02,
+    "vProd_tolerancia": 0.02,
+    "vICMSTot_tolerancia": 0.02
+  },
+  "severidade": {
+    "CRITICAL": {"score": 100, "bloqueia": true, "alerta_imediato": true},
+    "HIGH": {"score": 70, "bloqueia": false, "alerta_imediato": true},
+    "MEDIUM": {"score": 40, "bloqueia": false, "alerta_diario": true},
+    "LOW": {"score": 10, "bloqueia": false, "alerta_semanal": true},
+    "INFO": {"score": 0, "bloqueia": false, "log_apenas": true}
+  },
+  "validacoes_obrigatorias": {
+    "pre_requisitos": [
+      "NFe autorizada (cStat=100)",
+      "XML completo disponivel",
+      "Chave acesso valida (44 digitos)"
+    ],
+    "campos_minimos": [
+      "ide: cUF, cNF, natOp, mod, serie, nNF, dhEmi, tpNF, idDest, cMunFG, tpImp, tpEmis, cDV, tpAmb, finNFe, indFinal, indPres, procEmi, verProc",
+      "emit: CNPJ/CPF, xNome, enderEmit, IE, CRT",
+      "dest: CNPJ/CPF, xNome, enderDest, indIEDest, IE (se 1)",
+      "det: nItem, prod(cProd, xProd, NCM, CEST, CFOP, uCom, qCom, vUnCom, vProd, cEAN, uTrib, qTrib, vUnTrib, vFrete, vSeg, vDesc, vOutro, indTot)",
+      "total: ICMSTot(vBC, vICMS, vICMSDeson, vFCP, vBCST, vST, vFCPST, vFCPSTRet, vProd, vFrete, vSeg, vDesc, vII, vIPI, vPIS, vCOFINS, vOutro, vNF, vTotTrib)"
+    ]
+  },
+  "regras_cruzadas": {
+    "nfe_cte": {
+      "habilitada": true,
+      "verificar": ["vFrete", "tomador", "emitente", "datas", "ICMS"],
+      "fonte_cte": "api_cte_autorizadas"
+    },
+    "nfe_mdfe": {
+      "habilitada": true,
+      "verificar": ["encerramento", "CTes_vinculados"],
+      "condicao": "interestadual ou carga_fracionada_multipla_UF"
+    },
+    "nfe_nfse": {
+      "habilitada": false,
+      "obs": "futuro: validar servicos NFSe vs NFe"
+    }
+  },
+  "parametros_calculo": {
+    "ordem_calculo_icms": [
+      "ICMS_PROPRIO",
+      "ICMS_ST",
+      "DIFAL",
+      "FCP_PROPRIO",
+      "FCP_ST",
+      "FCP_ST_RETIDO"
+    ],
+    "base_icms_proprio": "vProd + vFrete + vSeg + vOutro - vDesc (se CST nao isento)",
+    "base_icms_st": "vProd + vFrete + vSeg + vOutro - vDesc + vBCFCP (se aplicar)",
+    "base_difal": "vBC (ja inclui frete) * aliquota_interna_destino",
+    "base_fcp": "mesma base ICMS correspondente"
+  },
+  "dados_referencia": {
+    "cst_csosn": "app/data/nfe/icms_cst_csosn.json",
+    "icms_st_mva": "app/data/nfe/icms_st_mva_iva.json",
+    "icms_difal": "app/data/nfe/icms_difal.json",
+    "fcp_aliquotas": "app/data/nfe/fcp_aliquotas.json",
+    "cfop_tabela": "app/data/nfe/cfop_tabela.json",
+    "ncm_cest": "app/data/nfe/ncm_cest_st.json",
+    "frete_base": "app/data/nfe/frete_base_icms.json",
+    "valor_total": "app/data/nfe/valor_total_consistencia.json",
+    "peso_volume": "app/data/nfe/peso_volume_validacao.json",
+    "transportadora": "app/data/nfe/transportadora_validacao.json",
+    "destinatario": "app/data/nfe/destinatario_validacao.json",
+    "complementar": "app/data/nfe/nfe_complementar_regras.json",
+    "cancelamento": "app/data/nfe/cancelamento_inutilizacao.json",
+    "cross_cte": "app/data/nfe/cross_cte_nfe_regras.json",
+    "regimes_especiais": "app/data/nfe/regimes_especiais.json",
+    "aliquotas_uf": "app/data/nfe/aliquotas_uf.json"
+  },
+  "atualizacao_dados": {
+    "frequencia": "mensal",
+    "responsavel": "time fiscal",
+    "validacao": "testes automatizados + homologacao",
+    "rollback": "versao anterior mantida por 90 dias"
+  },
+  "logging": {
+    "nivel": "INFO",
+    "auditoria": true,
+    "metricas": ["tempo_execucao", "regras_disparadas", "severidade_distribuicao", "cache_hit_rate"]
+  }
+}

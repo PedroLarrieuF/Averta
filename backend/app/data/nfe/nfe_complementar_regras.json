@@ -1,0 +1,62 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2016.002, NT 2020.001, LC 87/96",
+  "nfe_complementar": {
+    "finalidade": "complementar valores (ICMS, IPI, frete, etc.) de NFe ja autorizada",
+    "prazo": "sem prazo legal, mas antes de escrituracao fiscal",
+    "chave_acesso": "referencia NFe original (refNFe)",
+    "cfop": "mesmo CFOP da NFe original",
+    "valores_permitidos": ["vICMS", "vICMSST", "vIPI", "vFrete", "vSeg", "vOutro", "vFCP", "vFCPST"],
+    "nao_permite": ["alterar produtos", "alterar CFOP", "alterar emitente/destinatario", "cancelar itens"]
+  },
+  "nfe_ajuste": {
+    "finalidade": "ajustar informacoes nao monetarias",
+    "campos_permitidos": ["dados destinatario", "dados transportadora", "peso/volume", "informacoes complementares"],
+    "nao_permite": ["alterar valores tributarios", "alterar produtos"]
+  },
+  "carta_correcao": {
+    "base_legal": "Art. 7º Convenio S/N 1970, Ajuste SINIEF 07/2005",
+    "prazo_maximo": "720 horas (30 dias) apos autorizacao NFe",
+    "limite_cartas": "ate 20 cartas por NFe",
+    "campos_permitidos": [
+      "enderDest (entrega/retirada)",
+      "xNome destinatario (erro digitação)",
+      "enderEmit",
+      "dados transportadora",
+      "peso/volume",
+      "infCpl (informacoes complementares)",
+      "CFOP (apenas se erro formal, nao muda natureza)"
+    ],
+    "campos_vedados": [
+      "valores (vProd, vNF, vICMS, etc.)",
+      "itens (adicionar/remover/alterar qtd)",
+      "dados que alterem base calculo impostos",
+      "CFOP que mude natureza operacao",
+      "emitente/destinatario (troca de parte)"
+    ],
+    "sequencial": "nroSequencialEvento (1 a 20)",
+    "autorizacao": "evento autorizado pela SEFAZ, protocolo vinculado a NFe"
+  },
+  "validacoes_complementar": {
+    "refNFe_obrigatoria": "chave acesso NFe original",
+    "NFe_original_autorizada": "so complementar NFe com status autorizada",
+    "NFe_original_nao_cancelada": "nao complementar NFe cancelada",
+    "valores_positivos": "valores complementares >= 0",
+    "soma_nao_excede_original": "valor complementar + original <= limite tolerancia"
+  },
+  "validacoes_carta_correcao": {
+    "prazo_720h": "dhEvento - dhEmi <= 720 horas",
+    "max_20_cartas": "contar eventos 110110 ja autorizados",
+    "campos_vedados_nao_informados": "validar se informou campo vedado",
+    "sequencial_unico": "nroSequencialEvento nao repetido para mesma NFe"
+  },
+  "erros_comuns": [
+    "Carta correcao apos 30 dias",
+    "Mais de 20 cartas correcao",
+    "Alterar valores via carta correcao",
+    "Complementar NFe cancelada",
+    "Referenciar NFe inexistente",
+    "Campo vedado informado em carta correcao"
+  ]
+}

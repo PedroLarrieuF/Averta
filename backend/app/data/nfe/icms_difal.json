@@ -1,0 +1,39 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "LC 87/1996, LC 190/2022, Convênio ICMS 236/2021, STF ADI 7066",
+  "aliquotas_interestaduais": {
+    "sul_sudeste_centrooeste_para_norte_nordeste": 0.12,
+    "norte_nordeste_para_sul_sudeste_centrooeste": 0.07,
+    "entre_sul_sudeste_centrooeste": 0.12,
+    "entre_norte_nordeste": 0.07,
+    "importacao_para_qualquer_uf": 0.04
+  },
+  "aliquotas_internas": {
+    "AC": 0.17, "AL": 0.18, "AP": 0.18, "AM": 0.18,
+    "BA": 0.205, "CE": 0.18, "DF": 0.18, "ES": 0.17,
+    "GO": 0.19, "MA": 0.20, "MT": 0.17, "MS": 0.17,
+    "MG": 0.18, "PA": 0.17, "PB": 0.18, "PR": 0.18,
+    "PE": 0.18, "PI": 0.18, "RJ": 0.20, "RN": 0.18,
+    "RS": 0.18, "RO": 0.175, "RR": 0.17, "SC": 0.17,
+    "SP": 0.18, "SE": 0.18, "TO": 0.18
+  },
+  "regioes": {
+    "Norte": ["AC", "AP", "AM", "PA", "RO", "RR", "TO"],
+    "Nordeste": ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
+    "CentroOeste": ["DF", "GO", "MT", "MS"],
+    "Sudeste": ["ES", "MG", "RJ", "SP"],
+    "Sul": ["PR", "RS", "SC"]
+  },
+  "indIEDest": {
+    "1": "Contribuinte ICMS",
+    "2": "Isento ICMS",
+    "9": "Nao Contribuinte ICMS"
+  },
+  "regras_difal": {
+    "nao_contribuinte": "DIFAL = aliquota_interna_destino * vBC - vICMS_origem",
+    "contribuinte": "DIFAL = (aliquota_interna_destino - aliquota_interestadual) * vBC",
+    "isento": "Verificar legislacao estadual - geralmente 0",
+    "minimo_disparo": "1% da BC"
+  }
+}

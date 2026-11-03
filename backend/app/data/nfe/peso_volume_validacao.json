@@ -1,0 +1,65 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2020.001, Convênio ICMS 52/2017, Legislação ANTT",
+  "peso_bruto_liquido": {
+    "regra_geral": "pesoB >= pesoL",
+    "tolerancia": 0.001,
+    "unidade": "K (quilograma)",
+    "casas_decimais": 3
+  },
+  "volume_validacao": {
+    "qVol": "quantidade de volumes (inteiro > 0 se informado)",
+    "esp": "especie (ex: CX, PC, RL, FD, NE, PA, PT, RO, CX, BO, BA, BU, MA, MC, MR, NE, PA, PL, PO, PT, RL, RO, SC, TB, TU, UN, VG, VL)",
+    "marc": "marca (livre, max 60 chars)",
+    "nVol": "numeração dos volumes (livre, max 60 chars)",
+    "pesoL_por_volume": "pesoL / qVol (media, se qVol > 0)",
+    "pesoB_por_volume": "pesoB / qVol (media, se qVol > 0)"
+  },
+  "regras_por_modalidade": {
+    "rodoviario": {
+      "peso_maximo_eixo": "conforme Resolucao ANTT",
+      "peso_bruto_total": "PBTC do veiculo",
+      "validacao_antt": "verificar RNTRC transportadora"
+    },
+    "aereo": {
+      "peso_bruto": "limite aeronave",
+      "volume": "dimensoes porta carga"
+    },
+    "aquaviario": {
+      "peso_bruto": "capacidade embarcação",
+      "volume": "conteiner/type"
+    },
+    "ferroviario": {
+      "peso_bruto": "capacidade vagoes",
+      "volume": "tipo vagao"
+    },
+    "dutoviario": {
+      "apenas": "produtos liquidos/gasosos",
+      "peso": "densidade * volume"
+    }
+  },
+  "validacoes_criticas": {
+    "pesoL_zero": "pesoL = 0 apenas se servicos/imateriais",
+    "pesoB_zero": "pesoB = 0 apenas se servicos/imateriais",
+    "qVol_zero": "qVol = 0 apenas se servicos/imateriais",
+    "pesoB_menor_pesoL": "ERRO: pesoB < pesoL",
+    "peso_excedente_veiculo": "AVISO: pesoB > PBTC veiculo (se informado veicTransp)",
+    "densidade_suspeita": "AVISO: pesoL / (qVol * volume_medio) fora faixa NCM"
+  },
+  "ncm_faixas_peso": {
+    "graneis_solidos": {"ncm_prefix": ["25", "26", "27", "28", "31"], "densidade_min": 500, "densidade_max": 3000},
+    "liquidos": {"ncm_prefix": ["22", "27", "29", "38"], "densidade_min": 800, "densidade_max": 1200},
+    "eletroeletronicos": {"ncm_prefix": ["84", "85"], "densidade_min": 100, "densidade_max": 500},
+    "textieis": {"ncm_prefix": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63"], "densidade_min": 50, "densidade_max": 300},
+    "moveis": {"ncm_prefix": ["94"], "densidade_min": 50, "densidade_max": 200},
+    "veiculos": {"ncm_prefix": ["87"], "densidade_min": 200, "densidade_max": 1000}
+  },
+  "observacoes": [
+    "Peso liquido = peso do produto sem embalagem",
+    "Peso bruto = peso liquido + embalagens",
+    "Para NFe de servicos, peso e volume nao se aplicam",
+    "Transportadora deve ter RNTRC valido para rodoviario",
+    "VeicTransp (placa/UF) obrigatorio se modFrete em [0,1,2,3]"
+  ]
+}

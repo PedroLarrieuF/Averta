@@ -1,0 +1,113 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "LC 87/96, LC 123/2006 (Simples), Decretos Estaduais, Convênio ICMS 38/2001",
+  "simples_nacional": {
+    "identificacao": "CST/CSOSN 101-103, 201-203, 300, 400, 500, 900",
+    "cfop_faixa": "5101-5119, 6101-6119",
+    "icms_proprio": "nao destaca ICMS proprio na NFe (vICMS = 0)",
+    "icms_st": "pode ter ST se CSOSN 201-203, 500",
+    "credito": "apenas CSOSN 101, 201 geram credito para destinatario",
+    "difal": "nao se aplica (nao contribuinte ICMS)",
+    "fcp": "nao se aplica",
+    "ipi": "nao contribuinte IPI (exceto industrializacao)",
+    "pis_cofins": "recolhidos no DAS (nao destacados na NFe)",
+    "validacoes": [
+      "CST/CSOSN compativel com Simples",
+      "vICMS = 0 (exceto ST)",
+      "vIPI = 0",
+      "vPIS = 0, vCOFINS = 0",
+      "indIEDest = 9 (nao contribuinte)"
+    ]
+  },
+  "mei": {
+    "identificacao": "CNPJ com natureza juridica 213-5",
+    "limite_receita": 81000,
+    "regras": "igual Simples Nacional + limite receita",
+    "nao_emite_nfe_produtos": "pode emitir NFe servicos (NFSe)"
+  },
+  "substituicao_tributaria": {
+    "regimes": ["ST_normal", "ST_antecipado", "ST_diferido"],
+    "produtos_st": "conforme Conv. ICMS 142/2018 + decretos UF",
+    "mva_ajustada": "por UF destino (ver icms_st_mva_iva.json)",
+    "frete_integra_base": true,
+    "validacoes": [
+      "CST em [10,30,60,70] ou CSOSN em [201,202,203,500]",
+      "vBCST informado",
+      "pMVAST informado",
+      "vICMSST calculado = (vBCST * pMVAST * pICMSST) / 10000"
+    ]
+  },
+  "diferimento": {
+    "cst": "51",
+    "csosn": "nao se aplica",
+    "regras": "ICMS diferido para etapa posterior",
+    "validacoes": [
+      "vICMS = 0",
+      "vBC informada para controle",
+      "pRedBC pode aplicar",
+      "destinatario responsavel pelo ICMS diferido"
+    ]
+  },
+  "suspensao": {
+    "cst": "50",
+    "regras": "ICMS suspenso (ex: exportacao, ZFM)",
+    "validacoes": [
+      "vICMS = 0",
+      "vBC = 0 ou informada para controle",
+      "CFOP exportacao (7000+) ou ZFM"
+    ]
+  },
+  "isencao_nao_incidencia": {
+    "cst": ["40", "41"],
+    "csosn": ["103", "300", "400"],
+    "regras": "nao ha ICMS devido",
+    "validacoes": [
+      "vICMS = 0",
+      "vBC = 0 (CST 40/41) ou informada (CSOSN 103)",
+      "frete nao integra base (CST 40/41)"
+    ]
+  },
+  "regimes_especiais_uf": {
+    "SP": {"regimes": ["RPA", "RECOF", "RECOF-SP", "Drawback"], "codigo_inicio": "990"},
+    "RJ": {"regimes": ["RJ_Industrial", "RJ_Exportador"], "codigo_inicio": "990"},
+    "MG": {"regimes": ["MG_Desenvolve", "Pro_Minas"], "codigo_inicio": "990"},
+    "RS": {"regimes": ["RS_Desenvolvimento", "Pro_RS"], "codigo_inicio": "990"},
+    "PR": {"regimes": ["Parana_Competitivo"], "codigo_inicio": "990"},
+    "SC": {"regimes": ["Pro_SC", "SC_Industrial"], "codigo_inicio": "990"},
+    "BA": {"regimes": ["Desenvolve_BA"], "codigo_inicio": "990"},
+    "GO": {"regimes": ["Produzir_GO"], "codigo_inicio": "990"},
+    "PE": {"regimes": ["PE_Desenvolve"], "codigo_inicio": "990"},
+    "CE": {"regimes": ["CE_Industrial"], "codigo_inicio": "990"}
+  },
+  "zfm_amazonas": {
+    "uf": "AM",
+    "municipios": ["Manaus", "Rio Preto da Eva"],
+    "beneficios": ["IPI zero", "ICMS diferido/suspenso", "PIS/COFINS zero"],
+    "cfop_especiais": ["5405", "6405"],
+    "validacoes": ["CFOP ZFM", "informar incentivo fiscal"]
+  },
+  "exportacao": {
+    "cfop": "7000+",
+    "icms": "nao incide (CST 41)",
+    "ipi": "nao incide",
+    "pis_cofins": "nao incide (suspensao)",
+    "validacoes": ["CFOP 7xxx", "vICMS=0, vIPI=0, vPIS=0, vCOFINS=0", "dados exportacao preenchidos"]
+  },
+  "importacao": {
+    "cfop": "3000+",
+    "icms": "devido na entrada (CST 00/10/30/60/70)",
+    "ipi": "devido",
+    "pis_cofins_importacao": "devido",
+    "validacoes": ["CFOP 3xxx", "DI/DUIMP referenciada", "adicoes ICMS/IPI/PIS/COFINS"]
+  },
+  "erros_comuns": [
+    "Simples Nacional destacando ICMS proprio",
+    "ST calculado com MVA errada para UF destino",
+    "Diferimento sem vBC informada",
+    "Isencao com frete na base",
+    "ZFM sem CFOP especifico",
+    "Exportacao com ICMS/IPI destacados",
+    "Regime especial UF nao informado no campo adequado"
+  ]
+}

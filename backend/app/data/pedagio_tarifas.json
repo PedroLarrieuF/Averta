@@ -1,0 +1,39 @@
+{
+  "version": "2024.2",
+  "updated": "2025-01-15",
+  "source": "Concessionárias rodoviárias, ANTT",
+  "concessionarias": {
+    "CCR_AutoBAn": {
+      "rodovias": ["SP-300", "SP-330", "SP-348"],
+      "pracas": {
+        "Jundiai": {"cat1": 12.40, "cat2": 18.60, "cat3": 24.80, "cat4": 31.00, "cat5": 37.20},
+        "Itupeva": {"cat1": 10.80, "cat2": 16.20, "cat3": 21.60, "cat4": 27.00, "cat5": 32.40},
+        "Cabreuva": {"cat1": 9.20, "cat2": 13.80, "cat3": 18.40, "cat4": 23.00, "cat5": 27.60}
+      }
+    },
+    "EcoRodovias_Dutra": {
+      "rodovias": ["BR-116"],
+      "pracas": {
+        "Jacarei": {"cat1": 13.50, "cat2": 20.20, "cat3": 27.00, "cat4": 33.70, "cat5": 40.50},
+        "Taubate": {"cat1": 13.50, "cat2": 20.20, "cat3": 27.00, "cat4": 33.70, "cat5": 40.50},
+        "Pirai": {"cat1": 14.20, "cat2": 21.30, "cat3": 28.40, "cat4": 35.50, "cat5": 42.60}
+      }
+    },
+    "Arteris_LitoralSul": {
+      "rodovias": ["BR-101", "BR-376"],
+      "pracas": {
+        "Palhoca": {"cat1": 11.80, "cat2": 17.70, "cat3": 23.60, "cat4": 29.50, "cat5": 35.40},
+        "Garuvas": {"cat1": 10.50, "cat2": 15.80, "cat3": 21.00, "cat4": 26.30, "cat5": 31.50}
+      }
+    }
+  },
+  "categoria_por_eixos": {
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 4,
+    "6": 5,
+    "7": 5,
+    "9": 5
+  }
+}

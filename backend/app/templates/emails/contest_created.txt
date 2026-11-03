@@ -1,0 +1,12 @@
+Olá {{ client_name }},
+
+A contestação {{ contest_number }} foi criada e enviada para o transportador {{ carrier_name }}.
+
+Valor Contestado: R$ {{ '%.2f'|format(total_value) }}
+
+Acompanhar: {{ contest_url }}
+
+O PDF da contestação está anexado a este e-mail.
+
+---
+Averta - Auditoria de Frete com Cobrança por Êxito

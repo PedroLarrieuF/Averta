@@ -1,0 +1,57 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2020.001, NT 2023.001, Manual Orientação Contribuinte",
+  "formula_vNF": "vNF = vProd + vFrete + vSeg + vDesc + vII + vIPI + vPIS + vCOFINS + vOutro + vFCP + vFCPST + vFCPSTRet + vICMSDeson",
+  "formula_vProd": "vProd = soma(vProd_item) = soma(qCom * vUnCom)",
+  "formula_vICMSTot": "vICMSTot = vICMS + vICMSST + vICMSDeson + vFCP + vFCPST + vFCPSTRet",
+  "tolerancias": {
+    "vNF": 0.02,
+    "vProd": 0.02,
+    "vICMSTot": 0.02,
+    "vBC": 0.02,
+    "vICMS": 0.02,
+    "vICMSST": 0.02,
+    "vFrete": 0.01,
+    "vSeg": 0.01,
+    "vDesc": 0.02,
+    "vOutro": 0.02
+  },
+  "validacoes_por_item": {
+    "vProd_item": "qCom * vUnCom (tolerancia 0.01)",
+    "vDesc_item": "nao pode exceder vProd_item",
+    "vOutro_item": "nao pode ser negativo",
+    "vFCP_item": "pFCP * vBC_FCP / 100 (tolerancia 0.01)",
+    "vFCPST_item": "pFCPST * vBC_FCPST / 100 (tolerancia 0.01)",
+    "vFCPSTRet_item": "pFCPSTRet * vBC_FCPSTRet / 100 (tolerancia 0.01)"
+  },
+  "validacoes_totais": {
+    "soma_itens_vProd": "deve igualar vProd total",
+    "soma_itens_vFrete": "deve igualar vFrete total (se rateado)",
+    "soma_itens_vSeg": "deve igualar vSeg total (se rateado)",
+    "soma_itens_vDesc": "deve igualar vDesc total",
+    "soma_itens_vOutro": "deve igualar vOutro total",
+    "soma_itens_vICMS": "deve igualar vICMS total",
+    "soma_itens_vICMSST": "deve igualar vICMSST total",
+    "soma_itens_vFCP": "deve igualar vFCP total",
+    "soma_itens_vFCPST": "deve igualar vFCPST total",
+    "soma_itens_vFCPSTRet": "deve igualar vFCPSTRet total"
+  },
+  "regras_especiais": {
+    "devolucao": "vNF pode ser zero se devolucao total",
+    "bonificacao": "vProd pode ser zero, vOutro pode ser negativo (desconto incondicional)",
+    "simples_nacional": "vICMS, vICMSST, vFCP devem ser zero",
+    "isento_nao_trib": "vICMS zero, mas vBC informado para controle",
+    "substituicao_tributaria": "vICMSST calculado sobre vBCST (vProd + vFrete + vSeg + vOutro + ...)",
+    "difal": "vICMSDifal = vBCDifal * pDifal / 100",
+    "fcp": "vFCP = vBCFCP * pFCP / 100"
+  },
+  "erros_comuns": [
+    "vNF difere da soma dos componentes (> tolerancia)",
+    "vProd total difere da soma dos itens",
+    "vICMSTot nao confere com somas dos ICMS",
+    "Desconto incondicional nao informado em vDesc",
+    "Frete/seguro nao rateados nos itens",
+    "FCP calculado sobre base errada"
+  ]
+}

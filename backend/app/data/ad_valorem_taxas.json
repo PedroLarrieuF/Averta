@@ -1,0 +1,22 @@
+{
+  "version": "2024.1",
+  "updated": "2025-01-15",
+  "source": "Mercado segurador, SUSEP, contratos típicos",
+  "taxas_referencia_por_tipo_carga": {
+    "01": {"min": 0.0003, "media": 0.0008, "max": 0.0015, "desc": "Carga Geral"},
+    "02": {"min": 0.0010, "media": 0.0025, "max": 0.0050, "desc": "Carga Perigosa"},
+    "03": {"min": 0.0005, "media": 0.0012, "max": 0.0020, "desc": "Carga Frigorífica"},
+    "04": {"min": 0.0002, "media": 0.0005, "max": 0.0010, "desc": "Granel Líquido"},
+    "05": {"min": 0.0002, "media": 0.0005, "max": 0.0010, "desc": "Granel Sólido"},
+    "06": {"min": 0.0003, "media": 0.0008, "max": 0.0015, "desc": "Neogranel"},
+    "07": {"min": 0.0005, "media": 0.0010, "max": 0.0020, "desc": "Container"},
+    "08": {"min": 0.0010, "media": 0.0030, "max": 0.0060, "desc": "Carga Projeto/Alto Valor"},
+    "09": {"min": 0.0005, "media": 0.0010, "max": 0.0020, "desc": "Veículos"},
+    "10": {"min": 0.0008, "media": 0.0020, "max": 0.0040, "desc": "Carga Viva"}
+  },
+  "taxas_especiais": {
+    "eletronicos": 0.0030,
+    "joias": 0.0100,
+    "medicamentos_controlados": 0.0020
+  }
+}

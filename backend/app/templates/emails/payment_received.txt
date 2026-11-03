@@ -1,0 +1,12 @@
+Olá {{ client_name }},
+
+Recebemos o pagamento da contestação {{ contest_number }}.
+
+Valor Bruto: R$ {{ '%.2f'|format(amount) }}
+Taxa de Sucesso ({{ fee_percentage }}%): - R$ {{ '%.2f'|format(success_fee) }}
+Valor Líquido: R$ {{ '%.2f'|format(net_amount) }}
+
+O valor líquido será depositado na sua conta conforme cronograma acordado.
+
+---
+Averta - Auditoria de Frete com Cobrança por Êxito

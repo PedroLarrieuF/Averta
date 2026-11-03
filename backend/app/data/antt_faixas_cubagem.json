@@ -1,0 +1,22 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Resolução ANTT 5.933/2023",
+  "faixas_cubagem": [
+    {"faixa": 1, "cub_min": 0, "cub_max": 10, "carga_geral": 102.45, "perigosa": 122.94, "frigorifica": 112.70, "granel_liquido": 92.21, "granel_solido": 87.08},
+    {"faixa": 2, "cub_min": 10.01, "cub_max": 20, "carga_geral": 88.67, "perigosa": 106.40, "frigorifica": 97.54, "granel_liquido": 79.80, "granel_solido": 75.37},
+    {"faixa": 3, "cub_min": 20.01, "cub_max": 30, "carga_geral": 80.45, "perigosa": 96.54, "frigorifica": 88.50, "granel_liquido": 72.41, "granel_solido": 68.38},
+    {"faixa": 4, "cub_min": 30.01, "cub_max": 40, "carga_geral": 74.52, "perigosa": 89.42, "frigorifica": 81.97, "granel_liquido": 67.07, "granel_solido": 63.34},
+    {"faixa": 5, "cub_min": 40.01, "cub_max": 50, "carga_geral": 70.05, "perigosa": 84.06, "frigorifica": 77.06, "granel_liquido": 63.05, "granel_solido": 59.54},
+    {"faixa": 6, "cub_min": 50.01, "cub_max": 60, "carga_geral": 66.55, "perigosa": 79.86, "frigorifica": 73.21, "granel_liquido": 59.90, "granel_solido": 56.57},
+    {"faixa": 7, "cub_min": 60.01, "cub_max": 70, "carga_geral": 63.71, "perigosa": 76.45, "frigorifica": 70.08, "granel_liquido": 57.34, "granel_solido": 54.15},
+    {"faixa": 8, "cub_min": 70.01, "cub_max": 80, "carga_geral": 61.35, "perigosa": 73.62, "frigorifica": 67.49, "granel_liquido": 55.22, "granel_solido": 52.15},
+    {"faixa": 9, "cub_min": 80.01, "cub_max": 90, "carga_geral": 59.35, "perigosa": 71.22, "frigorifica": 65.29, "granel_liquido": 53.42, "granel_solido": 50.45},
+    {"faixa": 10, "cub_min": 90.01, "cub_max": 100, "carga_geral": 57.61, "perigosa": 69.13, "frigorifica": 63.37, "granel_liquido": 51.85, "granel_solido": 48.97}
+  ],
+  "fatores_tipo_carga": {
+    "01": 1.0000, "02": 1.2000, "03": 1.1000, "04": 0.9000,
+    "05": 0.8500, "06": 1.0000, "07": 1.0000, "08": 1.3000,
+    "09": 1.0000, "10": 1.1500
+  }
+}

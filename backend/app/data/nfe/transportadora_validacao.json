@@ -1,0 +1,54 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2020.001, Resolução ANTT 4799/2015, Lei 11.442/2007",
+  "transportadora_obrigatoria_se": "modFrete in [0,1,2,3]",
+  "transportadora_nao_informar_se": "modFrete in [4,9]",
+  "campos_obrigatorios": {
+    "CNPJ": "apenas se transportadora juridica",
+    "CPF": "apenas se transportadora fisica",
+    "xNome": "razao social ou nome",
+    "IE": "inscricao estadual (obrigatoria se contribuinte ICMS)",
+    "xEnder": "endereco completo",
+    "xMun": "municipio",
+    "UF": "sigla UF"
+  },
+  "validacoes_cnpj_cpf": {
+    "apenas_um": "informar CNPJ OU CPF, nunca ambos",
+    "cnpj_valido": "validar digito verificador (modulo 11)",
+    "cpf_valido": "validar digito verificador (modulo 11)",
+    "cnpj_emitente_destinatario": "CNPJ transportadora nao pode igual CNPJ emitente ou destinatario"
+  },
+  "rntrc_validacao": {
+    "obrigatorio_rodoviario": "modFrete in [0,1,2,3] e modalidade rodoviario",
+    "formato": "XXXXXXXXX (9 digitos) ou XXX.XXX.XXX-X",
+    "consulta_antt": "verificar se RNTRC ativo e vigente",
+    "veiculo_vinculado": "placa informada em veicTransp deve estar vinculada ao RNTRC"
+  },
+  "veiculotransp_obrigatorio_se": "modFrete in [0,1,2,3]",
+  "veiculotransp_campos": {
+    "placa": "formato AAA-0000 ou AAA0A00 (Mercosul)",
+    "UF": "UF licenciamento",
+    "RNTC": "registro ANTT (opcional se RNTRC informado no transportador)"
+  },
+  "motorista": {
+    "CPF": "obrigatorio se veicTransp informado",
+    "xNome": "nome completo",
+    "validacao_cpf": "modulo 11"
+  },
+  "regras_especiais": {
+    "transportadora_emitente": "se emitente transporta (modFrete 0/3), pode repetir dados emitente",
+    "transportadora_destinatario": "se destinatario transporta (modFrete 1/4), pode repetir dados destinatario",
+    "redespacho": "informar transportador redespachante em veicTransp/redespacho",
+    "subcontratacao": "mesma validacao da transportadora principal"
+  },
+  "erros_comuns": [
+    "Transportadora informada mas modFrete = 9",
+    "Transportadora nao informada mas modFrete em [0,1,2,3]",
+    "CNPJ/CPF invalido (digito verificador)",
+    "IE invalida para UF informada",
+    "RNTRC inativo ou nao encontrado",
+    "Placa veiculo formato invalido",
+    "CPF motorista invalido"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Lei 8.884/94, LC 87/96, RICMS/UF, Ajuste SINIEF 19/2016",
+  "cst_normal": {
+    "00": {"nome": "Tributada integralmente", "base_inclui_frete": true, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "interna_ou_interstadual"},
+    "10": {"nome": "Tributada c/ ST", "base_inclui_frete": true, "tem_reducao": false, "tem_st": true, "aliquota_tipo": "interna"},
+    "20": {"nome": "Redução base", "base_inclui_frete": true, "tem_reducao": true, "tem_st": false, "aliquota_tipo": "interna"},
+    "30": {"nome": "Isenta/não trib c/ ST", "base_inclui_frete": true, "tem_reducao": false, "tem_st": true, "aliquota_tipo": "interna"},
+    "40": {"nome": "Isenta", "base_inclui_frete": false, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "zero"},
+    "41": {"nome": "Não tributada", "base_inclui_frete": false, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "zero"},
+    "50": {"nome": "Suspensão", "base_inclui_frete": false, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "zero"},
+    "51": {"nome": "Diferimento", "base_inclui_frete": false, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "zero"},
+    "60": {"nome": "ICMS cobrado ant. por ST", "base_inclui_frete": true, "tem_reducao": false, "tem_st": true, "aliquota_tipo": "interna"},
+    "70": {"nome": "Redução base + ST", "base_inclui_frete": true, "tem_reducao": true, "tem_st": true, "aliquota_tipo": "interna"},
+    "90": {"nome": "Outras", "base_inclui_frete": true, "tem_reducao": false, "tem_st": false, "aliquota_tipo": "conforme_leg"}
+  },
+  "csosn_simples": {
+    "101": {"nome": "Simples c/ crédito", "gera_credito": true, "tem_st": false},
+    "102": {"nome": "Simples s/ crédito", "gera_credito": false, "tem_st": false},
+    "103": {"nome": "Isenção faixa receita", "gera_credito": false, "tem_st": false},
+    "201": {"nome": "Simples c/ crédito + ST", "gera_credito": true, "tem_st": true},
+    "202": {"nome": "Simples s/ crédito + ST", "gera_credito": false, "tem_st": true},
+    "203": {"nome": "Isenção + ST", "gera_credito": false, "tem_st": true},
+    "300": {"nome": "Imune", "gera_credito": false, "tem_st": false},
+    "400": {"nome": "Não trib. Simples", "gera_credito": false, "tem_st": false},
+    "500": {"nome": "ICMS ant. ST (Simples)", "gera_credito": false, "tem_st": true},
+    "900": {"nome": "Outras", "gera_credito": false, "tem_st": false}
+  },
+  "regras_frete_base": {
+    "csts_com_frete_na_base": ["00", "10", "20", "30", "60", "70", "90"],
+    "csts_sem_frete_na_base": ["40", "41", "50", "51"],
+    "observacao": "Lei 8.884/94 Art. 37 - frete integra base cálculo ICMS quando destacado na NF-e"
+  }
+}

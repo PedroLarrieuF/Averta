@@ -1,0 +1,15 @@
+Olá {{ client_name }},
+
+Nossa auditoria encontrou {{ total_discrepancies }} divergência(s) no CT-e {{ document_number }} do transportador {{ carrier_name }}.
+
+Divergências encontradas:
+{% for d in discrepancies %}
+- {{ d.rule_name }}: Esperado R$ {{ '%.2f'|format(d.expected_value or 0) }} | Cobrado R$ {{ '%.2f'|format(d.actual_value or 0) }} | Diferença R$ {{ '%.2f'|format(d.difference or 0) }}
+{% endfor %}
+
+Total a recuperar: R$ {{ '%.2f'|format(total_value) }}
+
+Acesse o dashboard: {{ dashboard_url }}
+
+---
+Averta - Auditoria de Frete com Cobrança por Êxito

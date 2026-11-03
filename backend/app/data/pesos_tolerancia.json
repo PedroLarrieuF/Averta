@@ -1,0 +1,16 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Resolução ANTT 5.839/2021 Art. 7º",
+  "tolerancias_por_tipo_carga": {
+    "01": 0.05, "02": 0.03, "03": 0.05, "04": 0.20,
+    "05": 0.20, "06": 0.05, "07": 0.05, "08": 0.05,
+    "09": 0.03, "10": 0.10
+  },
+  "tipos_carga": {
+    "01": "Carga Geral", "02": "Carga Perigosa", "03": "Carga Frigorífica",
+    "04": "Granel Líquido", "05": "Granel Sólido", "06": "Neogranel",
+    "07": "Container", "08": "Carga Projeto", "09": "Veículos", "10": "Carga Viva"
+  },
+  "fontes_peso_real_validas": ["balança_fiscal", "balança_transportador", "nota_pesagem"]
+}

@@ -1,0 +1,81 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Ajuste SINIEF 07/2005, NT 2016.002, NT 2020.001, NT 2023.001, Art. 36 CTN",
+  "cancelamento": {
+    "base_legal": "Art. 36 CTN, Art. 7º Convenio S/N 1970",
+    "prazo_maximo": "24 horas (1 dia) apos autorizacao NFe",
+    "prazo_estendido": "168 horas (7 dias) se nao circulou mercadoria (comprovado)",
+    "condicoes": [
+      "NFe autorizada",
+      "Mercadoria nao circulou",
+      "Nao houve saida estabelecimento",
+      "Pedido cancelamento antes prazo"
+    ],
+    "processo": {
+      "evento": "110111 - Cancelamento",
+      "justificativa": "xJust (min 15, max 256 chars)",
+      "autorizacao_sefaz": "protocolo cancelamento vinculado a NFe",
+      "efeito": "NFe torna-se inutilizada para fins fiscais"
+    },
+    "vedado_se": [
+      "Mercadoria ja circulou (CTe emitido, MDFe, entrega comprovada)",
+      "NFe ja cancelada",
+      "NFe denegada",
+      "Prazo expirado"
+    ]
+  },
+  "inutilizacao": {
+    "base_legal": "Art. 36 CTN, Ajuste SINIEF 07/2005",
+    "finalidade": "inutilizar numeracao NFe nao usada (quebra sequencia)",
+    "prazo": "ate 30 dias do ano seguinte (ex: 2024 -> 31/01/2025)",
+    "condicoes": [
+      "Numeracao nao utilizada",
+      "Nao ha NFe autorizada com essa numeracao",
+      "Solicitacao dentro prazo"
+    ],
+    "processo": {
+      "evento": "110112 - Inutilizacao",
+      "faixa": "nNFIni a nNFFim (intervalo)",
+      "justificativa": "xJust (min 15, max 256 chars)",
+      "autorizacao_sefaz": "protocolo inutilizacao",
+      "ano_referencia": "ano da numeracao (nNF)"
+    },
+    "vedado_se": [
+      "Existe NFe autorizada na faixa",
+      "Faixa ja inutilizada",
+      "Ano referencia invalido",
+      "Prazo expirado"
+    ]
+  },
+  "validacoes_cancelamento": {
+    "prazo_24h": "dhEvento - dhEmi <= 24 horas (ou 168h se comprovado nao circulacao)",
+    "NFe_autorizada": "cStat = 100",
+    "NFe_nao_cancelada": "nao existe evento 110111 autorizado",
+    "NFe_nao_denegada": "cStat != 110",
+    "justificativa_tamanho": "15 <= len(xJust) <= 256",
+    "CTe_vinculado": "se existe CTe referenciando NFe, cancelamento vedado"
+  },
+  "validacoes_inutilizacao": {
+    "prazo_ano_seguinte": "ano_atual <= ano_nNF + 1 (ate 31/01)",
+    "faixa_valida": "nNFIni <= nNFFim",
+    "faixa_nao_usada": "nenhuma NFe autorizada com nNF na faixa",
+    "faixa_nao_inutilizada": "nao existe inutilizacao previa sobreposta",
+    "justificativa_tamanho": "15 <= len(xJust) <= 256",
+    "serie_valida": "serie informada existe para emitente"
+  },
+  "regras_especiais": {
+    "cancelamento_substitui_inutilizacao": "se cancelou NFe, nao precisa inutilizar numero",
+    "inutilizacao_nao_substitui_cancelamento": "se NFe autorizada, deve cancelar, nao inutilizar",
+    "contingencia": "NFe contingencia (tpEmis 2-9) mesmo prazo cancelamento",
+    "denegada": "NFe denegada nao cancela, nao inutiliza (ja inutilizada fiscalmente)"
+  },
+  "erros_comuns": [
+    "Cancelamento apos 24h sem comprovacao nao circulacao",
+    "Cancelamento NFe com CTe emitido",
+    "Inutilizacao faixa com NFe autorizada",
+    "Inutilizacao fora prazo (ano + 1)",
+    "Justificativa muito curta (< 15 chars)",
+    "Tentar cancelar NFe denegada"
+  ]
+}

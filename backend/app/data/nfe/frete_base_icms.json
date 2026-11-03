@@ -1,0 +1,36 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Lei 8.884/94 Art. 37, LC 87/96 Art. 13, Convênio ICMS 52/2017, STF RE 540829",
+  "regra_geral": "Frete integra base de cálculo do ICMS quando destacado na NF-e (modFrete 0, 1, 2, 3)",
+  "modfrete": {
+    "0": {"desc": "Por conta do emitente", "integra_base": true, "responsavel_icms": "emitente"},
+    "1": {"desc": "Por conta do destinatário", "integra_base": true, "responsavel_icms": "destinatario"},
+    "2": {"desc": "Por conta de terceiros", "integra_base": true, "responsavel_icms": "terceiros"},
+    "3": {"desc": "Próprio por conta do emitente", "integra_base": true, "responsavel_icms": "emitente"},
+    "4": {"desc": "Próprio por conta do destinatário", "integra_base": true, "responsavel_icms": "destinatario"},
+    "9": {"desc": "Sem frete / não informado", "integra_base": false, "responsavel_icms": "nao_aplicavel"}
+  },
+  "vFrete_na_nfe": {
+    "localizacao": "NFe/infNFe/total/ICMSTot/vFrete",
+    "obrigatorio_se": "modFrete in [0,1,2,3]",
+    "nao_integrar_se": "modFrete = 9 ou CST em [40,41,50,51]"
+  },
+  "csts_com_frete_na_base": ["00", "10", "20", "30", "60", "70", "90"],
+  "csts_sem_frete_na_base": ["40", "41", "50", "51"],
+  "st_frete_integra": true,
+  "difal_frete_integra": true,
+  "fcp_frete_integra": true,
+  "observacoes": [
+    "Lei 8.884/94: frete é componente do valor da operação",
+    "CST 40/41/50/51: isenção/não incidência/suspensão - frete NÃO integra base",
+    "ST: frete integra base de cálculo do ICMS ST (MVA aplicado sobre vProd + vFrete + vSeg + vOutros)",
+    "DIFAL: base = vBC (já inclui frete) * aliquota_interna_destino",
+    "FCP: segue mesma base do ICMS próprio/ST"
+  ],
+  "validacoes_erro": {
+    "vFrete_negativo": "vFrete não pode ser negativo",
+    "vFrete_zerado_com_modfrete_0_3": "Se modFrete em [0,1,2,3], vFrete > 0",
+    "vFrete_positivo_com_modfrete_9": "Se modFrete = 9, vFrete deve ser 0"
+  }
+}

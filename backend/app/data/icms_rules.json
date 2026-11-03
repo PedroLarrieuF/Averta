@@ -1,0 +1,113 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "LC 87/1996, LC 190/2022, Convênio ICMS 174/2023, Convênio ICMS 142/2018, Convênio ICMS 236/2021",
+  "icms_difal": {
+    "aliquotas_interestaduais": {
+      "sul_sudeste_centrooeste_para_norte_nordeste": 0.12,
+      "norte_nordeste_para_sul_sudeste_centrooeste": 0.07,
+      "entre_sul_sudeste_centrooeste": 0.12,
+      "entre_norte_nordeste": 0.07,
+      "importacao_para_qualquer_uf": 0.04
+    },
+    "aliquotas_internas": {
+      "AC": 0.17, "AL": 0.18, "AP": 0.18, "AM": 0.18,
+      "BA": 0.205, "CE": 0.18, "DF": 0.18, "ES": 0.17,
+      "GO": 0.19, "MA": 0.20, "MT": 0.17, "MS": 0.17,
+      "MG": 0.18, "PA": 0.17, "PB": 0.18, "PR": 0.18,
+      "PE": 0.18, "PI": 0.18, "RJ": 0.20, "RN": 0.18,
+      "RS": 0.18, "RO": 0.175, "RR": 0.17, "SC": 0.17,
+      "SP": 0.18, "SE": 0.18, "TO": 0.18
+    },
+    "aliquotas_internas_liquidas_fcp": {
+      "AC": 0.17, "AL": 0.16, "AP": 0.16, "AM": 0.16,
+      "BA": 0.18, "CE": 0.16, "DF": 0.18, "ES": 0.15,
+      "GO": 0.19, "MA": 0.18, "MT": 0.17, "MS": 0.17,
+      "MG": 0.16, "PA": 0.15, "PB": 0.16, "PR": 0.16,
+      "PE": 0.16, "PI": 0.16, "RJ": 0.18, "RN": 0.16,
+      "RS": 0.16, "RO": 0.175, "RR": 0.15, "SC": 0.15,
+      "SP": 0.16, "SE": 0.16, "TO": 0.18
+    },
+    "regioes": {
+      "Norte": ["AC", "AP", "AM", "PA", "RO", "RR", "TO"],
+      "Nordeste": ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
+      "CentroOeste": ["DF", "GO", "MT", "MS"],
+      "Sudeste": ["ES", "MG", "RJ", "SP"],
+      "Sul": ["PR", "RS", "SC"]
+    }
+  },
+  "fcp": {
+    "aliquotas": {
+      "AC": 0.00, "AL": 0.02, "AP": 0.02, "AM": 0.02,
+      "BA": 0.02, "CE": 0.02, "DF": 0.00, "ES": 0.02,
+      "GO": 0.00, "MA": 0.02, "MT": 0.00, "MS": 0.00,
+      "MG": 0.02, "PA": 0.02, "PB": 0.02, "PR": 0.02,
+      "PE": 0.02, "PI": 0.02, "RJ": 0.02, "RN": 0.02,
+      "RS": 0.02, "RO": 0.00, "RR": 0.02, "SC": 0.02,
+      "SP": 0.02, "SE": 0.02, "TO": 0.00
+    },
+    "estados_com_fcp": ["AL", "AP", "AM", "BA", "CE", "ES", "MA", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RR", "SC", "SP", "SE"],
+    "observacoes": {
+      "BA": "Alíquota interna 20.5% inclui FECOP 2.5% - usar 18% no DIFAL + FCP 2% separado",
+      "RJ": "Alíquota interna 20% inclui FECP 2% - usar 18% no DIFAL + FCP 2% separado",
+      "SP": "Alíquota interna 18% inclui FECOP 2% - usar 16% no DIFAL + FCP 2% separado"
+    }
+  },
+  "icms_st": {
+    "produtos_st": {
+      "22030000": {
+        "descricao": "Cervejas",
+        "cest": "01.001.00",
+        "metodo": "MVA",
+        "ufs": {
+          "SP": {"mva": 41.67, "aliquota_interna": 0.18, "reducao_base": 0},
+          "RJ": {"mva": 51.22, "aliquota_interna": 0.20, "reducao_base": 0},
+          "MG": {"mva": 33.33, "aliquota_interna": 0.18, "reducao_base": 0},
+          "RS": {"mva": 33.33, "aliquota_interna": 0.18, "reducao_base": 0},
+          "PR": {"mva": 33.33, "aliquota_interna": 0.18, "reducao_base": 0},
+          "SC": {"mva": 41.67, "aliquota_interna": 0.17, "reducao_base": 0},
+          "BA": {"mva": 45.45, "aliquota_interna": 0.205, "reducao_base": 0},
+          "GO": {"mva": 33.33, "aliquota_interna": 0.19, "reducao_base": 0}
+        }
+      },
+      "22042100": {
+        "descricao": "Vinhos",
+        "cest": "01.002.00",
+        "metodo": "MVA",
+        "ufs": {
+          "SP": {"mva": 41.67, "aliquota_interna": 0.18},
+          "RJ": {"mva": 51.22, "aliquota_interna": 0.20}
+        }
+      },
+      "24022000": {
+        "descricao": "Cigarros",
+        "cest": "02.001.00",
+        "metodo": "IVA",
+        "ufs": {
+          "SP": {"iva": 56.00, "aliquota_interna": 0.18},
+          "RJ": {"iva": 60.00, "aliquota_interna": 0.20},
+          "MG": {"iva": 52.00, "aliquota_interna": 0.18}
+        }
+      },
+      "27101921": {
+        "descricao": "Óleo Diesel",
+        "cest": "03.001.00",
+        "metodo": "MVA",
+        "ufs": {
+          "SP": {"mva": 13.64, "aliquota_interna": 0.18},
+          "RJ": {"mva": 17.65, "aliquota_interna": 0.20}
+        }
+      },
+      "30049099": {
+        "descricao": "Medicamentos genéricos",
+        "cest": "04.001.00",
+        "metodo": "MVA",
+        "ufs": {
+          "SP": {"mva": 20.00, "aliquota_interna": 0.18}
+        }
+      }
+    },
+    "cst_com_st": ["10", "30", "40", "41", "50", "51", "60", "70", "90"],
+    "csosn_com_st": ["201", "202", "203", "500", "900"]
+  }
+}

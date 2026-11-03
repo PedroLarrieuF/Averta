@@ -1,0 +1,35 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "LC 190/2022, Convênio ICMS 174/2023",
+  "aliquotas_fcp": {
+    "AC": 0.02, "AL": 0.02, "AP": 0.02, "AM": 0.00,
+    "BA": 0.025, "CE": 0.02, "DF": 0.02, "ES": 0.02,
+    "GO": 0.02, "MA": 0.02, "MT": 0.02, "MS": 0.02,
+    "MG": 0.02, "PA": 0.02, "PB": 0.02, "PR": 0.02,
+    "PE": 0.02, "PI": 0.02, "RJ": 0.02, "RN": 0.02,
+    "RS": 0.02, "RO": 0.02, "RR": 0.02, "SC": 0.02,
+    "SP": 0.02, "SE": 0.02, "TO": 0.02
+  },
+  "observacoes": {
+    "AM": "ZFM - Isento FCP",
+    "BA": "2.5% (inclui FECOP estadual)",
+    "RJ": "2% + FECP estadual separado",
+    "geral": "FCP só se aplica: interestadual + indIEDest=9 (não contribuinte)"
+  },
+  "campos_nfe": {
+    "vFCP": "FCP operação própria",
+    "vFCPST": "FCP retenção ST",
+    "vFCPSTRet": "FCP retenção ST anterior",
+    "pFCP": "Alíquota FCP própria",
+    "pFCPST": "Alíquota FCP ST"
+  },
+  "ordem_calculo": [
+    "ICMS_PROPRIO",
+    "ICMS_ST",
+    "DIFAL",
+    "FCP_PROPRIO",
+    "FCP_ST",
+    "FCP_ST_RETIDO"
+  ]
+}

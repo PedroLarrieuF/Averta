@@ -1,0 +1,30 @@
+Olá {{ client_name }},
+
+Relatório Semanal de Auditoria - {{ period }}
+
+Resumo:
+- Documentos Auditados: {{ documents_audited }}
+- Divergências Encontradas: {{ discrepancies_found }}
+- Total a Recuperar: R$ {{ '%.2f'|format(total_recoverable) }}
+- Taxa de Sucesso: {{ success_rate }}%
+
+{% if top_carriers %}
+Top Transportadores:
+{% for c in top_carriers %}
+- {{ c.name }}: {{ c.count }} divergências, R$ {{ '%.2f'|format(c.value) }}
+{% endfor %}
+{% endif %}
+
+{% if top_discrepancy_types %}
+Principais Tipos:
+{% for d in top_discrepancy_types %}
+- {{ d.type }}: {{ d.count }} ocorrências, R$ {{ '%.2f'|format(d.value) }}
+{% endfor %}
+{% endif %}
+
+Ver relatório completo: {{ dashboard_url }}
+
+Relatórios em PDF e Excel anexos.
+
+---
+Averta - Auditoria de Frete com Cobrança por Êxito

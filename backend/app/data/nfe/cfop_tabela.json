@@ -1,0 +1,32 @@
+{
+  "version": "2025.1",
+  "updated": "2025-01-15",
+  "source": "Convênio ICMS 52/2017, Ajuste SINIEF 07/2005",
+  "cfops_com_frete_obrigatorio": {
+    "5352": {"desc": "Venda prod. estab. c/ frete emitente (interna)", "modfrete": "0", "interestadual": false, "gera_cte": true},
+    "5353": {"desc": "Venda prod. estab. c/ frete destinatário (interna)", "modfrete": "1", "interestadual": false, "gera_cte": true},
+    "5354": {"desc": "Venda prod. estab. c/ frete terceiros (interna)", "modfrete": "2/3/9", "interestadual": false, "gera_cte": true},
+    "6352": {"desc": "Venda prod. estab. c/ frete emitente (interstadual)", "modfrete": "0", "interestadual": true, "gera_cte": true},
+    "6353": {"desc": "Venda prod. estab. c/ frete destinatário (interstadual)", "modfrete": "1", "interestadual": true, "gera_cte": true},
+    "6354": {"desc": "Venda prod. estab. c/ frete terceiros (interstadual)", "modfrete": "2/3/9", "interestadual": true, "gera_cte": true},
+    "1202": {"desc": "Devolução venda prod. (interstadual)", "modfrete": "variavel", "interestadual": true, "gera_cte": "se_tiver_frete"},
+    "2202": {"desc": "Devolução venda prod. (interna)", "modfrete": "variavel", "interestadual": false, "gera_cte": "se_tiver_frete"},
+    "5152": {"desc": "Transferência mesmo titular (interna)", "modfrete": "variavel", "interestadual": false, "gera_cte": "se_tiver_frete"},
+    "6152": {"desc": "Transferência mesmo titular (interstadual)", "modfrete": "variavel", "interestadual": true, "gera_cte": "se_tiver_frete"},
+    "5910": {"desc": "Bonificação (interna)", "modfrete": "variavel", "interestadual": false, "gera_cte": "se_tiver_frete"},
+    "6910": {"desc": "Bonificação (interstadual)", "modfrete": "variavel", "interestadual": true, "gera_cte": "se_tiver_frete"}
+  },
+  "cfops_sem_frete": {
+    "5355": {"desc": "Venda prod. estab. sem frete (interna)", "modfrete": "9", "interestadual": false, "gera_cte": false},
+    "6355": {"desc": "Venda prod. estab. sem frete (interstadual)", "modfrete": "9", "interestadual": true, "gera_cte": false}
+  },
+  "cfops_simples_nacional": {
+    "prefixos": ["510", "511", "610", "611"],
+    "faixa": "5101-5119, 6101-6119",
+    "regime": "SIMPLES_NACIONAL"
+  },
+  "estrutura_cfop": {
+    "digito_1_tipo": {"1": "entrada_interstadual", "2": "saida_interstadual", "5": "saida_interna", "6": "saida_interna_interstadual"},
+    "digito_2_operacao": {"1": "venda_producao", "2": "venda_adquirida", "3": "entrada_compra", "5": "transferencia", "9": "outras"}
+  }
+}

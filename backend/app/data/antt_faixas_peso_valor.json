@@ -1,0 +1,28 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Resolução ANTT 5.933/2023",
+  "vigencia": "2024-01-01",
+  "faixas_peso_valor": [
+    {"faixa": 1, "peso_min": 0, "peso_max": 5.0, "carga_geral": 322.47, "perigosa": 386.96, "frigorifica": 354.72, "granel_liquido": 290.22, "granel_solido": 274.71},
+    {"faixa": 2, "peso_min": 5.01, "peso_max": 10.0, "carga_geral": 278.15, "perigosa": 333.78, "frigorifica": 305.97, "granel_liquido": 250.34, "granel_solido": 237.02},
+    {"faixa": 3, "peso_min": 10.01, "peso_max": 15.0, "carga_geral": 252.19, "perigosa": 302.63, "frigorifica": 277.41, "granel_liquido": 226.97, "granel_solido": 214.87},
+    {"faixa": 4, "peso_min": 15.01, "peso_max": 20.0, "carga_geral": 233.77, "perigosa": 280.52, "frigorifica": 257.15, "granel_liquido": 210.39, "granel_solido": 199.17},
+    {"faixa": 5, "peso_min": 20.01, "peso_max": 25.0, "carga_geral": 219.85, "perigosa": 263.82, "frigorifica": 241.84, "granel_liquido": 197.87, "granel_solido": 187.31},
+    {"faixa": 6, "peso_min": 25.01, "peso_max": 30.0, "carga_geral": 208.65, "perigosa": 250.38, "frigorifica": 229.52, "granel_liquido": 187.79, "granel_solido": 177.76},
+    {"faixa": 7, "peso_min": 30.01, "peso_max": 35.0, "carga_geral": 199.32, "perigosa": 239.18, "frigorifica": 219.25, "granel_liquido": 179.39, "granel_solido": 169.81},
+    {"faixa": 8, "peso_min": 35.01, "peso_max": 40.0, "carga_geral": 191.39, "perigosa": 229.67, "frigorifica": 210.53, "granel_liquido": 172.25, "granel_solido": 163.06},
+    {"faixa": 9, "peso_min": 40.01, "peso_max": 45.0, "carga_geral": 184.55, "perigosa": 221.46, "frigorifica": 203.01, "granel_liquido": 166.10, "granel_solido": 157.24},
+    {"faixa": 10, "peso_min": 45.01, "peso_max": 50.0, "carga_geral": 178.59, "perigosa": 214.31, "frigorifica": 196.45, "granel_liquido": 160.73, "granel_solido": 152.15}
+  ],
+  "fatores_tipo_carga": {
+    "01": 1.0000, "02": 1.2000, "03": 1.1000, "04": 0.9000,
+    "05": 0.8500, "06": 1.0000, "07": 1.0000, "08": 1.3000,
+    "09": 1.0000, "10": 1.1500
+  },
+  "tipos_carga": {
+    "01": "Carga Geral", "02": "Carga Perigosa", "03": "Carga Frigorífica",
+    "04": "Granel Líquido", "05": "Granel Sólido", "06": "Neogranel",
+    "07": "Container", "08": "Carga Projeto", "09": "Veículos", "10": "Carga Viva"
+  }
+}

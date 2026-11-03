@@ -1,0 +1,23 @@
+{
+  "version": "2024.1",
+  "updated": "2025-01-15",
+  "source": "Mercado transportador, ANTT, contratos típicos",
+  "taxas_por_regiao": {
+    "SP_RMSP": {"frete_pct": 0.04, "carga_pct": 0.0015, "fixo": 250, "risco": "ALTO"},
+    "RJ_RMRJ": {"frete_pct": 0.04, "carga_pct": 0.0015, "fixo": 250, "risco": "ALTO"},
+    "NE_CAPITAIS": {"frete_pct": 0.035, "carga_pct": 0.0012, "fixo": 200, "risco": "ALTO"},
+    "SUL_CAPITAIS": {"frete_pct": 0.025, "carga_pct": 0.0008, "fixo": 120, "risco": "MEDIO"},
+    "CO_CAPITAIS": {"frete_pct": 0.025, "carga_pct": 0.0008, "fixo": 120, "risco": "MEDIO"},
+    "INTERIOR_SP_SUL_MG": {"frete_pct": 0.02, "carga_pct": 0.0006, "fixo": 100, "risco": "MEDIO"},
+    "NORTE": {"frete_pct": 0.015, "carga_pct": 0.0005, "fixo": 80, "risco": "BAIXO"}
+  },
+  "adicional_rotas_criticas": {
+    "BR-116": 0.015,
+    "BR-101": 0.010,
+    "BR-381": 0.020,
+    "BR-262": 0.010,
+    "BR-364": 0.010,
+    "BR-163": 0.015
+  },
+  "tipos_base": ["frete", "carga", "fixo", "km"]
+}

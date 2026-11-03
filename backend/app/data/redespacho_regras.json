@@ -1,0 +1,13 @@
+{
+  "version": "2024.1",
+  "updated": "2024-07-15",
+  "source": "Decreto 9.209/2017, Lei 11.442/2007, Res. ANTT 5.839/2021",
+  "regras": {
+    "refCTe_obrigatorio": true,
+    "transportadores_diferentes": true,
+    "piso_minimo_por_trecho": true,
+    "soma_fretes_maior_ou_igual_piso_direto": true,
+    "icms_principal_recolhe_total": true,
+    "redespachante_pode_ser_isento": true
+  }
+}
