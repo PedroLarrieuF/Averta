@@ -37,7 +37,7 @@ async def create_carrier(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     carriers_service: CarriersService = Depends(get_carriers_service),
-):
+) -> CarrierResponse:
     """Create a new carrier"""
     return await carriers_service.create_carrier(data, company_id, current_user.sub)
 
@@ -56,7 +56,7 @@ async def list_carriers(  # noqa: PLR0913, PLR0917
     is_active: bool | None = Query(None),
     search: str | None = Query(None),
     carriers_service: CarriersService = Depends(get_carriers_service),
-):
+) -> CarrierListResponse:
     """List carriers with pagination and filters"""
     return await carriers_service.list_carriers(company_id, pagination, sort, is_active, search)
 
@@ -72,7 +72,7 @@ async def get_carrier(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     carriers_service: CarriersService = Depends(get_carriers_service),
-):
+) -> CarrierResponse:
     """Get carrier details"""
     return await carriers_service.get_by_id(carrier_id, company_id)
 
@@ -89,6 +89,6 @@ async def update_carrier(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     carriers_service: CarriersService = Depends(get_carriers_service),
-):
+) -> CarrierResponse:
     """Update carrier (admin only)"""
     return await carriers_service.update_carrier(carrier_id, data, company_id)

@@ -1,6 +1,7 @@
 """Storage service for S3/MinIO operations"""
 
 import io
+from datetime import timedelta
 
 import structlog
 from minio import Minio
@@ -12,7 +13,7 @@ logger = structlog.get_logger()
 
 
 class StorageService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = Minio(
             settings.S3_ENDPOINT.replace("http://", "").replace("https://", ""),
             access_key=settings.S3_ACCESS_KEY,
@@ -23,7 +24,7 @@ class StorageService:
         self.bucket = settings.S3_BUCKET
         self._ensure_bucket()
 
-    def _ensure_bucket(self):
+    def _ensure_bucket(self) -> None:
         """Create bucket if it doesn't exist"""
         try:
             if not self.client.bucket_exists(self.bucket):
@@ -79,7 +80,7 @@ class StorageService:
     def get_presigned_url(self, object_name: str, expires: int = 3600) -> str:
         """Generate presigned URL for download"""
         try:
-            return self.client.presigned_get_object(self.bucket, object_name, expires=expires)
+            return self.client.presigned_get_object(self.bucket, object_name, expires=timedelta(seconds=expires))
         except S3Error as e:
             logger.error("presigned_url_error", object_name=object_name, error=str(e))
             raise

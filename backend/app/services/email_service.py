@@ -27,13 +27,16 @@ logger = structlog.get_logger()
 class EmailService:
     """SendGrid-based email service with Jinja2 templates"""
 
-    def __init__(self):
+    client: SendGridAPIClient | None
+    templates_env: Environment | None
+
+    def __init__(self) -> None:
         self.client = None
         self.templates_env = None
         self._init_client()
         self._init_templates()
 
-    def _init_client(self):
+    def _init_client(self) -> None:
         """Initialize SendGrid client"""
         if settings.SENDGRID_API_KEY:
             self.client = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
@@ -41,7 +44,7 @@ class EmailService:
         else:
             logger.warning("sendgrid_api_key_not_set", environment=settings.ENVIRONMENT)
 
-    def _init_templates(self):
+    def _init_templates(self) -> None:
         """Initialize Jinja2 template environment"""
         template_dir = Path(__file__).parent.parent / "templates" / "emails"
         template_dir.mkdir(parents=True, exist_ok=True)
@@ -56,6 +59,8 @@ class EmailService:
 
     def _render_template(self, template_name: str, context: dict[str, Any]) -> tuple[str, str]:
         """Render both HTML and text versions of a template"""
+        if self.templates_env is None:
+            raise RuntimeError("Templates not initialized")
         try:
             html_template = self.templates_env.get_template(f"{template_name}.html")
             text_template = self.templates_env.get_template(f"{template_name}.txt")

@@ -1,6 +1,7 @@
 """Contests module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -65,7 +66,7 @@ class PaymentCreate(BaseModel):
     amount: float = Field(..., gt=0)
     currency: str = Field(default="BRL", min_length=3, max_length=3)
     reference: str | None = None
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class PaymentResponse(BaseModel):
@@ -98,7 +99,7 @@ class ContestUpdate(BaseModel):
         None, pattern="^(DRAFT|SENT|ACKNOWLEDGED|NEGOTIATING|ACCEPTED|PARTIAL|REJECTED|EXPIRED)$"
     )
     notes: str | None = None
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class ContestResponse(BaseModel):
@@ -120,7 +121,7 @@ class ContestResponse(BaseModel):
     resolved_at: datetime | None
     expired_at: datetime | None
     notes: str | None
-    metadata: dict | None
+    metadata: dict[str, Any] | None
     created_at: datetime
     updated_at: datetime
     items: list[ContestItemResponse] = []

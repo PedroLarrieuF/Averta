@@ -1,12 +1,32 @@
 """Critical Rules Implementation - 6 critical + complementary CT-e rules + ML Anomaly Detection"""
 
+import json
+from pathlib import Path
+from typing import Any
+
 import httpx
 import structlog
 
+from app.core.database import get_prisma
 from app.services.rules_engine_v2 import BaseRule, DiscrepancyResult, DiscrepancyType, RuleContext
 
 logger = structlog.get_logger()
 
+# Constants for rule evaluation
+# Float comparison tolerance (for currency values in BRL)
+FLOAT_TOLERANCE: float = 0.01
+
+# ML Anomaly Detection thresholds
+ML_ANOMALY_HIGH_THRESHOLD: float = -0.7
+ML_ANOMALY_MEDIUM_THRESHOLD: float = -0.3
+
+# Weight thresholds
+PESO_REAL_HIGH_DIFF_PCT: float = 20.0
+PESO_REAL_MEDIUM_DIFF_PCT: float = 5.0  # default tolerance
+VALOR_MINIMO_PESO_LIMITE_KG: float = 10000.0  # 10 ton
+
+# Toll plaza tolerance
+PEDAGIO_TOLERANCE: float = 0.50
 
 # ============================================
 # ML ANOMALY DETECTION RULE
@@ -26,7 +46,7 @@ class MLAnomalyRule(BaseRule):
     severity = "MEDIUM"
     relevance_tags = ["ml", "anomaly", "freight"]
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config or {})
         self.threshold = self.config.get("anomaly_threshold", -0.5)
         self.endpoint = self.config.get("ml_endpoint", "http://localhost:8001/ml/anomaly-score")
@@ -74,9 +94,9 @@ class MLAnomalyRule(BaseRule):
         triggered = is_anomaly
 
         # Determine severity based on anomaly score
-        if score < -0.7:
+        if score < ML_ANOMALY_HIGH_THRESHOLD:
             self.severity = "HIGH"
-        elif score < -0.3:
+        elif score < ML_ANOMALY_MEDIUM_THRESHOLD:
             self.severity = "MEDIUM"
         else:
             self.severity = "LOW"
@@ -93,7 +113,7 @@ class MLAnomalyRule(BaseRule):
             },
         )
 
-    def _extract_features(self, context: RuleContext) -> dict:
+    def _extract_features(self, context: RuleContext) -> dict[str, float]:
         doc = context.document
         metadata = context.metadata
 
@@ -244,7 +264,7 @@ class ICMSDifferentialRule(BaseRule):
         p_fcp = difal_rule.get("aliquota_fcp", 0)
         expected_icms = round(bc_doc * (p_difal + p_fcp) / 100, 2)
 
-        triggered = abs(icms_doc - expected_icms) > 0.01
+        triggered = abs(icms_doc - expected_icms) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -260,10 +280,11 @@ class ICMSDifferentialRule(BaseRule):
             evidence={"table_rule": difal_rule},
         )
 
-    def _lookup_difal(self, rules: dict, uf_origem: str, uf_destino: str) -> dict | None:
+    def _lookup_difal(self, rules: dict[str, Any], uf_origem: str, uf_destino: str) -> dict[str, Any] | None:
         for rule in rules.get("difal", []):
-            if rule.get("uf_origem") == uf_origem and rule.get("uf_destino") == uf_destino:
-                return rule
+            if isinstance(rule, dict):
+                if rule.get("uf_origem") == uf_origem and rule.get("uf_destino") == uf_destino:
+                    return rule
         return None
 
 
@@ -307,7 +328,7 @@ class FCPRule(BaseRule):
         p_fcp = self.FCP_UFS[uf_destino]
         expected_fcp = round(bc * p_fcp / 100, 2)
 
-        triggered = icms_doc < expected_fcp - 0.01
+        triggered = icms_doc < expected_fcp - FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -356,8 +377,8 @@ class ICMSSTRule(BaseRule):
                 # Verificar UF
                 uf_origem_rule = rule.get("uf_origem", "*")
                 uf_destino_rule = rule.get("uf_destino", "*")
-                if (uf_origem_rule == "*" or uf_origem_rule == uf_origem) and (
-                    uf_destino_rule == "*" or uf_destino_rule == uf_destino
+                if (uf_origem_rule in ("*", uf_origem)) and (
+                    uf_destino_rule in ("*", uf_destino)
                 ):
                     st_rule = rule
                     break
@@ -372,7 +393,7 @@ class ICMSSTRule(BaseRule):
 
         actual_st = self._safe_get(doc, "icms.v_icms_st", 0)
 
-        triggered = abs(actual_st - expected_st) > 0.01
+        triggered = abs(actual_st - expected_st) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -434,7 +455,7 @@ class FreightWeightValueRule(BaseRule):
         expected_by_weight = round(weight * rate_per_kg, 2)
         expected = max(expected_by_weight, min_freight)
 
-        triggered = abs(freight_charged - expected) > 0.01
+        triggered = abs(freight_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -492,7 +513,7 @@ class FreightCubageRule(BaseRule):
         expected_by_cubage = round(volume * rate_per_m3, 2)
         expected = max(expected_by_cubage, min_freight)
 
-        triggered = abs(freight_charged - expected) > 0.01
+        triggered = abs(freight_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -521,7 +542,7 @@ class PesoRealVsFaturadoRule(BaseRule):
 
         # Peso do XML (CT-e/NF-e)
         peso_bruto_xml = self._safe_get(doc, "peso_bruto")  # vPesoB
-        peso_liquido_xml = self._safe_get(doc, "peso_liquido")  # vPesoL
+        self._safe_get(doc, "peso_liquido")  # vPesoL
 
         # Peso faturado (na fatura/tabela)
         peso_faturado = self._safe_get(doc, "weight")
@@ -536,7 +557,7 @@ class PesoRealVsFaturadoRule(BaseRule):
         triggered = diff_pct > tolerance_pct
 
         # Set severity before calling _create_result
-        self.severity = "HIGH" if diff_pct > 20 else "MEDIUM"
+        self.severity = "HIGH" if diff_pct > PESO_REAL_HIGH_DIFF_PCT else "MEDIUM"
         return self._create_result(
             triggered=triggered,
             expected=peso_bruto_xml,
@@ -593,10 +614,10 @@ class ValorMinimoFreteRule(BaseRule):
         frete_minimo = round(piso_eixo * distancia_km, 2)
 
         # Aplicar fator de peso se > limite (ex: > 10 ton)
-        if peso > 10000:  # 10 ton
+        if peso > VALOR_MINIMO_PESO_LIMITE_KG:  # 10 ton
             frete_minimo *= 1.2
 
-        triggered = freight_charged < frete_minimo - 0.01
+        triggered = freight_charged < frete_minimo - FLOAT_TOLERANCE
 
         # severity is already CRITICAL from class attribute
         return self._create_result(
@@ -628,9 +649,9 @@ class SicobanTableRuleReal(BaseRule):
     requires_freight_table = True
     relevance_tags = ["freight", "sicoban"]
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
-        self._sicoban_data: list[dict] | None = None
+        self._sicoban_data: list[dict[str, Any]] | None = None
 
     async def evaluate(self, context: RuleContext) -> DiscrepancyResult:
         doc = context.document
@@ -674,7 +695,7 @@ class SicobanTableRuleReal(BaseRule):
         expected_m3 = round(volume * valor_m3, 2) if volume > 0 and valor_m3 > 0 else 0
         expected = max(expected_kg, expected_m3, valor_min)
 
-        triggered = abs(freight_charged - expected) > 0.01
+        triggered = abs(freight_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -694,8 +715,8 @@ class SicobanTableRuleReal(BaseRule):
         )
 
     def _find_sicoban_match(
-        self, rules: list[dict], cep_origem: str, cep_destino: str, tipo_carga: str, modalidade: str
-    ) -> dict | None:
+        self, rules: list[dict[str, Any]], cep_origem: str, cep_destino: str, tipo_carga: str, modalidade: str
+    ) -> dict[str, Any] | None:
         """Find matching Sicoban rule"""
         cep_o = int("".join(filter(str.isdigit, cep_origem))[:5])
         cep_d = int("".join(filter(str.isdigit, cep_destino))[:5])
@@ -715,18 +736,16 @@ class SicobanTableRuleReal(BaseRule):
                 return rule
         return None
 
-    async def _load_sicoban_data(self) -> list[dict]:
+    async def _load_sicoban_data(self) -> list[dict[str, Any]]:
         """Load Sicoban data from file"""
-        import json
-        import os
 
         if self._sicoban_data is not None:
             return self._sicoban_data
 
         # Try to load from data file
-        data_path = os.path.join(os.path.dirname(__file__), "..", "data", "sicoban_table.json")
-        if os.path.exists(data_path):
-            with open(data_path) as f:
+        data_path = Path(__file__).parent.parent / "data" / "sicoban_table.json"
+        if data_path.exists():
+            with data_path.open() as f:
                 self._sicoban_data = json.load(f)
                 return self._sicoban_data
 
@@ -768,8 +787,6 @@ class ComplementaryCTEAnulationRule(BaseRule):
             )
 
         # Verificar se CT-e original existe no sistema
-        from app.core.database import get_prisma
-
         db = await get_prisma()
 
         original = await db.document.find_first(
@@ -821,8 +838,6 @@ class ComplementaryCTESubstitutionRule(BaseRule):
                 True,
                 details={"reason": "CT-e substituição sem referência ao CT-e original"},
             )
-
-        from app.core.database import get_prisma
 
         db = await get_prisma()
 
@@ -886,8 +901,6 @@ class ComplementaryCTEComplementRule(BaseRule):
                 True,
                 details={"reason": "CT-e complemento sem referência ao CT-e original"},
             )
-
-        from app.core.database import get_prisma
 
         db = await get_prisma()
 
@@ -1017,7 +1030,7 @@ class TollPlazaRule(BaseRule):
                     total_expected += p_exp.get("valor", 0)
                     break
 
-        triggered = abs(total_charged - total_expected) > 0.50
+        triggered = abs(total_charged - total_expected) > PEDAGIO_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -1064,7 +1077,7 @@ class AdValoremRule(BaseRule):
         if teto:
             expected = min(expected, teto)
 
-        triggered = abs(advalorem_charged - expected) > 0.01
+        triggered = abs(advalorem_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -1112,7 +1125,7 @@ class GRISRule(BaseRule):
         if teto:
             expected = min(expected, teto)
 
-        triggered = abs(gris_charged - expected) > 0.01
+        triggered = abs(gris_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,

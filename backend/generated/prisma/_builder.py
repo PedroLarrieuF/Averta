@@ -263,7 +263,7 @@ class QueryBuilder:
 
         e.g. order_by -> orderBy
         """
-        transformed = dict()
+        transformed = {}
         for key, value in arguments.items():
             alias = QUERY_BUILDER_ALIASES.get(key, key)
             if isinstance(value, dict):

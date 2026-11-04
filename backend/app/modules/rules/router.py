@@ -1,5 +1,7 @@
 """Rules module router"""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import (
@@ -41,7 +43,7 @@ async def create_rule(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleResponse:
     """Create a new audit rule"""
     # Check if code already exists
     existing = await rules_service.get_rule_by_code(data.code)
@@ -54,7 +56,7 @@ async def create_rule(
     # Reload engine rules
     await reload_engine_rules()
 
-    return rule
+    return rule  # type: ignore[no-any-return]
 
 
 @router.get(
@@ -72,7 +74,7 @@ async def list_rules(  # noqa: PLR0913, PLR0917
     type: RuleType | None = Query(None),
     search: str | None = Query(None),
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleListResponse:
     """List audit rules with filters"""
     result = await rules_service.list_rules(
         page=pagination.page,
@@ -81,7 +83,7 @@ async def list_rules(  # noqa: PLR0913, PLR0917
         type=type.value if type else None,
         search=search,
     )
-    return result
+    return result  # type: ignore[return-value]
 
 
 @router.get(
@@ -93,7 +95,7 @@ async def list_rules(  # noqa: PLR0913, PLR0917
 async def get_engine_status(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
-):
+) -> RuleEngineStatus:
     """Get rules engine loading status and cache stats"""
     engine = get_engine_instance()
 
@@ -123,7 +125,7 @@ async def get_engine_status(
 async def reload_rules(
     current_user: RequireManager,
     company_id: CompanyIdDep,
-):
+) -> dict[str, Any]:
     """Force reload rules from database into engine"""
     engine = await reload_engine_rules()
     rules_list = engine.list_rules()
@@ -145,12 +147,12 @@ async def get_rule(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleResponse:
     """Get rule details"""
     rule = await rules_service.get_rule(rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
-    return rule
+    return rule  # type: ignore[no-any-return]
 
 
 @router.patch(
@@ -165,7 +167,7 @@ async def update_rule(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleResponse:
     """Update a rule (increments version)"""
     existing = await rules_service.get_rule(rule_id)
     if not existing:
@@ -180,7 +182,7 @@ async def update_rule(
     # Reload engine rules
     await reload_engine_rules()
 
-    return rule
+    return rule  # type: ignore[no-any-return]
 
 
 @router.delete(
@@ -194,7 +196,7 @@ async def delete_rule(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleResponse:
     """Soft delete a rule (sets isActive=false, increments version)"""
     existing = await rules_service.get_rule(rule_id)
     if not existing:
@@ -205,7 +207,7 @@ async def delete_rule(
     # Reload engine rules
     await reload_engine_rules()
 
-    return rule
+    return rule  # type: ignore[no-any-return]
 
 
 @router.delete(
@@ -219,7 +221,7 @@ async def hard_delete_rule(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     rules_service: RulesService = Depends(get_rules_service),
-):
+) -> RuleResponse:
     """Hard delete a rule (use with caution - permanent)"""
     existing = await rules_service.get_rule(rule_id)
     if not existing:
@@ -230,4 +232,4 @@ async def hard_delete_rule(
     # Reload engine rules
     await reload_engine_rules()
 
-    return rule
+    return rule  # type: ignore[no-any-return]

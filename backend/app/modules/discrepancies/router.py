@@ -44,7 +44,7 @@ async def create_discrepancy(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> DiscrepancyResponse:
     """Create a new discrepancy (internal use)"""
     data.company_id = company_id
     return await discrepancies_service.create_discrepancy(data)
@@ -70,7 +70,7 @@ async def list_discrepancies(  # noqa: PLR0913, PLR0917
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> DiscrepancyListResponse:
     """List discrepancies with filters"""
     # If user is CLIENT role, filter by their client
     if current_user.role == "CLIENT" and current_user.client_id:
@@ -103,7 +103,7 @@ async def get_summary(  # noqa: PLR0913, PLR0917
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> DiscrepancySummary:
     """Get discrepancy summary for dashboard"""
     if current_user.role == "CLIENT" and current_user.client_id:
         client_id = current_user.client_id  # noqa: F841
@@ -123,7 +123,7 @@ async def get_discrepancy(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> DiscrepancyResponse:
     """Get discrepancy details"""
     return await discrepancies_service.get_by_id(discrepancy_id, company_id)
 
@@ -140,7 +140,7 @@ async def update_discrepancy(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> DiscrepancyResponse:
     """Update discrepancy (review, add notes, etc.)"""
     if data.reviewed_by is None:
         data.reviewed_by = current_user.sub
@@ -161,7 +161,7 @@ async def bulk_update_status(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     discrepancies_service: DiscrepanciesService = Depends(get_discrepancies_service),
-):
+) -> dict[str, int]:
     """Bulk update multiple discrepancies status"""
     count = await discrepancies_service.bulk_update_status(
         discrepancy_ids, company_id, status, current_user.sub

@@ -1,7 +1,10 @@
 """Users module service"""
 
+from typing import Any
+
 import bcrypt
 import structlog
+from prisma.models import User as UserModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError
@@ -17,11 +20,11 @@ from prisma import Prisma
 logger = structlog.get_logger()
 
 
-class UsersService(BaseService):
+class UsersService(BaseService[UserModel, UserCreate, UserUpdate, UserResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "User")
 
-    def _to_response(self, user) -> UserResponse:
+    def _to_response(self, user: UserModel) -> UserResponse:
         return UserResponse(
             id=user.id,
             email=user.email,
@@ -48,7 +51,7 @@ class UsersService(BaseService):
         # Hash password if provided
         password_hash = None
         if data.password:
-            password_hash = bcrypt.hash(data.password.encode()).decode()
+            password_hash = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
 
         create_data = data.model_dump(exclude={"password"}, exclude_unset=True)
         create_data["companyId"] = company_id
@@ -86,7 +89,7 @@ class UsersService(BaseService):
         search: str | None = None,
     ) -> UserListResponse:
         """List users with filters"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if role:
             where["role"] = role
         if status:
@@ -119,7 +122,7 @@ class UsersService(BaseService):
     async def reset_password(self, user_id: str, company_id: str, new_password: str) -> None:
         """Admin reset user password"""
         await self.get_by_id(user_id, company_id)
-        password_hash = bcrypt.hash(new_password.encode()).decode()
+        password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
         await self.db.user.update(
             where={"id": user_id},
             data={"passwordHash": password_hash},

@@ -1,5 +1,7 @@
 """Rules module service"""
 
+from typing import Any
+
 from prisma.models import Rule as RuleModel
 
 from prisma import Prisma
@@ -9,7 +11,7 @@ class RulesService:
     def __init__(self, db: Prisma):
         self.db = db
 
-    async def create_rule(self, data: dict) -> RuleModel:
+    async def create_rule(self, data: dict[str, Any]) -> RuleModel:
         """Create a new rule"""
         rule = await self.db.rule.create(data=data)
         return rule
@@ -29,9 +31,9 @@ class RulesService:
         is_active: bool | None = None,
         type: str | None = None,
         search: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """List rules with pagination and filters"""
-        where = {}
+        where: dict[str, Any] = {}
         if is_active is not None:
             where["isActive"] = is_active
         if type:
@@ -58,7 +60,7 @@ class RulesService:
             "total_pages": (total + page_size - 1) // page_size,
         }
 
-    async def update_rule(self, rule_id: str, data: dict) -> RuleModel:
+    async def update_rule(self, rule_id: str, data: dict[str, Any]) -> RuleModel:
         """Update a rule (increments version)"""
         existing = await self.db.rule.find_unique(where={"id": rule_id})
         if not existing:
@@ -87,7 +89,7 @@ class RulesService:
 
     async def get_active_rules(self) -> list[RuleModel]:
         """Get all active rules for engine loading"""
-        return await self.db.rule.find_many(
+        return await self.db.rule.find_many(  # type: ignore[no-any-return]
             where={"isActive": True},
             order={"code": "asc"},
         )

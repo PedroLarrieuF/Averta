@@ -1,7 +1,7 @@
 # copied from https://github.com/prisma/prisma/blob/23d5ef0672372035a84552b6b457197ca19f486d/packages/client/src/runtime/core/engines/common/types/Metrics.ts
 from __future__ import annotations
 
-from typing import Generic, NamedTuple, TypeVar
+from typing import NamedTuple, TypeVar
 
 from pydantic import BaseModel
 
@@ -26,7 +26,7 @@ class Metrics(BaseModel):
     histograms: list[Metric[MetricHistogram]]
 
 
-class Metric(GenericModel, Generic[_T]):
+class Metric[T](GenericModel):
     key: str
     value: _T
     labels: dict[str, str]

@@ -1,6 +1,7 @@
 """XML Parser for CT-e and NF-e - Extracts freight audit relevant data using lxml.etree"""
 
 from datetime import datetime
+from typing import Any
 
 import structlog
 from lxml import etree
@@ -25,7 +26,7 @@ etree.register_namespace("cte", NS_CTE)
 etree.register_namespace("ds", NS_DS)
 
 
-def parse_cte_xml(xml_content: str | bytes) -> dict:
+def parse_cte_xml(xml_content: str | bytes) -> dict[str, Any]:
     """Parse CT-e XML and extract structured data for audit using lxml.etree"""
     if isinstance(xml_content, bytes):
         xml_content = xml_content.decode("utf-8")
@@ -52,7 +53,7 @@ def parse_cte_xml(xml_content: str | bytes) -> dict:
         raise ValueError(f"Failed to parse CT-e XML: {e}") from e
 
 
-def parse_nfe_xml(xml_content: str | bytes) -> dict:
+def parse_nfe_xml(xml_content: str | bytes) -> dict[str, Any]:
     """Parse NF-e XML and extract structured data for audit using lxml.etree"""
     if isinstance(xml_content, bytes):
         xml_content = xml_content.decode("utf-8")
@@ -79,18 +80,18 @@ def parse_nfe_xml(xml_content: str | bytes) -> dict:
         raise ValueError(f"Failed to parse NF-e XML: {e}") from e
 
 
-def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) -> dict:  # noqa: PLR0912, PLR0915
+def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
     """Extract relevant fields from CT-e infCte using lxml XPath"""
 
     # Helper functions
-    def get_text(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> str | None:
+    def get_text(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> str | None:
         result = elem.find(xpath, namespaces=ns)
         return result.text if result is not None else None
 
     def get_attr(elem: etree._Element, attr: str) -> str | None:
-        return elem.get(attr)
+        return elem.get(attr)  # type: ignore[no-any-return]
 
-    def get_float(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> float | None:
+    def get_float(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> float | None:
         val = get_text(elem, xpath, ns)
         if val is None:
             return None
@@ -99,7 +100,7 @@ def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) ->
         except ValueError:
             return None
 
-    def get_int(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> int | None:
+    def get_int(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> int | None:
         val = get_text(elem, xpath, ns)
         if val is None:
             return None
@@ -108,8 +109,8 @@ def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) ->
         except ValueError:
             return None
 
-    def find_all(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> list[etree._Element]:
-        return elem.findall(xpath, namespaces=ns)
+    def find_all(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> list[etree._Element]:
+        return elem.findall(xpath, ns)  # type: ignore[no-any-return]
 
     ide = inf_cte.find("cte:ide", namespaces=NS_MAP)
     emit = inf_cte.find("cte:emit", namespaces=NS_MAP)
@@ -128,7 +129,7 @@ def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) ->
     moto = rodo.find("cte:moto", namespaces=NS_MAP) if rodo is not None else None
 
     # Extract values from vPrest/Comp
-    comp_list = find_all(v_prest, "cte:Comp", namespaces=NS_MAP) if v_prest is not None else []
+    comp_list = find_all(v_prest, "cte:Comp", NS_MAP) if v_prest is not None else []
 
     def get_comp_value(name: str) -> float | None:
         for comp in comp_list:
@@ -303,17 +304,17 @@ def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) ->
     }
 
 
-def _extract_nfe_data_lxml(inf_nfe: etree._Element, nfe_elem: etree._Element) -> dict:  # noqa: PLR0912, PLR0915
+def _extract_nfe_data_lxml(inf_nfe: etree._Element, nfe_elem: etree._Element) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
     """Extract relevant fields from NF-e infNFe using lxml XPath"""
 
-    def get_text(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> str | None:
+    def get_text(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> str | None:
         result = elem.find(xpath, namespaces=ns)
         return result.text if result is not None else None
 
     def get_attr(elem: etree._Element, attr: str) -> str | None:
-        return elem.get(attr)
+        return elem.get(attr)  # type: ignore[no-any-return]
 
-    def get_float(elem: etree._Element, xpath: str, ns: dict = NS_MAP) -> float | None:
+    def get_float(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> float | None:
         val = get_text(elem, xpath, ns)
         if val is None:
             return None
@@ -374,7 +375,7 @@ def _extract_nfe_data_lxml(inf_nfe: etree._Element, nfe_elem: etree._Element) ->
     }
 
 
-def _format_address_lxml(parent: etree._Element, xpath: str) -> dict | None:
+def _format_address_lxml(parent: etree._Element, xpath: str) -> dict[str, str | None] | None:
     """Format address from lxml element"""
     if parent is None:
         return None
@@ -398,9 +399,9 @@ def _format_address_lxml(parent: etree._Element, xpath: str) -> dict | None:
     }
 
 
-def _elem_to_dict(elem: etree._Element) -> dict:
+def _elem_to_dict(elem: etree._Element) -> dict[str, Any]:
     """Convert lxml element to dict (simplified)"""
-    result = {}
+    result: dict[str, Any] = {}
     for child in elem:
         # Remove namespace from tag
         tag = child.tag

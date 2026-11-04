@@ -85,7 +85,7 @@ agents-new/backend-agent/cards/
 └── done/          # Completed and accepted
 ```
 
-### Current Sprint Cards (2026-11-03)
+### Current Sprint Cards (2026-11-04)
 
 | Card | Title | Status | Priority | Estimate |
 |------|-------|--------|----------|----------|
@@ -95,9 +95,13 @@ agents-new/backend-agent/cards/
 | #13 | Integration Tests (httpx.AsyncClient) | 🟡 In Progress | MEDIUM | L |
 | #14 | PDF Generator Threadpool | 🟡 In Progress | MEDIUM | M |
 | #16 | Rules DB-Driven Configuration | 🔴 Ready | MEDIUM | L |
-| #28 | Fix Failing Rule Tests | 🔴 Ready | HIGH | M |
+| #28 | Fix Failing Rule Tests | ✅ **Done** | HIGH | M |
 | #29 | Backend Integration Tests (httpx.AsyncClient) | 🔴 Ready | HIGH | L |
-| #30 | Fix Rate Limit Module Test Import | 🔴 Ready | HIGH | S |
+| #30 | Fix Rate Limit Module Test Import | ✅ **Done** | HIGH | S |
+| #33 | Fix Linting Issues (ruff) | 🔴 Ready | MEDIUM | M |
+| #34 | NF-e Critical Rules (5 rules) | 🔴 Ready | CRITICAL | L |
+| #35 | NF-e High Priority Rules (7 rules) | 🔴 Ready | HIGH | L |
+| #36 | NF-e Medium Priority Rules (6 rules) | 🔴 Ready | MEDIUM | M |
 
 ### Backlog Cards
 
@@ -292,17 +296,19 @@ The following tests are FAILING and need to be fixed (Card #28):
 3. **deploy-staging** (develop) - kubectl/Helm staging
 4. **deploy-production** (main, manual) - Blue/green production
 
-## Known Technical Debt (Updated 2026-11-03)
+## Known Technical Debt (Updated 2026-11-04)
 
 | ID | Area | Description | Status |
 |----|------|-------------|--------|
 | TD-001 | xml_parser.py | NF-e 4.00 namespace frágil; migrar para lxml.etree | ✅ **DONE** (Card #12) |
 | TD-002 | rules_engine_v2.py | Cache Redis stub (`_cache = None`) | ✅ **DONE** (Card #05) |
-| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | 🟡 In Progress (Card #14) |
+| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | 🟡 In Progress (Card #14, #41) |
 | TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | ✅ **DONE** (Card #04) |
-| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | 🟡 In Progress (Card #13, #29) |
-| TD-009 | Rules Tests | 6 tests failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | 🔴 Open (Card #28) |
-| TD-010 | Rate Limit Module | `app.core.rate_limit` import failing in tests | 🔴 Open (Card #30) |
+| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | 🟡 In Progress (Card #13, #29, #37) |
+| TD-009 | Rules Tests | 6 tests failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | ✅ **DONE** (Card #28) |
+| TD-010 | Rate Limit Module | `app.core.rate_limit` import failing in tests | ✅ **DONE** (Card #30) |
+| TD-011 | Linting | 200+ ruff issues (import sorting, print statements, unused imports) | 🔴 Open (Card #33) |
+| TD-012 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | 🔴 Open (Cards #34, #35, #36) |
 
 ## Future Roadmap (from README)
 

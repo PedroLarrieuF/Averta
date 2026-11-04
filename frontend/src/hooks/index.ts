@@ -50,6 +50,13 @@ export {
   useUnreadNotificationCount,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
+  useUserProfile,
+  useUpdateUserProfile,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+  useChangePassword,
+  useDeleteAccount,
+  type NotificationPreferences,
 } from './useApi'
 
 export {

@@ -6,13 +6,14 @@ import { useAuth } from '@/store/auth-context'
 import { useUsers, useUpdateUser, useDeleteUser, useInviteUser, useResendInvite } from '@/hooks/useSettings'
 import { UserInviteModal } from '@/components/settings/UserInviteModal'
 import { formatRelativeTime } from '@/utils/helpers'
-import type { User, Role } from '@/types'
+import type { User, Role, UserStatus } from '@/types'
 
 const ROLE_BADGES: Record<Role, 'primary' | 'success' | 'warning' | 'secondary' | 'danger'> = {
   ADMIN: 'danger',
   MANAGER: 'primary',
   AUDITOR: 'warning',
   CLIENT: 'secondary',
+  CARRIER: 'secondary',
 }
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -20,6 +21,7 @@ const ROLE_LABELS: Record<Role, string> = {
   MANAGER: 'Gestor',
   AUDITOR: 'Auditor',
   CLIENT: 'Cliente',
+  CARRIER: 'Transportadora',
 }
 
 const STATUS_BADGES: Record<string, 'success' | 'warning' | 'danger' | 'secondary'> = {
@@ -338,7 +340,7 @@ export function UsersPage() {
             </div>
             <div className="space-y-2">
               <Label className="block text-sm font-medium text-secondary-700">Status</Label>
-              <Select value={editFormData.status || editingUser.status} onValueChange={(value) => setEditFormData({...editFormData, status: value})}>
+              <Select value={editFormData.status || editingUser.status} onValueChange={(value) => setEditFormData({...editFormData, status: value as UserStatus})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ACTIVE">Ativo</SelectItem>

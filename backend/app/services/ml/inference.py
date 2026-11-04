@@ -1,5 +1,6 @@
 """ML Inference Service - FastAPI endpoint for anomaly scoring."""
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -102,11 +103,61 @@ class HealthResponse(BaseModel):
     model_version: str | None = None
 
 
-# Global model and scaler
-_model: Any | None = None
-_scaler: Any | None = None
-_model_version: str | None = None
-_model_threshold: float = -0.5  # Default threshold (Isolation Forest: negative = anomaly)
+# Default threshold (Isolation Forest: negative = anomaly)
+DEFAULT_MODEL_THRESHOLD: float = -0.5
+
+
+class ModelManager:
+    """Singleton manager for ML model and scaler."""
+
+    def __init__(self) -> None:
+        self._model: Any | None = None
+        self._scaler: Any | None = None
+        self._model_version: str | None = None
+        self._model_threshold: float = DEFAULT_MODEL_THRESHOLD
+
+    @property
+    def model(self) -> Any | None:
+        return self._model
+
+    @property
+    def scaler(self) -> Any | None:
+        return self._scaler
+
+    @property
+    def model_version(self) -> str | None:
+        return self._model_version
+
+    @property
+    def model_threshold(self) -> float:
+        return self._model_threshold
+
+    def load_model(self) -> tuple[Any, Any]:
+        """Load the latest trained model and scaler."""
+        models_dir = Path("models")
+        model_path = models_dir / "isolation_forest_latest.joblib"
+        scaler_path = models_dir / "scaler_latest.joblib"
+        metadata_path = models_dir / "metadata_latest.json"
+
+        if not model_path.exists():
+            raise RuntimeError(f"Model not found at {model_path}. Run train_anomaly_model.py first.")
+
+        self._model = joblib.load(model_path)
+        self._scaler = joblib.load(scaler_path)
+
+        if metadata_path.exists():
+            with metadata_path.open() as f:
+                metadata = json.load(f)
+            self._model_version = metadata.get("version", "unknown")
+            # Use contamination-based threshold
+            contamination = metadata.get("model_params", {}).get("contamination", 0.05)
+            self._model_threshold = -contamination * 10  # Approximate heuristic
+
+        return self._model, self._scaler
+
+
+# Global model manager instance
+model_manager = ModelManager()
 
 
 app = FastAPI(
@@ -116,57 +167,34 @@ app = FastAPI(
 )
 
 
-def load_model() -> tuple:
-    """Load the latest trained model and scaler."""
-    global _model, _scaler, _model_version, _model_threshold
-
-    models_dir = Path("models")
-    model_path = models_dir / "isolation_forest_latest.joblib"
-    scaler_path = models_dir / "scaler_latest.joblib"
-    metadata_path = models_dir / "metadata_latest.json"
-
-    if not model_path.exists():
-        raise RuntimeError(f"Model not found at {model_path}. Run train_anomaly_model.py first.")
-
-    _model = joblib.load(model_path)
-    _scaler = joblib.load(scaler_path)
-
-    if metadata_path.exists():
-        import json
-
-        with open(metadata_path) as f:
-            metadata = json.load(f)
-        _model_version = metadata.get("version", "unknown")
-        # Use contamination-based threshold
-        contamination = metadata.get("model_params", {}).get("contamination", 0.05)
-        _model_threshold = -contamination * 10  # Approximate heuristic
-
-    print(f"Loaded model version: {_model_version}")
-    print(f"Model threshold: {_model_threshold}")
-    return _model, _scaler
+app = FastAPI(
+    title="AvertaSaaS ML Inference Service",
+    description="Isolation Forest anomaly detection for freight audit discrepancies",
+    version="1.0.0",
+)
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Load model on startup."""
     try:
-        load_model()
-    except Exception as e:
-        print(f"WARNING: Failed to load model on startup: {e}")
+        model_manager.load_model()
+    except Exception:
+        pass
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(
-        status="healthy" if _model is not None else "degraded",
-        model_loaded=_model is not None,
-        model_version=_model_version,
+        status="healthy" if model_manager.model is not None else "degraded",
+        model_loaded=model_manager.model is not None,
+        model_version=model_manager.model_version,
     )
 
 
 @app.post("/ml/anomaly-score", response_model=AnomalyResponse)
-async def anomaly_score(request: AnomalyRequest):
+async def anomaly_score(request: AnomalyRequest) -> AnomalyResponse:
     """Score anomaly for given features.
 
     Expected features (in order):
@@ -186,51 +214,51 @@ async def anomaly_score(request: AnomalyRequest):
     - has_icms: 1 if ICMS data present, 0 otherwise
     - has_freight_value: 1 if freight value present, 0 otherwise
     """
-    if _model is None or _scaler is None:
+    if model_manager.model is None or model_manager.scaler is None:
         raise HTTPException(status_code=503, detail="Model not loaded. Check /health endpoint.")
 
     # Convert features dict to array in correct order
     try:
         X = np.array([[request.features.get(f, 0.0) for f in FEATURE_ORDER]])
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid features: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid features: {str(e)}") from e
 
     # Scale features
-    X_scaled = _scaler.transform(X)
+    X_scaled = model_manager.scaler.transform(X)
 
     # Get anomaly score (decision_function: negative = anomaly)
-    score = float(_model.decision_function(X_scaled)[0])
+    score = float(model_manager.model.decision_function(X_scaled)[0])
 
     # Classify
-    is_anomaly = score < _model_threshold
+    is_anomaly = score < model_manager.model_threshold
 
     return AnomalyResponse(
         anomaly_score=score,
         is_anomaly=is_anomaly,
-        threshold=_model_threshold,
-        model_version=_model_version or "unknown",
+        threshold=model_manager.model_threshold,
+        model_version=model_manager.model_version or "unknown",
     )
 
 
 @app.post("/ml/anomaly-score/batch")
-async def anomaly_score_batch(requests: list[AnomalyRequest]):
+async def anomaly_score_batch(requests: list[AnomalyRequest]) -> list[AnomalyResponse | dict[str, str]]:
     """Batch anomaly scoring for multiple records."""
-    if _model is None or _scaler is None:
+    if model_manager.model is None or model_manager.scaler is None:
         raise HTTPException(status_code=503, detail="Model not loaded.")
 
-    results = []
+    results: list[AnomalyResponse | dict[str, str]] = []
     for req in requests:
         try:
             X = np.array([[req.features.get(f, 0.0) for f in FEATURE_ORDER]])
-            X_scaled = _scaler.transform(X)
-            score = float(_model.decision_function(X_scaled)[0])
-            is_anomaly = score < _model_threshold
+            X_scaled = model_manager.scaler.transform(X)
+            score = float(model_manager.model.decision_function(X_scaled)[0])
+            is_anomaly = score < model_manager.model_threshold
             results.append(
                 AnomalyResponse(
                     anomaly_score=score,
                     is_anomaly=is_anomaly,
-                    threshold=_model_threshold,
-                    model_version=_model_version or "unknown",
+                    threshold=model_manager.model_threshold,
+                    model_version=model_manager.model_version or "unknown",
                 )
             )
         except Exception as e:
@@ -239,7 +267,7 @@ async def anomaly_score_batch(requests: list[AnomalyRequest]):
     return results
 
 
-def extract_features_from_context(context: dict) -> dict[str, float]:
+def extract_features_from_context(context: dict[str, Any]) -> dict[str, float]:
     """Extract ML features from rule evaluation context (for Rules Engine integration)."""
     doc = context.get("document", {})
     metadata = context.get("metadata", {})

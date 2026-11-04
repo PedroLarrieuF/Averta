@@ -7,12 +7,3 @@
 
 LiteralString = str
 # -- template http.py.jinja --
-from ._async_http import (
-    HTTP as HTTP,
-)
-from ._async_http import (
-    Response as Response,
-)
-from ._async_http import (
-    client as client,
-)

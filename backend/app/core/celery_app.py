@@ -66,6 +66,6 @@ celery_app.conf.update(
 celery_app.autodiscover_tasks()
 
 
-@celery_app.task(bind=True, ignore_result=True)
-def debug_task(self):
+@celery_app.task(bind=True, ignore_result=True)  # type: ignore[untyped-decorator]
+def debug_task(self: "Celery") -> None:
     logger.debug("celery_debug_task", request=repr(self.request))

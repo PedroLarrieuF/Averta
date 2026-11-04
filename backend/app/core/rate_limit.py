@@ -2,6 +2,7 @@
 
 import structlog
 from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -24,7 +25,7 @@ limiter = Limiter(
 def init_rate_limiter(app: FastAPI) -> None:
     """Initialize rate limiter on FastAPI app."""
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
     # Log rate limit configuration
     logger.info(
@@ -50,7 +51,7 @@ def get_limiter() -> Limiter:
     return limiter
 
 
-async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """Custom handler for rate limit exceeded with structured logging."""
     client_ip = get_remote_address(request)
     logger.warning(

@@ -1,11 +1,14 @@
 """Documents module service"""
 
 from datetime import datetime
+from typing import Any
 
 import structlog
+from prisma.models import Document as DocumentModel
 
 from app.core.dependencies import PaginationParams
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import NotFoundError, ValidationError_
+from app.modules.discrepancies.schemas import DiscrepancyCreate, DiscrepancyResponse
 from app.modules.discrepancies.service import DiscrepanciesService
 from app.modules.documents.schemas import (
     DocumentCreate,
@@ -19,8 +22,8 @@ from app.modules.documents.schemas import (
 )
 from app.modules.notifications.service import NotificationsService
 from app.services.rules_engine_v2 import RuleContext, create_engine_v2
-from app.services.storage import storage_service
-from app.services.xml_parser import xml_parser
+from app.services.storage import upload_file
+from app.services.xml_parser import parse_cte_xml, parse_nfe_xml
 from prisma import Prisma
 
 logger = structlog.get_logger()
@@ -29,14 +32,14 @@ logger = structlog.get_logger()
 class DocumentsService:
     def __init__(self, db: Prisma):
         self.db = db
-        self._rules_engine = None
+        self._rules_engine: Any = None
 
-    async def _get_rules_engine(self):
+    async def _get_rules_engine(self) -> Any:
         if self._rules_engine is None:
             self._rules_engine = await create_engine_v2()
         return self._rules_engine
 
-    def _to_response(self, document) -> DocumentResponse:
+    def _to_response(self, document: DocumentModel) -> DocumentResponse:
         return DocumentResponse(
             id=document.id,
             company_id=document.companyId,
@@ -68,7 +71,7 @@ class DocumentsService:
             where={"accessKey_companyId": {"accessKey": data.access_key, "companyId": company_id}}
         )
         if existing:
-            raise ValidationError(f"Document with access key {data.access_key} already exists")
+            raise ValidationError_(f"Document with access key {data.access_key} already exists")
 
         document = await self.db.document.create(
             data={
@@ -125,7 +128,7 @@ class DocumentsService:
         date_to: datetime | None = None,
     ) -> DocumentListResponse:
         """List documents with filters"""
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if client_id:
             where["clientId"] = client_id
         if carrier_id:
@@ -182,8 +185,14 @@ class DocumentsService:
         contract_id: str | None = None,
     ) -> DocumentResponse:
         """Parse XML and create document"""
-        # Parse XML
-        parsed = xml_parser.parse(file_content)
+        # Parse XML - try CT-e first, then NF-e
+        try:
+            parsed = parse_cte_xml(file_content)
+        except ValueError:
+            try:
+                parsed = parse_nfe_xml(file_content)
+            except ValueError as e:
+                raise ValidationError_(f"Could not parse XML: {e}") from e
 
         # Determine document type
         doc_type = DocumentType.CTE
@@ -195,19 +204,18 @@ class DocumentsService:
         # Extract key fields
         access_key = parsed.get("chave_acesso") or parsed.get("access_key")
         if not access_key:
-            raise ValidationError("Could not extract access key from XML")
+            raise ValidationError_("Could not extract access key from XML")
 
         # Check for duplicate
         existing = await self.get_by_access_key(access_key, company_id)
         if existing:
-            raise ValidationError(f"Document with access key {access_key} already exists")
+            raise ValidationError_(f"Document with access key {access_key} already exists")
 
         # Store XML file
-        file_path = await storage_service.upload_document(
-            company_id=company_id,
-            client_id=client_id,
-            file_content=file_content.encode(),
-            filename=f"{access_key}.xml",
+        file_path = await upload_file(
+            file_data=file_content.encode(),
+            object_name=f"documents/{company_id}/{client_id}/{access_key}.xml",
+            content_type="application/xml",
         )
 
         # Create document
@@ -250,13 +258,13 @@ class DocumentsService:
                 await notifications.notify_discrepancy_found(
                     client_id=client_id,
                     discrepancy_id=disc.id,
-                    discrepancy_type=disc.type,
+                    discrepancy_type=disc.discrepancy_type,
                     value=disc.difference or 0,
                 )
 
         return document
 
-    async def _match_contract(self, document: DocumentResponse, company_id: str):
+    async def _match_contract(self, document: DocumentResponse, company_id: str) -> Any | None:
         """Match document to contract based on carrier and client"""
         return await self.db.contract.find_first(
             where={
@@ -270,7 +278,7 @@ class DocumentsService:
             order={"validFrom": "desc"},
         )
 
-    async def _run_audit(self, document: DocumentResponse, company_id: str) -> list:
+    async def _run_audit(self, document: DocumentResponse, company_id: str) -> list[DiscrepancyResponse]:
         """Run rules engine on document"""
         engine = await self._get_rules_engine()
 
@@ -305,7 +313,7 @@ class DocumentsService:
         discrepancies_service = DiscrepanciesService(self.db)
 
         for result in results:
-            disc = await discrepancies_service.create_discrepancy(
+            disc_data = DiscrepancyCreate(
                 document_id=document.id,
                 company_id=company_id,
                 rule_code=result.rule_code,
@@ -319,6 +327,7 @@ class DocumentsService:
                 evidence=result.evidence,
                 severity=result.severity,
             )
+            disc = await discrepancies_service.create_discrepancy(disc_data)
             discrepancies.append(disc)
 
         # Update document status

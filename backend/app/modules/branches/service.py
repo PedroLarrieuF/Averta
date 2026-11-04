@@ -1,6 +1,9 @@
 """Branches module service"""
 
+from typing import Any
+
 import structlog
+from prisma.models import Branch as BranchModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
@@ -16,11 +19,11 @@ from prisma import Prisma
 logger = structlog.get_logger()
 
 
-class BranchesService(BaseService):
+class BranchesService(BaseService[BranchModel, BranchCreate, BranchUpdate, BranchResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Branch")
 
-    def _to_response(self, branch) -> BranchResponse:
+    def _to_response(self, branch: BranchModel) -> BranchResponse:
         return BranchResponse(
             id=branch.id,
             company_id=branch.companyId,
@@ -105,7 +108,7 @@ class BranchesService(BaseService):
         search: str | None = None,
     ) -> BranchListResponse:
         """List branches"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if client_id:
             where["clientId"] = client_id
         if is_active is not None:

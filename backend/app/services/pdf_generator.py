@@ -3,6 +3,7 @@
 import asyncio
 import io
 from datetime import datetime
+from typing import Any
 
 import anyio
 import structlog
@@ -41,10 +42,10 @@ GREEN = HexColor("#28a745")
 
 
 def _generate_contest_letter_sync(  # noqa: PLR0915
-    contest: dict,
-    client: dict,
-    carrier: dict,
-    company: dict,
+    contest: dict[str, Any],
+    client: dict[str, Any],
+    carrier: dict[str, Any],
+    company: dict[str, Any],
     template: str = "default",
 ) -> bytes:
     """Generate contest letter PDF (synchronous - runs in threadpool)"""
@@ -354,10 +355,10 @@ def _generate_contest_letter_sync(  # noqa: PLR0915
 
 
 async def generate_contest_letter(  # noqa: PLR0913, PLR0917
-    contest: dict,
-    client: dict,
-    carrier: dict,
-    company: dict,
+    contest: dict[str, Any],
+    client: dict[str, Any],
+    carrier: dict[str, Any],
+    company: dict[str, Any],
     template: str = "default",
     timeout: float | None = None,
 ) -> bytes:
@@ -380,7 +381,7 @@ async def generate_contest_letter(  # noqa: PLR0913, PLR0917
     timeout = timeout or PDF_GENERATION_TIMEOUT
 
     # Use anyio.to_thread.run_sync for threadpool execution with asyncio.wait_for for timeout
-    async def _run_in_threadpool():
+    async def _run_in_threadpool() -> bytes:
         return await anyio.to_thread.run_sync(
             _generate_contest_letter_sync,
             contest,

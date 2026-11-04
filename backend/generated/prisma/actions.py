@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generic,
     TypeVar,
     cast,
     overload,
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 _PrismaModelT = TypeVar('_PrismaModelT', bound='_PrismaModel')
 
 
-class UserActions(Generic[_PrismaModelT]):
+class UserActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -893,7 +892,7 @@ class UserActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -1067,7 +1066,7 @@ class UserActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class RefreshTokenActions(Generic[_PrismaModelT]):
+class RefreshTokenActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -1926,7 +1925,7 @@ class RefreshTokenActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -2100,7 +2099,7 @@ class RefreshTokenActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class CompanyActions(Generic[_PrismaModelT]):
+class CompanyActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -2954,7 +2953,7 @@ class CompanyActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -3128,7 +3127,7 @@ class CompanyActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class ClientActions(Generic[_PrismaModelT]):
+class ClientActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -3992,7 +3991,7 @@ class ClientActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -4166,7 +4165,7 @@ class ClientActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class BranchActions(Generic[_PrismaModelT]):
+class BranchActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -5025,7 +5024,7 @@ class BranchActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -5199,7 +5198,7 @@ class BranchActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class CarrierActions(Generic[_PrismaModelT]):
+class CarrierActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -6058,7 +6057,7 @@ class CarrierActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -6232,7 +6231,7 @@ class CarrierActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class ContractActions(Generic[_PrismaModelT]):
+class ContractActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -7096,7 +7095,7 @@ class ContractActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -7270,7 +7269,7 @@ class ContractActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class FreightTableActions(Generic[_PrismaModelT]):
+class FreightTableActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -8139,7 +8138,7 @@ class FreightTableActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -8313,7 +8312,7 @@ class FreightTableActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class DocumentActions(Generic[_PrismaModelT]):
+class DocumentActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -9197,7 +9196,7 @@ class DocumentActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -9371,7 +9370,7 @@ class DocumentActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class DiscrepancyActions(Generic[_PrismaModelT]):
+class DiscrepancyActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -10265,7 +10264,7 @@ class DiscrepancyActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -10439,7 +10438,7 @@ class DiscrepancyActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class ContestActions(Generic[_PrismaModelT]):
+class ContestActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -11308,7 +11307,7 @@ class ContestActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -11482,7 +11481,7 @@ class ContestActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class ContestItemActions(Generic[_PrismaModelT]):
+class ContestItemActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -12346,7 +12345,7 @@ class ContestItemActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -12520,7 +12519,7 @@ class ContestItemActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class CommunicationActions(Generic[_PrismaModelT]):
+class CommunicationActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -13384,7 +13383,7 @@ class CommunicationActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -13558,7 +13557,7 @@ class CommunicationActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class PaymentActions(Generic[_PrismaModelT]):
+class PaymentActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -14422,7 +14421,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -14596,7 +14595,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class AuditLogActions(Generic[_PrismaModelT]):
+class AuditLogActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -15460,7 +15459,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -15634,7 +15633,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class NotificationActions(Generic[_PrismaModelT]):
+class NotificationActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -16498,7 +16497,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -16672,7 +16671,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class SystemConfigActions(Generic[_PrismaModelT]):
+class SystemConfigActions[PrismaModelT: '_PrismaModel']:
     __slots__ = (
         '_client',
         '_model',
@@ -17526,7 +17525,7 @@ class SystemConfigActions(Generic[_PrismaModelT]):
         else:
 
             root_selection = [
-                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
             ]
 
         resp = await self._client._execute(
@@ -17707,6 +17706,4 @@ def _select_fields(root: str, select: Mapping[str, Any]) -> str:
     This is a work around until field selection is added to the query builder.
     """
 
-    return root + ' {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
-
-
+    return root + ' {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))

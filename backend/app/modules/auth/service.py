@@ -1,6 +1,7 @@
 """Auth service: authentication, registration, token management"""
 
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -226,7 +227,7 @@ class AuthService:
             raise NotFoundError("User", user_id)
         return self._to_user_response(user)
 
-    def _to_user_response(self, user) -> UserResponse:
+    def _to_user_response(self, user: Any) -> UserResponse:
         return UserResponse(
             id=user.id,
             email=user.email,

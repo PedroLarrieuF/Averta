@@ -39,7 +39,7 @@ def get_auth_service(db: Prisma = Depends(get_database)) -> AuthService:
 async def login(
     data: LoginRequest,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> AuthResponse:
     """Authenticate user with email and password"""
     return await auth_service.login(data)
 
@@ -54,7 +54,7 @@ async def login(
 async def register(
     data: RegisterRequest,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> AuthResponse:
     """Register a new company with an admin user"""
     return await auth_service.register(data)
 
@@ -69,7 +69,7 @@ async def register(
 async def refresh(
     data: RefreshRequest,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> TokenResponse:
     """Get new access token using refresh token"""
     return await auth_service.refresh(data.refresh_token)
 
@@ -83,7 +83,7 @@ async def refresh(
 async def logout(
     current_user: CurrentUserDep,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> MessageResponse:
     """Logout - client should discard tokens"""
     await auth_service.logout(current_user.sub)
     return MessageResponse(success=True, message="Logged out successfully")
@@ -99,7 +99,7 @@ async def change_password(
     data: ChangePasswordRequest,
     current_user: CurrentUserDep,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> MessageResponse:
     """Change current user's password"""
     await auth_service.change_password(current_user.sub, data.current_password, data.new_password)
     return MessageResponse(success=True, message="Password changed successfully")
@@ -115,7 +115,7 @@ async def change_password(
 async def forgot_password(
     data: ForgotPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> MessageResponse:
     """Request password reset link via email"""
     await auth_service.request_password_reset(data.email)
     return MessageResponse(
@@ -134,7 +134,7 @@ async def forgot_password(
 async def reset_password(
     data: ResetPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> MessageResponse:
     """Reset password using token from email"""
     await auth_service.reset_password(data.token, data.new_password)
     return MessageResponse(success=True, message="Password reset successfully")
@@ -149,6 +149,6 @@ async def reset_password(
 async def get_profile(
     current_user: CurrentUserDep,
     auth_service: AuthService = Depends(get_auth_service),
-):
+) -> UserResponse:
     """Get authenticated user's profile"""
     return await auth_service.get_profile(current_user.sub)

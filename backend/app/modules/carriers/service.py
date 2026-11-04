@@ -1,6 +1,9 @@
 """Carriers module service"""
 
+from typing import Any
+
 import structlog
+from prisma.models import Carrier as CarrierModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError
@@ -16,11 +19,11 @@ from prisma import Prisma
 logger = structlog.get_logger()
 
 
-class CarriersService(BaseService):
+class CarriersService(BaseService[CarrierModel, CarrierCreate, CarrierUpdate, CarrierResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Carrier")
 
-    def _to_response(self, carrier) -> CarrierResponse:
+    def _to_response(self, carrier: CarrierModel) -> CarrierResponse:
         return CarrierResponse(
             id=carrier.id,
             company_id=carrier.companyId,
@@ -109,7 +112,7 @@ class CarriersService(BaseService):
         search: str | None = None,
     ) -> CarrierListResponse:
         """List carriers"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if is_active is not None:
             where["isActive"] = is_active
         if search:

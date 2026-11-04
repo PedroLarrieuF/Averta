@@ -42,8 +42,6 @@ def load_dataset(data_path: str = "data/discrepancies_history.parquet") -> pd.Da
         )
 
     df = pd.read_parquet(path)
-    print(f"Loaded dataset: {df.shape}")
-    print(f"Label distribution:\n{df['label'].value_counts()}")
     return df
 
 
@@ -53,7 +51,6 @@ def prepare_features(df: pd.DataFrame) -> tuple:
     for col in FEATURE_COLUMNS:
         if col not in df.columns:
             df[col] = 0.0
-            print(f"WARNING: Column {col} not found, filled with zeros")
 
     X = df[FEATURE_COLUMNS].values
     y = df["label"].values  # 1 = normal, -1 = anomaly
@@ -61,9 +58,6 @@ def prepare_features(df: pd.DataFrame) -> tuple:
     # Handle any NaN/Inf values
     X = np.nan_to_num(X, nan=0.0, posinf=1e6, neginf=-1e6)
 
-    print(f"Features shape: {X.shape}")
-    print(f"Labels shape: {y.shape}")
-    print(f"Anomaly rate: {(y == -1).mean():.2%}")
 
     return X, y
 
@@ -86,9 +80,6 @@ def train_isolation_forest(
         verbose=1,
     )
 
-    print(
-        f"Training IsolationForest(contamination={contamination}, n_estimators={n_estimators}, max_samples={max_samples})"
-    )
     model.fit(X)
 
     # Get anomaly scores (negative = anomaly)
@@ -122,12 +113,6 @@ def evaluate_model(y_true: np.ndarray, y_pred: np.ndarray, scores: np.ndarray) -
         "classification_report": report,
     }
 
-    print("\n=== Model Evaluation ===")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1 Score: {f1:.4f}")
-    print(f"True Anomaly Rate: {metrics['anomaly_rate_true']:.2%}")
-    print(f"Predicted Anomaly Rate: {metrics['anomaly_rate_pred']:.2%}")
 
     return metrics
 
@@ -138,9 +123,8 @@ def temporal_cross_validation(X: np.ndarray, y: np.ndarray, n_splits: int = 5) -
     cv_results = []
 
     for fold, (train_idx, test_idx) in enumerate(tscv.split(X)):
-        print(f"\n--- Fold {fold + 1}/{n_splits} ---")
         X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
+        _y_train, y_test = y[train_idx], y[test_idx]
 
         # Train on fold
         model, _, _ = train_isolation_forest(X_train)
@@ -155,14 +139,10 @@ def temporal_cross_validation(X: np.ndarray, y: np.ndarray, n_splits: int = 5) -
         cv_results.append(metrics)
 
     # Aggregate
-    avg_precision = np.mean([r["precision"] for r in cv_results])
-    avg_recall = np.mean([r["recall"] for r in cv_results])
-    avg_f1 = np.mean([r["f1_score"] for r in cv_results])
+    np.mean([r["precision"] for r in cv_results])
+    np.mean([r["recall"] for r in cv_results])
+    np.mean([r["f1_score"] for r in cv_results])
 
-    print(f"\n=== Temporal CV Results ({n_splits} folds) ===")
-    print(f"Avg Precision: {avg_precision:.4f}")
-    print(f"Avg Recall: {avg_recall:.4f}")
-    print(f"Avg F1: {avg_f1:.4f}")
 
     return cv_results
 
@@ -208,10 +188,6 @@ def save_model(model: IsolationForest, scaler: StandardScaler, metrics: dict, ve
     with open(latest_metadata, "w") as f:
         json.dump(metadata, f, indent=2, default=str)
 
-    print(f"\nModel saved to {model_path}")
-    print(f"Scaler saved to {scaler_path}")
-    print(f"Metadata saved to {metadata_path}")
-    print("Latest symlinks updated")
 
     return version
 
@@ -227,7 +203,6 @@ def hyperparameter_tuning(X: np.ndarray, y: np.ndarray) -> dict:
     best_score = -1
     best_params = {}
 
-    print("\n=== Hyperparameter Tuning ===")
     for contamination in param_grid["contamination"]:
         for n_estimators in param_grid["n_estimators"]:
             for max_samples in param_grid["max_samples"]:
@@ -258,18 +233,12 @@ def hyperparameter_tuning(X: np.ndarray, y: np.ndarray) -> dict:
                         "n_estimators": n_estimators,
                         "max_samples": max_samples,
                     }
-                    print(
-                        f"  New best: contamination={contamination}, n_estimators={n_estimators}, "
-                        f"max_samples={max_samples} -> F1={f1:.4f}"
-                    )
 
-    print(f"\nBest params: {best_params} (F1={best_score:.4f})")
     return best_params
 
 
 def main():
     """Main training pipeline."""
-    print("=== ML Anomaly Detection - Model Training ===\n")
 
     # Load dataset
     df = load_dataset()
@@ -294,7 +263,6 @@ def main():
     cv_results = temporal_cross_validation(X_scaled, y)
 
     # Train final model on all data
-    print("\n=== Training Final Model ===")
     model, scores, predictions = train_isolation_forest(X_scaled, **best_params)
 
     # Final evaluation
@@ -305,15 +273,7 @@ def main():
     version = save_model(model, scaler, metrics)
 
     # Print threshold info
-    print("\n=== Inference Thresholds ===")
-    print(f"Decision function scores range: [{scores.min():.4f}, {scores.max():.4f}]")
-    print(f"Mean score (normal): {scores[y == 1].mean():.4f}")
-    print(f"Mean score (anomaly): {scores[y == -1].mean():.4f}")
-    print(
-        f"Suggested threshold (contamination={best_params['contamination']}): ~{np.percentile(scores, best_params['contamination'] * 100):.4f}"
-    )
 
-    print(f"\n✅ Training complete! Model version: {version}")
     return version
 
 

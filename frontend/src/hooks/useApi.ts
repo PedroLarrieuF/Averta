@@ -598,3 +598,72 @@ export function useMarkAllNotificationsRead() {
     },
   })
 }
+
+// User Profile hooks
+export function useUserProfile(options?: UseQueryOptions<User>) {
+  return useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => apiClient.get<User>('/users/me'),
+    staleTime: 1000 * 60 * 5,
+    ...options,
+  })
+}
+
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<User>) => apiClient.patch<User>('/users/me', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
+    },
+  })
+}
+
+// Notification Preferences hooks
+export interface NotificationPreferences {
+  email_enabled: boolean
+  in_app_enabled: boolean
+  weekly_report: boolean
+  discrepancy_alerts: boolean
+  contest_updates: boolean
+}
+
+export function useNotificationPreferences(options?: UseQueryOptions<NotificationPreferences>) {
+  return useQuery({
+    queryKey: ['notifications', 'preferences'],
+    queryFn: () => apiClient.get<NotificationPreferences>('/notifications/preferences'),
+    staleTime: 1000 * 60 * 5,
+    ...options,
+  })
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<NotificationPreferences>) =>
+      apiClient.patch<NotificationPreferences>('/notifications/preferences', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'preferences'] })
+    },
+  })
+}
+
+// Auth hooks - Change Password
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) =>
+      apiClient.post('/auth/change-password', data),
+  })
+}
+
+// Delete Account
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (password: string) =>
+      apiClient.post('/users/me/delete', { password }),
+    onSuccess: () => {
+      queryClient.clear()
+    },
+  })
+}

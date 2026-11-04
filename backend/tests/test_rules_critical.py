@@ -1,6 +1,5 @@
 """Unit tests for critical rules"""
 
-
 import pytest
 
 from app.services.rules_critical import (
@@ -15,7 +14,7 @@ from app.services.rules_critical import (
     PesoRealVsFaturadoRule,
     ValorMinimoFreteRule,
 )
-from app.services.rules_engine_v2 import RuleContext
+from app.services.rules_engine_v2 import RuleContext, create_engine_v2
 
 
 class TestICMSRules:
@@ -257,7 +256,7 @@ class TestPesoRealVsFaturadoRule:
         rule = PesoRealVsFaturadoRule(config={"tolerance_pct": 5.0})
         result = await rule.evaluate(peso_context)
 
-        # 10% difference > 5% tolerance
+        # 10% difference > 5% tolerance  # noqa: ERA001
         assert result.triggered is True
         assert result.difference_pct == 10.0
 
@@ -431,8 +430,6 @@ class TestRulesEngineIntegration:
     @pytest.mark.asyncio
     async def test_engine_creation(self):
         """Test engine can be created with all rules"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
         rules = engine.list_rules()
 
@@ -465,8 +462,6 @@ class TestRulesEngineIntegration:
     @pytest.mark.asyncio
     async def test_engine_filtering(self):
         """Test engine filters rules by relevance"""
-        from app.services.rules_engine_v2 import RuleContext, create_engine_v2
-
         engine = await create_engine_v2()
 
         # Document with only freight data
@@ -488,8 +483,6 @@ class TestRulesEngineIntegration:
     @pytest.mark.asyncio
     async def test_full_audit(self):
         """Test full audit on a document with multiple issues"""
-        from app.services.rules_engine_v2 import RuleContext, create_engine_v2
-
         engine = await create_engine_v2()
 
         context = RuleContext(
@@ -597,8 +590,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_cache_miss_then_hit(self, cache_context):
         """Test cache miss on first call, hit on second"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         # First call - cache miss
@@ -609,15 +600,13 @@ class TestRulesEngineCache:
 
         # Results should be identical
         assert len(results1) == len(results2)
-        for r1, r2 in zip(results1, results2):
+        for r1, r2 in zip(results1, results2, strict=False):
             assert r1.rule_code == r2.rule_code
             assert r1.triggered == r2.triggered
 
     @pytest.mark.asyncio
     async def test_cache_invalidation_by_rule(self, cache_context):
         """Test cache invalidation by rule code"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         # Populate cache
@@ -630,8 +619,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_cache_invalidation_by_tag(self, cache_context):
         """Test cache invalidation by tag"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         # Populate cache
@@ -644,8 +631,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_freight_table_cache_invalidation(self, cache_context):
         """Test freight table cache invalidation"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         # Populate cache
@@ -658,8 +643,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_reference_data_cache_invalidation(self, cache_context):
         """Test reference data (ICMS, SICOBAN) cache invalidation"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         # Populate cache
@@ -672,8 +655,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_cache_stats(self, cache_context):
         """Test cache statistics"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
 
         stats = await engine.get_cache_stats()
@@ -684,8 +665,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_cache_key_consistency(self, cache_context):
         """Test cache key generation is consistent for same input"""
-        from app.services.rules_engine_v2 import create_engine_v2
-
         engine = await create_engine_v2()
         rule = engine.get_rule("ICMS_DIFAL")
 
@@ -698,8 +677,6 @@ class TestRulesEngineCache:
     @pytest.mark.asyncio
     async def test_different_context_different_key(self, cache_context):
         """Test different contexts produce different cache keys"""
-        from app.services.rules_engine_v2 import RuleContext, create_engine_v2
-
         engine = await create_engine_v2()
         rule = engine.get_rule("ICMS_DIFAL")
 

@@ -1,8 +1,10 @@
 """Contracts module service"""
 
 from datetime import datetime
+from typing import Any
 
 import structlog
+from prisma.models import Contract as ContractModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
@@ -25,11 +27,11 @@ logger = structlog.get_logger()
 PROGRESSIVE_MONTH_DAYS = 30
 
 
-class ContractsService(BaseService):
+class ContractsService(BaseService[ContractModel, ContractCreate, ContractUpdate, ContractResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Contract")
 
-    def _to_response(self, contract) -> ContractResponse:
+    def _to_response(self, contract: ContractModel) -> ContractResponse:
         tables = [
             FreightTableResponse(
                 id=t.id,
@@ -182,7 +184,7 @@ class ContractsService(BaseService):
         search: str | None = None,
     ) -> ContractListResponse:
         """List contracts"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if status:
             where["status"] = status
         if carrier_id:
@@ -299,7 +301,7 @@ class ContractsService(BaseService):
         """List freight tables for contract"""
         await self.get_by_id(contract_id, company_id)
 
-        where = {"contractId": contract_id}
+        where: dict[str, Any] = {"contractId": contract_id}
         if is_active is not None:
             where["isActive"] = is_active
 
@@ -326,7 +328,7 @@ class ContractsService(BaseService):
 
     async def get_active_freight_table(
         self, contract_id: str, company_id: str, date: datetime | None = None
-    ):
+    ) -> FreightTableResponse | None:
         """Get active freight table for a given date"""
         check_date = date or datetime.utcnow()
 
@@ -362,7 +364,7 @@ class ContractsService(BaseService):
         )
 
     def calculate_progressive_fee_pct(
-        self, contract, reference_date: datetime | None = None
+        self, contract: ContractModel, reference_date: datetime | None = None
     ) -> float:
         """
         Calculate the success fee percentage based on progressive pricing model.
@@ -374,12 +376,12 @@ class ContractsService(BaseService):
         For FIXED model: returns the standard success_fee_pct
         """
         if contract.pricingModel == "FIXED":
-            return contract.successFeePct
+            return contract.successFeePct  # type: ignore[no-any-return]
 
         # PROGRESSIVE model
         start_date = contract.progressiveStartDate or contract.startDate
         if not start_date:
-            return contract.successFeePct
+            return contract.successFeePct  # type: ignore[no-any-return]
 
         check_date = reference_date or datetime.utcnow()
 

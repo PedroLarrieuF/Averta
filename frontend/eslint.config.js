@@ -5,7 +5,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'node_modules/', 'coverage/', 'vite.config.ts', 'vitest.config.ts', 'eslint.config.js'] },
+  { ignores: ['dist/', 'node_modules/', 'coverage/', 'vite.config.ts', 'vitest.config.ts', 'eslint.config.js', '**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

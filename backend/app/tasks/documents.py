@@ -1,32 +1,37 @@
 """Document processing tasks: XML parsing, validation, discrepancy detection"""
 
 import asyncio
+from datetime import datetime, timedelta
+from typing import Any
 
 import structlog
 from celery import Task
 
 from app.core.celery_app import celery_app
+from app.core.database import get_prisma
+from app.services.rules_engine import run_rules
+from app.services.storage import download_file
+from app.services.xml_parser import parse_cte_xml, parse_nfe_xml
 
 logger = structlog.get_logger()
 
 
-class AsyncTask(Task):
+class AsyncTask(Task):  # type: ignore[misc]
     """Base task with async support"""
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return asyncio.run(self.run_async(*args, **kwargs))
 
-    async def run_async(self, *args, **kwargs):
+    async def run_async(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
 
-@celery_app.task(base=AsyncTask, bind=True, max_retries=3, default_retry_delay=60)
-async def process_document(self, document_id: str):
+@celery_app.task(base=AsyncTask, bind=True, max_retries=3, default_retry_delay=60)  # type: ignore[untyped-decorator]
+async def process_document(
+    self: AsyncTask,
+    document_id: str,
+) -> None:
     """Process uploaded document: parse XML/PDF, extract data, run rules"""
-    from app.core.database import get_prisma
-    from app.services.rules_engine import run_rules
-    from app.services.xml_parser import parse_cte_xml, parse_nfe_xml
-
     db = await get_prisma()
 
     try:
@@ -42,16 +47,14 @@ async def process_document(self, document_id: str):
             return
 
         # Download from S3/MinIO
-        from app.services.storage import download_file
-
         xml_content = await download_file(doc.s3Bucket, doc.s3Key)
 
         # Parse based on type
         parsed_data = None
         if doc.type == "CTE":
-            parsed_data = await parse_cte_xml(xml_content)
+            parsed_data = parse_cte_xml(xml_content)
         elif doc.type == "NFE":
-            parsed_data = await parse_nfe_xml(xml_content)
+            parsed_data = parse_nfe_xml(xml_content)
         else:
             raise ValueError(f"Unsupported document type: {doc.type}")
 
@@ -74,7 +77,7 @@ async def process_document(self, document_id: str):
         )
 
         # Run discrepancy detection rules
-        await run_rules.delay(document_id, parsed_data, doc.companyId, doc.clientId)
+        await run_rules(document_id, parsed_data, doc.companyId, doc.clientId)
 
         logger.info("document_processed", document_id=document_id, type=doc.type)
 
@@ -90,13 +93,11 @@ async def process_document(self, document_id: str):
         raise
 
 
-@celery_app.task(base=AsyncTask, bind=True)
-async def check_stale_documents(self):
+@celery_app.task(base=AsyncTask, bind=True)  # type: ignore[untyped-decorator]
+async def check_stale_documents(
+    self: AsyncTask,
+) -> None:
     """Check for documents stuck in PROCESSING state"""
-    from datetime import datetime, timedelta
-
-    from app.core.database import get_prisma
-
     db = await get_prisma()
     stale_threshold = datetime.utcnow() - timedelta(minutes=10)
 
@@ -109,24 +110,28 @@ async def check_stale_documents(self):
 
     for doc in stale_docs:
         logger.warning("stale_document_found", document_id=doc.id)
-        await process_document.delay(doc.id)
+        process_document.delay(doc.id)
 
 
-@celery_app.task(base=AsyncTask, bind=True)
-async def reprocess_document(self, document_id: str):
+@celery_app.task(base=AsyncTask, bind=True)  # type: ignore[untyped-decorator]
+async def reprocess_document(
+    self: AsyncTask,
+    document_id: str,
+) -> None:
     """Reprocess a document (e.g., after rules update)"""
-    from app.core.database import get_prisma
-
     db = await get_prisma()
     await db.document.update(
         where={"id": document_id},
         data={"status": "UPLOADED"},
     )
-    await process_document.delay(document_id)
+    process_document.delay(document_id)
 
 
-@celery_app.task(base=AsyncTask, bind=True)
-async def batch_process_documents(self, document_ids: list[str]):
+@celery_app.task(base=AsyncTask, bind=True)  # type: ignore[untyped-decorator]
+async def batch_process_documents(
+    self: AsyncTask,
+    document_ids: list[str],
+) -> None:
     """Process multiple documents in batch"""
     for doc_id in document_ids:
         process_document.delay(doc_id)

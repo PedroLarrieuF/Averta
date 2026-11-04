@@ -1,8 +1,10 @@
 """Notifications module service"""
 
 from datetime import datetime, timedelta
+from typing import Any
 
 import structlog
+from prisma.models import Notification as NotificationModel
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import NotFoundError
@@ -25,7 +27,7 @@ class NotificationsService:
     def __init__(self, db: Prisma):
         self.db = db
 
-    def _to_response(self, notification) -> NotificationResponse:
+    def _to_response(self, notification: NotificationModel) -> NotificationResponse:
         return NotificationResponse(
             id=notification.id,
             client_id=notification.clientId,
@@ -59,7 +61,7 @@ class NotificationsService:
         logger.info("notification_created", id=notification.id, type=notification.type)
         return self._to_response(notification)
 
-    async def _send_notification(self, notification):
+    async def _send_notification(self, notification: NotificationModel) -> None:
         """Send notification via configured channels"""
         channels = notification.channels or []
 
@@ -69,7 +71,7 @@ class NotificationsService:
         if NotificationChannel.PUSH.value in channels:
             await self._send_push_notification(notification)
 
-    async def _send_email_notification(self, notification):
+    async def _send_email_notification(self, notification: NotificationModel) -> None:
         """Send email via SendGrid"""
         try:
             # Get user email
@@ -121,7 +123,7 @@ class NotificationsService:
         except Exception as e:
             logger.exception("email_send_failed", notification_id=notification.id, error=str(e))
 
-    async def _send_push_notification(self, notification):
+    async def _send_push_notification(self, notification: NotificationModel) -> None:
         """Send push notification (Firebase, OneSignal, etc.)"""
         # TODO: Implement push notification service
         pass
@@ -135,7 +137,7 @@ class NotificationsService:
         type: NotificationType | None = None,
     ) -> NotificationListResponse:
         """Get notifications for client/user"""
-        where = {"clientId": client_id}
+        where: dict[str, Any] = {"clientId": client_id}
         if user_id:
             where["userId"] = user_id
         if unread_only:
@@ -174,7 +176,7 @@ class NotificationsService:
 
     async def mark_all_as_read(self, client_id: str, user_id: str | None = None) -> int:
         """Mark all notifications as read"""
-        where = {"clientId": client_id, "readAt": None}
+        where: dict[str, Any] = {"clientId": client_id, "readAt": None}
         if user_id:
             where["userId"] = user_id
 
@@ -183,7 +185,7 @@ class NotificationsService:
             where=where,
             data={"readAt": datetime.utcnow()},
         )
-        return count
+        return count  # type: ignore[no-any-return]
 
     async def delete_notification(self, notification_id: str, client_id: str) -> None:
         """Delete notification"""
@@ -239,7 +241,7 @@ class NotificationsService:
 
     async def notify_discrepancy_found(
         self, client_id: str, discrepancy_id: str, discrepancy_type: str, value: float
-    ):
+    ) -> None:
         """Notify about new discrepancy"""
         client = await self.db.client.find_unique(where={"id": client_id})
         if not client:
@@ -277,7 +279,7 @@ class NotificationsService:
 
     async def notify_contest_approved(
         self, client_id: str, contest_id: str, contest_number: str, value: float
-    ):
+    ) -> None:
         """Notify contest approved"""
         users = await self.db.user.find_many(
             where={"clientId": client_id, "status": "ACTIVE"},
@@ -298,7 +300,7 @@ class NotificationsService:
 
     async def notify_contest_sent(
         self, client_id: str, contest_id: str, contest_number: str, carrier: str
-    ):
+    ) -> None:
         """Notify contest sent to carrier"""
         users = await self.db.user.find_many(
             where={"clientId": client_id, "status": "ACTIVE"},
@@ -319,7 +321,7 @@ class NotificationsService:
 
     async def notify_recovery_confirmed(
         self, client_id: str, contest_id: str, contest_number: str, recovered: float
-    ):
+    ) -> None:
         """Notify recovery confirmed"""
         users = await self.db.user.find_many(
             where={"clientId": client_id, "status": "ACTIVE"},
@@ -344,7 +346,7 @@ class NotificationsService:
 
     async def notify_contract_expiring(
         self, client_id: str, contract_id: str, contract_number: str, carrier: str, days: int
-    ):
+    ) -> None:
         """Notify contract expiring"""
         users = await self.db.user.find_many(
             where={
@@ -379,7 +381,7 @@ class NotificationsService:
                 )
             )
 
-    async def send_weekly_report(self, client_id: str):
+    async def send_weekly_report(self, client_id: str) -> None:
         """Send weekly summary report"""
         week_ago = datetime.utcnow() - timedelta(days=7)
 

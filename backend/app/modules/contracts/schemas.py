@@ -1,6 +1,7 @@
 """Contracts module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +12,7 @@ class FreightTableCreate(BaseModel):
     effective_from: datetime
     effective_to: datetime | None = None
     description: str | None = None
-    rules: dict  # JSON: {faixas_peso, pedagios, advalorem, gris, difal, etc.}
+    rules: dict[str, Any]  # JSON: {faixas_peso, pedagios, advalorem, gris, difal, etc.}
 
 
 class FreightTableUpdate(BaseModel):
@@ -20,7 +21,7 @@ class FreightTableUpdate(BaseModel):
     effective_from: datetime | None = None
     effective_to: datetime | None = None
     description: str | None = None
-    rules: dict | None = None
+    rules: dict[str, Any] | None = None
     is_active: bool | None = None
 
 
@@ -32,7 +33,7 @@ class FreightTableResponse(BaseModel):
     effective_from: datetime
     effective_to: datetime | None
     description: str | None
-    rules: dict
+    rules: dict[str, Any]
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -51,8 +52,8 @@ class ContractCreate(BaseModel):
     success_fee_pct: float = Field(default=25.0, ge=0, le=100)
     min_recovery: float | None = Field(None, ge=0)
     currency: str = Field(default="BRL", min_length=3, max_length=3)
-    terms: dict | None = None
-    metadata: dict | None = None
+    terms: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
     # Progressive pricing fields
     pricing_model: str = Field(default="FIXED", pattern="^(FIXED|PROGRESSIVE)$")
     progressive_start_date: datetime | None = None
@@ -70,8 +71,8 @@ class ContractUpdate(BaseModel):
     success_fee_pct: float | None = Field(None, ge=0, le=100)
     min_recovery: float | None = Field(None, ge=0)
     currency: str | None = Field(None, min_length=3, max_length=3)
-    terms: dict | None = None
-    metadata: dict | None = None
+    terms: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
     status: str | None = Field(None, pattern="^(ACTIVE|EXPIRED|PENDING|CANCELLED)$")
     # Progressive pricing fields
     pricing_model: str | None = Field(None, pattern="^(FIXED|PROGRESSIVE)$")
@@ -93,8 +94,8 @@ class ContractResponse(BaseModel):
     success_fee_pct: float
     min_recovery: float | None
     currency: str
-    terms: dict | None
-    metadata: dict | None
+    terms: dict[str, Any] | None
+    metadata: dict[str, Any] | None
     created_at: datetime
     updated_at: datetime
     tables: list[FreightTableResponse] = []

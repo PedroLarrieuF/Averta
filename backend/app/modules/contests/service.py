@@ -2,8 +2,10 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 import structlog
+from prisma.models import Contest as ContestModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import BadRequestError, NotFoundError
@@ -33,12 +35,51 @@ PROGRESSIVE_MONTH_DAYS = 30
 FEE_PCT_TOLERANCE = 0.01
 
 
-class ContestsService(BaseService):
+class ContestsService(BaseService[ContestModel, ContestCreate, ContestUpdate, ContestResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Contest")
         self.contracts_service = ContractsService(db)
 
-    async def _to_response(self, contest, include_relations: bool = False) -> ContestResponse:
+    def _to_response(self, contest: ContestModel) -> ContestResponse:
+        """Convert DB model to response schema (base implementation without relations)"""
+        # Determine pricing model info for response
+        pricing_model = "FIXED"
+        progressive_month = None
+        if contest.contractId:
+            # Note: This is a synchronous method, so we can't fetch contract here
+            # The progressive info will only be available in the async version
+            pass
+
+        return ContestResponse(
+            id=contest.id,
+            company_id=contest.companyId,
+            client_id=contest.clientId,
+            carrier_id=contest.carrierId,
+            contract_id=contest.contractId,
+            number=contest.number,
+            status=contest.status,
+            total_expected=contest.totalExpected,
+            total_recovered=contest.totalRecovered,
+            success_fee_pct=contest.successFeePct,
+            success_fee_value=contest.successFeeValue,
+            net_recovery=contest.netRecovery,
+            sent_at=contest.sentAt,
+            acknowledged_at=contest.acknowledgedAt,
+            responded_at=contest.respondedAt,
+            resolved_at=contest.resolvedAt,
+            expired_at=contest.expiredAt,
+            notes=contest.notes,
+            metadata=contest.metadata,
+            created_at=contest.createdAt,
+            updated_at=contest.updatedAt,
+            items=[],
+            communications=[],
+            payments=[],
+            pricing_model=pricing_model,
+            progressive_month=progressive_month,
+        )
+
+    async def _to_response_with_relations(self, contest: ContestModel, include_relations: bool = False) -> ContestResponse:
         items = []
         communications = []
         payments = []
@@ -102,7 +143,11 @@ class ContestsService(BaseService):
                     start_date = contract.progressiveStartDate or contract.startDate
                     check_date = datetime.utcnow()
                     days_diff = (check_date - start_date).days
-                    progressive_month = 1 if days_diff < PROGRESSIVE_MONTH_DAYS else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+                    progressive_month = (
+                        1
+                        if days_diff < PROGRESSIVE_MONTH_DAYS
+                        else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+                    )
 
         return ContestResponse(
             id=contest.id,
@@ -144,11 +189,11 @@ class ContestsService(BaseService):
         contest = await self.get_contest_detail(contest_id, company_id)
 
         if not contest.contract_id:
-            return await self._to_response(contest, include_relations=True)
+            return await self._to_response_with_relations(contest, include_relations=True)
 
-        contract = await self.db.contract.find_unique(where={"id": contest.contractId})
+        contract = await self.db.contract.find_unique(where={"id": contest.contract_id})
         if not contract:
-            return await self._to_response(contest, include_relations=True)
+            return await self._to_response_with_relations(contest, include_relations=True)
 
         # Calculate new fee percentage
         new_fee_pct = self.contracts_service.calculate_progressive_fee_pct(contract, reference_date)
@@ -171,7 +216,7 @@ class ContestsService(BaseService):
                 "contest_success_fee_recalculated", contest_id=contest_id, new_pct=new_fee_pct
             )
 
-        return await self._to_response(contest, include_relations=True)
+        return await self._to_response_with_relations(contest, include_relations=True)
 
     def _generate_contest_number(self) -> str:
         """Generate unique contest number: CTST-YYYY-NNNNN"""
@@ -282,6 +327,16 @@ class ContestsService(BaseService):
         )
         return await self.get_by_id(contest.id, company_id)
 
+    async def get_contest_detail(self, contest_id: str, company_id: str) -> ContestResponse:
+        """Get contest with all relations"""
+        contest = await self.db.contest.find_first(
+            where={"id": contest_id, "companyId": company_id},
+            include={"items": True, "communications": True, "payments": True},
+        )
+        if not contest:
+            raise NotFoundError("Contest", contest_id)
+        return await self._to_response_with_relations(contest, include_relations=True)
+
     async def update_contest(
         self, contest_id: str, data: ContestUpdate, company_id: str
     ) -> ContestResponse:
@@ -295,7 +350,7 @@ class ContestsService(BaseService):
             include={"items": True, "communications": True, "payments": True},
         )
         logger.info("contest_updated", id=contest_id, company_id=company_id)
-        return await self._to_response(contest, include_relations=True)
+        return await self._to_response_with_relations(contest, include_relations=True)
 
     async def list_contests(  # noqa: PLR0913, PLR0917
         self,
@@ -309,7 +364,7 @@ class ContestsService(BaseService):
         date_to: datetime | None = None,
     ) -> ContestListResponse:
         """List contests"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if status:
             where["status"] = status
         if client_id:
@@ -333,16 +388,6 @@ class ContestsService(BaseService):
             total_pages=(total + pagination.page_size - 1) // pagination.page_size,
         )
 
-    async def get_contest_detail(self, contest_id: str, company_id: str) -> ContestResponse:
-        """Get contest with all relations"""
-        contest = await self.db.contest.find_first(
-            where={"id": contest_id, "companyId": company_id},
-            include={"items": True, "communications": True, "payments": True},
-        )
-        if not contest:
-            raise NotFoundError("Contest", contest_id)
-        return await self._to_response(contest, include_relations=True)
-
     # ============================================
     # WORKFLOW ACTIONS
     # ============================================
@@ -358,8 +403,11 @@ class ContestsService(BaseService):
         carrier = await self.db.carrier.find_unique(where={"id": contest.carrier_id})
         company = await self.db.company.find_unique(where={"id": company_id})
 
+        # Convert ContestResponse to dict for PDF generator
+        contest_dict = contest.model_dump()
+
         pdf_bytes = await generate_contest_letter(
-            contest=contest,
+            contest=contest_dict,
             client=client,
             carrier=carrier,
             company=company,
@@ -423,7 +471,7 @@ class ContestsService(BaseService):
         )
 
         logger.info("contest_sent", contest_id=contest_id, send_via=send_via)
-        return await self._to_response(contest, include_relations=True)
+        return await self._to_response_with_relations(contest, include_relations=True)
 
     async def acknowledge_contest(self, contest_id: str, company_id: str) -> ContestResponse:
         """Mark contest as acknowledged by carrier"""
@@ -437,10 +485,10 @@ class ContestsService(BaseService):
         )
         if not contest:
             raise NotFoundError("Contest", contest_id)
-        return await self._to_response(contest, include_relations=True)
+        return await self._to_response_with_relations(contest, include_relations=True)
 
     async def respond_contest(
-        self, contest_id: str, company_id: str, item_updates: list[dict]
+        self, contest_id: str, company_id: str, item_updates: list[dict[str, Any]]
     ) -> ContestResponse:
         """Process carrier response (accepted/partial/rejected per item)"""
         contest = await self.get_contest_detail(contest_id, company_id)
@@ -462,14 +510,14 @@ class ContestsService(BaseService):
             total_recovered += recovered
 
         # Calculate success fee using progressive model if applicable
-        if contest.contractId:
-            contract = await self.db.contract.find_unique(where={"id": contest.contractId})
+        if contest.contract_id:
+            contract = await self.db.contract.find_unique(where={"id": contest.contract_id})
             if contract:
                 success_fee_pct = self.contracts_service.calculate_progressive_fee_pct(contract)
             else:
-                success_fee_pct = contest.successFeePct
+                success_fee_pct = contest.success_fee_pct
         else:
-            success_fee_pct = contest.successFeePct
+            success_fee_pct = contest.success_fee_pct
 
         success_fee_value = round(total_recovered * success_fee_pct / 100, 2)
         net_recovery = round(total_recovered - success_fee_value, 2)
@@ -516,7 +564,7 @@ class ContestsService(BaseService):
             status=overall_status,
             recovered=total_recovered,
         )
-        return await self._to_response(contest, include_relations=True)
+        return await self._to_response_with_relations(contest, include_relations=True)
 
     async def record_payment(
         self, contest_id: str, company_id: str, data: PaymentCreate

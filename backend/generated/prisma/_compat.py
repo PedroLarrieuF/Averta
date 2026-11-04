@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import sys
-from asyncio import get_running_loop as get_running_loop
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -78,16 +76,12 @@ if TYPE_CHECKING:
     class BaseConfig: ...
 
     from pydantic import (
-        GetCoreSchemaHandler as GetCoreSchemaHandler,
-    )
-    from pydantic import (
-        PlainSerializer as PlainSerializer,
+        GetCoreSchemaHandler,
+        PlainSerializer,
     )
     from pydantic_core import (
-        CoreSchema as CoreSchema,
-    )
-    from pydantic_core import (
-        core_schema as core_schema,
+        CoreSchema,
+        core_schema,
     )
 
     class GenericModel(BaseModel): ...
@@ -123,10 +117,7 @@ else:
 
     else:
         from pydantic import (
-            BaseConfig as BaseConfig,
-        )
-        from pydantic import (
-            BaseSettings as BaseSettings,
+            BaseSettings,
         )
 
         BaseSettingsConfig = BaseSettings.Config
@@ -134,7 +125,6 @@ else:
 
 # v1 re-exports
 if TYPE_CHECKING:
-    from pydantic.v1 import Extra as Extra
 
     def get_args(t: type[Any]) -> tuple[Any, ...]:  # noqa: ARG001
         ...
@@ -152,44 +142,14 @@ if TYPE_CHECKING:
         ...
 
 elif PYDANTIC_V2:
-    from pydantic.v1 import Extra as Extra
-    from pydantic.v1.typing import (
-        get_args as get_args,
-    )
-    from pydantic.v1.typing import (
-        get_origin as get_origin,
-    )
-    from pydantic.v1.typing import (
-        is_literal_type as is_literal_type,
-    )
-    from pydantic.v1.typing import (
-        is_typeddict as is_typeddict,
-    )
-    from pydantic.v1.typing import (
-        is_union as is_union,
-    )
+    pass
 else:
-    from pydantic import Extra as Extra
-    from pydantic.typing import (
-        get_args as get_args,
-    )
-    from pydantic.typing import (
-        get_origin as get_origin,
-    )
-    from pydantic.typing import (
-        is_literal_type as is_literal_type,
-    )
-    from pydantic.typing import (
-        is_typeddict as is_typeddict,
-    )
-    from pydantic.typing import (
-        is_union as is_union,
-    )
+    pass
 
 
 # refactored config
 if TYPE_CHECKING:
-    from pydantic import ConfigDict as ConfigDict
+    from pydantic import ConfigDict
 elif PYDANTIC_V2:
     from pydantic import ConfigDict
 else:
@@ -256,7 +216,7 @@ def model_field_type(field: FieldInfo) -> type | None:
     return field.type_  # type: ignore
 
 
-def model_copy(model: _ModelT, deep: bool = False) -> _ModelT:
+def model_copy[ModelT: BaseModel](model: _ModelT, deep: bool = False) -> _ModelT:
     if PYDANTIC_V2:
         return model.model_copy(deep=deep)
 
@@ -306,14 +266,14 @@ def model_rebuild(model: type[BaseModel]) -> None:
         model.update_forward_refs()  # pyright: ignore[reportDeprecated]
 
 
-def model_parse(model: type[_ModelT], obj: Any) -> _ModelT:
+def model_parse[ModelT: BaseModel](model: type[_ModelT], obj: Any) -> _ModelT:
     if PYDANTIC_V2:
         return model.model_validate(obj)
     else:
         return model.parse_obj(obj)  # pyright: ignore[reportDeprecated]
 
 
-def model_parse_json(model: type[_ModelT], obj: str) -> _ModelT:
+def model_parse_json[ModelT: BaseModel](model: type[_ModelT], obj: str) -> _ModelT:
     if PYDANTIC_V2:
         return model.model_validate_json(obj)
     else:
@@ -341,16 +301,6 @@ def Field(*, env: str | None = None, **extra: Any) -> Any:
     return pydantic.Field(**extra, env=env)  # type: ignore
 
 
-if sys.version_info[:2] < (3, 8):
-    # cached_property doesn't define type hints so just ignore it
-    # it is functionally equivalent to the standard property anyway
-    if TYPE_CHECKING:
-        cached_property = property
-    else:
-        from cached_property import cached_property as cached_property
-else:
-    from functools import cached_property as cached_property
-
 
 if TYPE_CHECKING:
     import nodejs as _nodejs
@@ -368,19 +318,9 @@ else:
 # - https://blog.pecar.me/python-enum#there-be-dragons
 # - https://github.com/python/cpython/issues/100458
 if TYPE_CHECKING:
-    if sys.version_info >= (3, 11):
-        from enum import StrEnum as StrEnum
-    else:
-        # Note: we have to define our own `StrEnum`
-        # class as the backport we're using doesn't
-        # define good types.
-        from enum import Enum
-
-        class StrEnum(str, Enum): ...
-elif sys.version_info >= (3, 11):
-    from enum import StrEnum as StrEnum
+    pass
 else:
-    from strenum import StrEnum as StrEnum
+    pass
 
 
 def removeprefix(string: str, prefix: str) -> str:

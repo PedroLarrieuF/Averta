@@ -34,7 +34,6 @@ from typing import (
     IO,
     Any,
     ClassVar,
-    Generic,
     Optional,
     TypeVar,
     Union,
@@ -133,18 +132,18 @@ class UnexpectedInput(LarkError):
                             ut, (UnexpectedToken, UnexpectedEOF)
                         ):
                             if ut.token == self.token:  ##
-                                logger.debug("Exact Match at example [%s][%s]" % (i, j))
+                                logger.debug(f"Exact Match at example [{i}][{j}]")
                                 return label
 
                             if token_type_match_fallback:
                                 ##
 
                                 if (ut.token.type == self.token.type) and not candidate[-1]:
-                                    logger.debug("Token Type Fallback at example [%s][%s]" % (i, j))
+                                    logger.debug(f"Token Type Fallback at example [{i}][{j}]")
                                     candidate = label, True
 
                         if candidate[0] is None:
-                            logger.debug("Same State match at example [%s][%s]" % (i, j))
+                            logger.debug(f"Same State match at example [{i}][{j}]")
                             candidate = label, False
 
         return candidate[0]
@@ -153,7 +152,7 @@ class UnexpectedInput(LarkError):
         if self._terminals_by_name:
             d = self._terminals_by_name
             expected = [d[t_name].user_repr() if t_name in d else t_name for t_name in expected]
-        return "Expected one of: \n\t* %s\n" % "\n\t* ".join(expected)
+        return "Expected one of: \n\t* {}\n".format("\n\t* ".join(expected))
 
 
 class UnexpectedEOF(ParseError, UnexpectedInput):
@@ -230,7 +229,7 @@ class UnexpectedCharacters(LexError, UnexpectedInput):
         if self.allowed:
             message += self._format_expected(self.allowed)
         if self.token_history:
-            message += "\nPrevious tokens: %s\n" % ", ".join(repr(t) for t in self.token_history)
+            message += "\nPrevious tokens: {}\n".format(", ".join(repr(t) for t in self.token_history))
         return message
 
 
@@ -275,14 +274,9 @@ class UnexpectedToken(ParseError, UnexpectedInput):
         return self._accepts
 
     def __str__(self):
-        message = "Unexpected token %r at line %s, column %s.\n%s" % (
-            self.token,
-            self.line,
-            self.column,
-            self._format_expected(self.accepts or self.expected),
-        )
+        message = f"Unexpected token {self.token!r} at line {self.line}, column {self.column}.\n{self._format_expected(self.accepts or self.expected)}"
         if self.token_history:
-            message += "Previous tokens: %r\n" % self.token_history
+            message += f"Previous tokens: {self.token_history!r}\n"
 
         return message
 
@@ -294,7 +288,7 @@ class VisitError(LarkError):
     orig_exc: Exception
 
     def __init__(self, rule, obj, orig_exc):
-        message = 'Error trying to process rule "%s":\n\n%s' % (rule, orig_exc)
+        message = f'Error trying to process rule "{rule}":\n\n{orig_exc}'
         super().__init__(message)
 
         self.rule = rule
@@ -324,9 +318,7 @@ NO_VALUE = object()
 T = TypeVar("T")
 
 
-def classify(
-    seq: Iterable, key: Callable | None = None, value: Callable | None = None
-) -> dict:
+def classify(seq: Iterable, key: Callable | None = None, value: Callable | None = None) -> dict:
     d: dict[Any, Any] = {}
     for item in seq:
         k = key(item) if (key is not None) else item
@@ -427,12 +419,8 @@ try:
 except ImportError:
     _has_regex = False
 
-if sys.version_info >= (3, 11):
-    import re._constants as sre_constants
-    import re._parser as sre_parse
-else:
-    import sre_constants
-    import sre_parse
+import re._constants as sre_constants
+import re._parser as sre_parse
 
 categ_pattern = re.compile(r"\\p{[A-Za-z_]+}")
 
@@ -496,7 +484,7 @@ _Leaf_T = TypeVar("_Leaf_T")
 Branch = Union[_Leaf_T, "Tree[_Leaf_T]"]
 
 
-class Tree(Generic[_Leaf_T]):
+class Tree[Leaf_T]:
     # --
 
     data: str
@@ -516,7 +504,7 @@ class Tree(Generic[_Leaf_T]):
         return self._meta
 
     def __repr__(self):
-        return "Tree(%r, %r)" % (self.data, self.children)
+        return f"Tree({self.data!r}, {self.children!r})"
 
     def _pretty_label(self):
         return self.data
@@ -660,7 +648,7 @@ class _Decoratable:
         return cls
 
 
-class Transformer(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
+class Transformer[Leaf_T, Return_T](_Decoratable, ABC):
     # --
     __visit_tokens__ = True  ##
 
@@ -716,7 +704,7 @@ class Transformer(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
         children = list(self._transform_children(tree.children))
         return self._call_userfunc(tree, children)
 
-    def transform(self, tree: Tree[_Leaf_T]) -> _Return_T:
+    def transform(self, tree: Tree[Leaf_T]) -> Return_T:
         # --
         return self._transform_tree(tree)
 
@@ -750,7 +738,7 @@ def merge_transformers(base_transformer=None, **transformers_to_merge):
             prefixed_method = prefix + "__" + method_name
             if hasattr(base_transformer, prefixed_method):
                 raise AttributeError(
-                    "Cannot merge: method '%s' appears more than once" % prefixed_method
+                    f"Cannot merge: method '{prefixed_method}' appears more than once"
                 )
 
             setattr(base_transformer, prefixed_method, method)
@@ -771,16 +759,16 @@ class InlineTransformer(Transformer):  ##
             return f(*children)
 
 
-class TransformerChain(Generic[_Leaf_T, _Return_T]):
+class TransformerChain[Leaf_T, Return_T]:
     transformers: "tuple[Transformer | TransformerChain, ...]"
 
     def __init__(self, *transformers: "Transformer | TransformerChain") -> None:
         self.transformers = transformers
 
-    def transform(self, tree: Tree[_Leaf_T]) -> _Return_T:
+    def transform(self, tree: Tree[Leaf_T]) -> Return_T:
         for t in self.transformers:
             tree = t.transform(tree)
-        return cast(_Return_T, tree)
+        return cast(Return_T, tree)
 
     def __mul__(
         self: "TransformerChain[_Leaf_T, Tree[_Leaf_U]]",
@@ -872,26 +860,26 @@ class VisitorBase:
         return cls
 
 
-class Visitor(VisitorBase, ABC, Generic[_Leaf_T]):
+class Visitor[Leaf_T](VisitorBase, ABC):
     # --
 
-    def visit(self, tree: Tree[_Leaf_T]) -> Tree[_Leaf_T]:
+    def visit(self, tree: Tree[Leaf_T]) -> Tree[Leaf_T]:
         # --
         for subtree in tree.iter_subtrees():
             self._call_userfunc(subtree)
         return tree
 
-    def visit_topdown(self, tree: Tree[_Leaf_T]) -> Tree[_Leaf_T]:
+    def visit_topdown(self, tree: Tree[Leaf_T]) -> Tree[Leaf_T]:
         # --
         for subtree in tree.iter_subtrees_topdown():
             self._call_userfunc(subtree)
         return tree
 
 
-class Visitor_Recursive(VisitorBase, Generic[_Leaf_T]):
+class Visitor_Recursive[Leaf_T](VisitorBase):
     # --
 
-    def visit(self, tree: Tree[_Leaf_T]) -> Tree[_Leaf_T]:
+    def visit(self, tree: Tree[Leaf_T]) -> Tree[Leaf_T]:
         # --
         for child in tree.children:
             if isinstance(child, Tree):
@@ -900,7 +888,7 @@ class Visitor_Recursive(VisitorBase, Generic[_Leaf_T]):
         self._call_userfunc(tree)
         return tree
 
-    def visit_topdown(self, tree: Tree[_Leaf_T]) -> Tree[_Leaf_T]:
+    def visit_topdown(self, tree: Tree[Leaf_T]) -> Tree[Leaf_T]:
         # --
         self._call_userfunc(tree)
 
@@ -911,10 +899,10 @@ class Visitor_Recursive(VisitorBase, Generic[_Leaf_T]):
         return tree
 
 
-class Interpreter(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
+class Interpreter[Leaf_T, Return_T](_Decoratable, ABC):
     # --
 
-    def visit(self, tree: Tree[_Leaf_T]) -> _Return_T:
+    def visit(self, tree: Tree[Leaf_T]) -> Return_T:
         ##
 
         ##
@@ -923,7 +911,7 @@ class Interpreter(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
 
         return self._visit_tree(tree)
 
-    def _visit_tree(self, tree: Tree[_Leaf_T]):
+    def _visit_tree(self, tree: Tree[Leaf_T]):
         f = getattr(self, tree.data)
         wrapper = getattr(f, "visit_wrapper", None)
         if wrapper is not None:
@@ -931,7 +919,7 @@ class Interpreter(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
         else:
             return f(tree)
 
-    def visit_children(self, tree: Tree[_Leaf_T]) -> list:
+    def visit_children(self, tree: Tree[Leaf_T]) -> list:
         return [
             self._visit_tree(child) if isinstance(child, Tree) else child for child in tree.children
         ]
@@ -1074,7 +1062,7 @@ class Symbol(Serialize):
         return hash(self.name)
 
     def __repr__(self):
-        return "%s(%r)" % (type(self).__name__, self.name)
+        return f"{type(self).__name__}({self.name!r})"
 
     fullrepr = property(__repr__)
 
@@ -1093,7 +1081,7 @@ class Terminal(Symbol):
 
     @property
     def fullrepr(self):
-        return "%s(%r, %r)" % (type(self).__name__, self.name, self.filter_out)
+        return f"{type(self).__name__}({self.name!r}, {self.filter_out!r})"
 
     def renamed(self, f):
         return type(self)(f(self.name), self.filter_out)
@@ -1135,12 +1123,7 @@ class RuleOptions(Serialize):
         self.empty_indices = empty_indices
 
     def __repr__(self):
-        return "RuleOptions(%r, %r, %r, %r)" % (
-            self.keep_all_tokens,
-            self.expand1,
-            self.priority,
-            self.template_source,
-        )
+        return f"RuleOptions({self.keep_all_tokens!r}, {self.expand1!r}, {self.priority!r}, {self.template_source!r})"
 
 
 class Rule(Serialize):
@@ -1176,10 +1159,10 @@ class Rule(Serialize):
         self._hash = hash((self.origin, tuple(self.expansion)))
 
     def __str__(self):
-        return "<%s : %s>" % (self.origin.name, " ".join(x.name for x in self.expansion))
+        return "<{} : {}>".format(self.origin.name, " ".join(x.name for x in self.expansion))
 
     def __repr__(self):
-        return "Rule(%r, %r, %r, %r)" % (self.origin, self.expansion, self.alias, self.options)
+        return f"Rule({self.origin!r}, {self.expansion!r}, {self.alias!r}, {self.options!r})"
 
     def __hash__(self):
         return self._hash
@@ -1238,7 +1221,7 @@ class Pattern(Serialize, ABC):
 
     def _get_flags(self, value):
         for f in self.flags:
-            value = "(?%s:%s)" % (f, value)
+            value = f"(?{f}:{value})"
         return value
 
 
@@ -1299,7 +1282,7 @@ class TerminalDef(Serialize):
         self.priority = priority
 
     def __repr__(self):
-        return "%s(%r, %r)" % (type(self).__name__, self.name, self.pattern)
+        return f"{type(self).__name__}({self.name!r}, {self.pattern!r})"
 
     def user_repr(self) -> str:
         if self.name.startswith("__"):  ##
@@ -1435,7 +1418,7 @@ class Token(str):
         return (self.__class__, (self.type, self.value, self.start_pos, self.line, self.column))
 
     def __repr__(self):
-        return "Token(%r, %r)" % (self.type, self.value)
+        return f"Token({self.type!r}, {self.value!r})"
 
     def __deepcopy__(self, memo):
         return Token(self.type, self.value, self.start_pos, self.line, self.column)
@@ -1554,7 +1537,7 @@ class Scanner:
         mres = []
         while terminals:
             pattern = "|".join(
-                "(?P<%s>%s)" % (t.name, t.pattern.to_regexp() + postfix)
+                f"(?P<{t.name}>{t.pattern.to_regexp() + postfix})"
                 for t in terminals[:max_size]
             )
             if self.use_bytes:
@@ -1737,11 +1720,11 @@ class BasicLexer(AbstractBasicLexer):
                 try:
                     self.re.compile(regexp, conf.g_regex_flags)
                 except self.re.error:
-                    raise LexError("Cannot compile token %s: %s" % (t.name, t.pattern))
+                    raise LexError(f"Cannot compile token {t.name}: {t.pattern}")
 
                 if t.pattern.min_width == 0:
                     raise LexError(
-                        "Lexer does not allow zero-width terminals. (%s: %s)" % (t.name, t.pattern)
+                        f"Lexer does not allow zero-width terminals. ({t.name}: {t.pattern})"
                     )
                 if t.pattern.type == "re":
                     terminal_to_regexp[t] = regexp
@@ -1836,7 +1819,7 @@ class BasicLexer(AbstractBasicLexer):
                     t = self.callback[t.type](t)
                 if not ignored:
                     if not isinstance(t, Token):
-                        raise LexError("Callbacks must return a token (returned %r)" % t)
+                        raise LexError(f"Callbacks must return a token (returned {t!r})")
                     lex_state.last_token = t
                     return t
 
@@ -2094,7 +2077,7 @@ def make_propagate_positions(option):
     elif option is False:
         return None
 
-    raise ConfigurationError("Invalid option for propagate_positions: %r" % option)
+    raise ConfigurationError(f"Invalid option for propagate_positions: {option!r}")
 
 
 class ChildFilter:
@@ -2381,7 +2364,7 @@ class ParseTreeBuilder:
                 f = w(f)
 
             if rule in callbacks:
-                raise GrammarError("Rule '%s' already exists" % (rule,))
+                raise GrammarError(f"Rule '{rule}' already exists")
 
             callbacks[rule] = f
 
@@ -2405,7 +2388,7 @@ Reduce = Action("Reduce")
 StateT = TypeVar("StateT")
 
 
-class ParseTableBase(Generic[StateT]):
+class ParseTableBase[StateT]:
     states: dict[StateT, dict[str, tuple]]
     start_states: dict[str, StateT]
     end_states: dict[str, StateT]
@@ -2471,7 +2454,7 @@ class IntParseTable(ParseTableBase[int]):
         return cls(int_states, start_states, end_states)
 
 
-class ParseConf(Generic[StateT]):
+class ParseConf[StateT]:
     __slots__ = "parse_table", "callbacks", "start", "start_state", "end_state", "states"
 
     parse_table: ParseTableBase[StateT]
@@ -2493,7 +2476,7 @@ class ParseConf(Generic[StateT]):
         self.start = start
 
 
-class ParserState(Generic[StateT]):
+class ParserState[StateT]:
     __slots__ = "parse_conf", "lexer", "state_stack", "value_stack"
 
     parse_conf: ParseConf[StateT]
@@ -2686,12 +2669,8 @@ class _Parser:
             raise e
         except Exception:
             if self.debug:
-                print("")
-                print("STATE STACK DUMP")
-                print("----------------")
-                for i, s in enumerate(state.state_stack):
-                    print("%d)" % i, s)
-                print("")
+                for _i, _s in enumerate(state.state_stack):
+                    pass
 
             raise
 
@@ -2761,8 +2740,8 @@ class InteractiveParser:
         # --
         out = ["Parser choices:"]
         for k, v in self.choices().items():
-            out.append("\t- %s -> %r" % (k, v))
-        out.append("stack size: %s" % len(self.parser_state.state_stack))
+            out.append(f"\t- {k} -> {v!r}")
+        out.append(f"stack size: {len(self.parser_state.state_stack)}")
         return "\n".join(out)
 
     def choices(self):
@@ -2867,7 +2846,9 @@ class ParsingFrontend(Serialize):
             self.parser = parser
         else:
             create_parser = _parser_creators.get(parser_conf.parser_type)
-            assert create_parser is not None, f"{parser_conf.parser_type} is not supported in standalone mode"
+            assert create_parser is not None, (
+                f"{parser_conf.parser_type} is not supported in standalone mode"
+            )
             self.parser = create_parser(lexer_conf, parser_conf, options)
 
         ##
@@ -2905,7 +2886,7 @@ class ParsingFrontend(Serialize):
             (start,) = start_decls
         elif start not in self.parser_conf.start:
             raise ConfigurationError(
-                "Unknown start rule %s. Must be one of %r" % (start, self.parser_conf.start)
+                f"Unknown start rule {start}. Must be one of {self.parser_conf.start!r}"
             )
         return start
 
@@ -2941,7 +2922,7 @@ def _validate_frontend_args(parser, lexer) -> None:
             "cyk": ("basic",),
         }[parser]
         assert_config(
-            lexer, expected, "Parser %r does not support lexer %%r, expected one of %%s" % parser
+            lexer, expected, f"Parser {parser!r} does not support lexer %r, expected one of %s"
         )
 
 
@@ -3020,9 +3001,7 @@ class LarkOptions(Serialize):
     use_bytes: bool
     ordered_sets: bool
     edit_terminals: Callable[[TerminalDef], TerminalDef] | None
-    import_paths: (
-        "list[str | Callable[[None | str | PackageResource, str], tuple[str, str]]]"
-    )
+    import_paths: "list[str | Callable[[None | str | PackageResource, str], tuple[str, str]]]"
     source_path: str | None
 
     OPTIONS_DOC = r"""
@@ -3175,7 +3154,7 @@ class LarkOptions(Serialize):
             )
 
         if o:
-            raise ConfigurationError("Unknown options: %s" % o.keys())
+            raise ConfigurationError(f"Unknown options: {o.keys()}")
 
     def __getattr__(self, name: str) -> Any:
         try:
@@ -3310,7 +3289,7 @@ class Lark(Serialize):
 
                         username = "unknown"
 
-                    cache_fn = tempfile.gettempdir() + "/.lark_cache_%s_%s_%s_%s.tmp" % (
+                    cache_fn = tempfile.gettempdir() + "/.lark_cache_{}_{}_{}_{}.tmp".format(
                         username,
                         cache_sha256,
                         *sys.version_info[:2],
@@ -3371,7 +3350,7 @@ class Lark(Serialize):
             elif self.options.parser == "cyk":
                 self.options.lexer = "basic"
             else:
-                assert False, self.options.parser
+                raise AssertionError(self.options.parser)
         lexer = self.options.lexer
         if isinstance(lexer, type):
             assert issubclass(lexer, Lexer)  ##
@@ -3398,13 +3377,11 @@ class Lark(Serialize):
 
         if self.options.priority not in _VALID_PRIORITY_OPTIONS:
             raise ConfigurationError(
-                "invalid priority option: %r. Must be one of %r"
-                % (self.options.priority, _VALID_PRIORITY_OPTIONS)
+                f"invalid priority option: {self.options.priority!r}. Must be one of {_VALID_PRIORITY_OPTIONS!r}"
             )
         if self.options.ambiguity not in _VALID_AMBIGUITY_OPTIONS:
             raise ConfigurationError(
-                "invalid ambiguity option: %r. Must be one of %r"
-                % (self.options.ambiguity, _VALID_AMBIGUITY_OPTIONS)
+                f"invalid ambiguity option: {self.options.ambiguity!r}. Must be one of {_VALID_AMBIGUITY_OPTIONS!r}"
             )
 
         if self.options.parser is None:
@@ -3598,10 +3575,12 @@ class Lark(Serialize):
         cls: type[_T],
         package: str,
         grammar_path: str,
-        search_paths: "Sequence[str]" = [""],
+        search_paths: "Sequence[str]" = None,
         **options,
     ) -> _T:
         # --
+        if search_paths is None:
+            search_paths = [""]
         package_loader = FromPackageLoader(package, search_paths)
         full_path, text = package_loader(None, grammar_path)
         options.setdefault("source_path", full_path)
@@ -3610,11 +3589,7 @@ class Lark(Serialize):
         return cls(text, **options)
 
     def __repr__(self):
-        return "Lark(open(%r), parser=%r, lexer=%r, ...)" % (
-            self.source_path,
-            self.options.parser,
-            self.options.lexer,
-        )
+        return f"Lark(open({self.source_path!r}), parser={self.options.parser!r}, lexer={self.options.lexer!r}, ...)"
 
     def lex(self, text: str, dont_ignore: bool = False) -> Iterator[Token]:
         # --
@@ -3723,8 +3698,7 @@ class Indenter(PostLex, ABC):
 
             if indent != self.indent_level[-1]:
                 raise DedentError(
-                    "Unexpected dedent to column %s. Expected dedent to %s"
-                    % (indent, self.indent_level[-1])
+                    f"Unexpected dedent to column {indent}. Expected dedent to {self.indent_level[-1]}"
                 )
 
     def _process(self, stream):

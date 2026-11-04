@@ -140,9 +140,9 @@ class GenericGenerator(ABC, Generic[BaseModelT]):
         if request.method == "getManifest":
             response = jsonrpc.SuccessResponse(
                 id=request.id,
-                result=dict(
-                    manifest=self.get_manifest(),
-                ),
+                result={
+                    "manifest": self.get_manifest(),
+                },
             )
         elif request.method == "generate":
             if request.params is None:  # pragma: no cover

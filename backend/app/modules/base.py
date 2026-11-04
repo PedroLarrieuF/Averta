@@ -67,7 +67,7 @@ class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaT
 
     async def create(self, data: CreateSchemaType, company_id: str) -> ResponseSchemaType:
         """Create new record"""
-        create_data = data.model_dump(exclude_unset=True)
+        create_data = data.model_dump(exclude_unset=True)  # type: ignore[attr-defined]
         create_data["companyId"] = company_id
 
         model = await self.model.create(data=create_data)
@@ -79,7 +79,7 @@ class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaT
         # Verify ownership
         await self.get_by_id(id, company_id)
 
-        update_data = data.model_dump(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True)  # type: ignore[attr-defined]
         model = await self.model.update(
             where={"id": id},
             data=update_data,
@@ -96,4 +96,4 @@ class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaT
     async def exists(self, id: str, company_id: str) -> bool:
         """Check if record exists"""
         count = await self.model.count(where={"id": id, "companyId": company_id})
-        return count > 0
+        return count > 0  # type: ignore[no-any-return]

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, ClassVar, Union
 
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ from .models import Model as ModelInfo
 from .utils import to_constant_case
 
 
-class Kind(str, Enum):
+class Kind(StrEnum):
     alias = "alias"
     union = "union"
     typeddict = "typeddict"

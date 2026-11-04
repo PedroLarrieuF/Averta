@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine, Mapping
-from typing import Any, NewType, TypeVar
-from typing import Literal as Literal
-from typing import Protocol as Protocol
-from typing import TypeGuard as TypeGuard
-from typing import get_args as get_args
+from typing import Any, Literal, NewType, Protocol, TypeVar
 
 import httpx
 from pydantic import BaseModel
 from typing_extensions import (
-    TypedDict as TypedDict,
-)
-from typing_extensions import (
-    runtime_checkable as runtime_checkable,
+    TypedDict,
+    runtime_checkable,
 )
 
 Method = Literal["GET", "POST"]

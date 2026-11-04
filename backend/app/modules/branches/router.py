@@ -37,7 +37,7 @@ async def create_branch(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     branches_service: BranchesService = Depends(get_branches_service),
-):
+) -> BranchResponse:
     """Create a new branch"""
     return await branches_service.create_branch(data, company_id, current_user.sub)
 
@@ -57,7 +57,7 @@ async def list_branches(  # noqa: PLR0913, PLR0917
     is_active: bool | None = Query(None),
     search: str | None = Query(None),
     branches_service: BranchesService = Depends(get_branches_service),
-):
+) -> BranchListResponse:
     """List branches with pagination and filters"""
     return await branches_service.list_branches(
         company_id, pagination, sort, client_id, is_active, search
@@ -75,7 +75,7 @@ async def get_branch(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     branches_service: BranchesService = Depends(get_branches_service),
-):
+) -> BranchResponse:
     """Get branch details"""
     return await branches_service.get_by_id(branch_id, company_id)
 
@@ -92,6 +92,6 @@ async def update_branch(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     branches_service: BranchesService = Depends(get_branches_service),
-):
+) -> BranchResponse:
     """Update branch (admin only)"""
     return await branches_service.update_branch(branch_id, data, company_id)

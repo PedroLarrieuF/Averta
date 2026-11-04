@@ -6,7 +6,18 @@ export { Card, CardHeader, CardBody, CardFooter } from './Card'
 
 export { Badge, StatusBadge } from './Badge'
 
-export { Modal, ConfirmDialog } from './Modal'
+export { Modal, ConfirmDialog, ModalHeader, ModalBody, ModalFooter } from './Modal'
+export {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogPortal,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from './Modal'
 
 export {
   DropdownMenuRoot as DropdownMenu,
@@ -27,6 +38,14 @@ export type { Column } from './Table'
 
 export { Avatar } from './Avatar'
 
+export { Tooltip } from './Tooltip'
+
+export { Toast, ToastManager, useToast } from './Toast'
+
+export { EmptyState, EmptyDiscrepancies, EmptyDocuments, EmptyContests, EmptySearch, EmptyGeneric } from './EmptyState'
+
+export { Alert, AlertTitle, AlertDescription } from './Alert'
+
 export { PageHeader, PageTitle, PageSubtitle } from './PageHeader'
 
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './Select'
@@ -36,6 +55,10 @@ export { Switch } from './Switch'
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs'
 
 export { KPICard, KPIValue, KPILabel } from './KPICard'
+
+// Data Grid components
+export { FreightTable } from './data-grid'
+export type { FreightTableColumn, FreightTableRow, FreightTableProps } from './data-grid/types'
 
 // Documents components
 export { UploadZone } from './documents/UploadZone'
@@ -88,3 +111,14 @@ export { BranchForm as CarrierBranchForm } from './carriers/BranchForm'
 export { BranchesTable as CarrierBranchesTable } from './carriers/BranchesTable'
 export { carrierSchema, type CarrierFormData } from './carriers/CarrierForm'
 export { carrierBranchSchema, type CarrierBranchFormData } from './carriers/BranchForm'
+
+// Profile components
+export { ProfileHeader } from './profile/ProfileHeader'
+export { ProfileForm } from './profile/ProfileForm'
+export { ChangePasswordModal } from './profile/ChangePasswordModal'
+export { NotificationPreferences } from './profile/NotificationPreferences'
+export { DangerZone } from './profile/DangerZone'
+export { profileSchema, type ProfileFormData } from './profile/ProfileForm'
+export { changePasswordSchema, type ChangePasswordFormData } from './profile/ChangePasswordModal'
+export { notificationPreferencesSchema, type NotificationPreferencesData } from './profile/NotificationPreferences'
+export { deleteAccountSchema, type DeleteAccountFormData } from './profile/DangerZone'
