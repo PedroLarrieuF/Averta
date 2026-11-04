@@ -40,7 +40,7 @@ async def get_dashboard(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     reports_service: ReportsService = Depends(get_reports_service),
-):
+) -> DashboardKPIs:
     """Get main dashboard KPIs"""
     return await reports_service.get_dashboard_kpis(company_id)
 
@@ -62,7 +62,7 @@ async def get_recovery_report(  # noqa: PLR0913, PLR0917
     date_to: str | None = Query(None),
     status: list[str] | None = Query(None),
     reports_service: ReportsService = Depends(get_reports_service),
-):
+) -> RecoveryReport:
     """Get detailed recovery report with pagination"""
     df = datetime.fromisoformat(date_from) if date_from else None
     dt = datetime.fromisoformat(date_to) if date_to else None
@@ -87,7 +87,7 @@ async def get_success_fee_report(  # noqa: PLR0913, PLR0917
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
     reports_service: ReportsService = Depends(get_reports_service),
-):
+) -> SuccessFeeReport:
     """Get success fee report grouped by contract"""
     df = datetime.fromisoformat(date_from) if date_from else None
     dt = datetime.fromisoformat(date_to) if date_to else None
@@ -107,7 +107,7 @@ async def get_discrepancy_stats(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     reports_service: ReportsService = Depends(get_reports_service),
-):
+) -> DiscrepancyStats:
     """Get discrepancy statistics by type, status, carrier, client"""
     return await reports_service.get_discrepancy_stats(company_id)
 
@@ -124,6 +124,6 @@ async def export_report(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     reports_service: ReportsService = Depends(get_reports_service),
-):
+) -> ExportResponse:
     """Export report to Excel (returns presigned download URL)"""
     return await reports_service.export_report(company_id, data)

@@ -1,5 +1,6 @@
 """Averta SaaS - FastAPI Application Entry Point"""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
@@ -7,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import HTMLResponse
 from jose import JWTError
 from prisma.errors import PrismaError
 from slowapi.errors import RateLimitExceeded
@@ -64,7 +66,7 @@ structlog.configure(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan events"""
     # Startup
     await get_prisma()
@@ -104,19 +106,19 @@ app.add_middleware(
 init_rate_limiter(app)
 
 # Exception Handlers
-app.add_exception_handler(AppException, app_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(PrismaError, prisma_exception_handler)
+app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(PrismaError, prisma_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(JWTError, jwt_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
 # Custom Swagger UI (if needed)
 @app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui():
+async def custom_swagger_ui() -> HTMLResponse:
     return get_swagger_ui_html(
-        openapi_url=app.openapi_url,
+        openapi_url=app.openapi_url or "",
         title=f"{settings.APP_NAME} - API Docs",
         swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
         swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
@@ -124,9 +126,9 @@ async def custom_swagger_ui():
 
 
 @app.get("/redoc", include_in_schema=False)
-async def custom_redoc():
+async def custom_redoc() -> HTMLResponse:
     return get_redoc_html(
-        openapi_url=app.openapi_url,
+        openapi_url=app.openapi_url or "",
         title=f"{settings.APP_NAME} - ReDoc",
         redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
     )
@@ -134,7 +136,7 @@ async def custom_redoc():
 
 # Health check (no auth required)
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check() -> dict[str, str]:
     return {
         "status": "healthy",
         "version": settings.APP_VERSION,

@@ -322,7 +322,7 @@ class PrismaPlugin(Plugin):
             )
 
         parsed = {}
-        for arg_name, value_expr in zip(expr.arg_names, expr.args):
+        for arg_name, value_expr in zip(expr.arg_names, expr.args, strict=False):
             if arg_name is None:
                 continue
 

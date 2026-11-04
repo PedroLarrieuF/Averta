@@ -2,7 +2,7 @@ import { Outlet, NavLink } from 'react-router-dom'
 import { Building2, Users, Truck, FileText, Bell } from 'lucide-react'
 import { cn } from '@/utils/helpers'
 import { useAuth } from '@/store/auth-context'
-import type { Role } from '@/types'
+import type { UserRole as Role } from '@/types'
 
 const SETTINGS_NAV = [
   { path: 'company', label: 'Empresa', icon: Building2, roles: ['ADMIN'] as Role[] },

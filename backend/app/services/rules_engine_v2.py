@@ -3,9 +3,11 @@
 import hashlib
 import json
 import os
+import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import redis.asyncio as redis
@@ -17,7 +19,7 @@ from app.core.database import get_prisma
 logger = structlog.get_logger()
 
 
-class DiscrepancyType(str, Enum):
+class DiscrepancyType(StrEnum):
     # CT-e Rules (existing)
     ICMS_DIFFERENTIAL = "ICMS_DIFFERENTIAL"
     ICMS_FCP = "ICMS_FCP"
@@ -64,12 +66,12 @@ class DiscrepancyType(str, Enum):
 class RuleContext:
     """Context passed to all rules during evaluation"""
 
-    document: dict
-    contract: dict | None = None
-    freight_table: dict | None = None
-    carrier: dict | None = None
-    client_settings: dict | None = None
-    metadata: dict = field(default_factory=dict)
+    document: dict[str, Any]
+    contract: dict[str, Any] | None = None
+    freight_table: dict[str, Any] | None = None
+    carrier: dict[str, Any] | None = None
+    client_settings: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -84,8 +86,8 @@ class DiscrepancyResult:
     actual_value: float | None = None
     difference: float | None = None
     difference_pct: float | None = None
-    details: dict = field(default_factory=dict)
-    evidence: dict = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
     severity: str = "MEDIUM"
 
 
@@ -100,7 +102,7 @@ class BaseRule(ABC):
     requires_freight_table: bool = False
     relevance_tags: list[str] = field(default_factory=list)  # para filtro
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
 
     @abstractmethod
@@ -112,8 +114,8 @@ class BaseRule(ABC):
         triggered: bool,
         expected: float | None = None,
         actual: float | None = None,
-        details: dict | None = None,
-        evidence: dict | None = None,
+        details: dict[str, Any] | None = None,
+        evidence: dict[str, Any] | None = None,
     ) -> DiscrepancyResult:
         diff = diff_pct = None
         if expected is not None and actual is not None:
@@ -135,9 +137,9 @@ class BaseRule(ABC):
             severity=self.severity,
         )
 
-    def _safe_get(self, data: dict, path: str, default=None):
+    def _safe_get(self, data: dict[str, Any], path: str, default: Any = None) -> Any:
         keys = path.split(".")
-        current = data
+        current: Any = data
         for key in keys:
             if isinstance(current, dict):
                 current = current.get(key)
@@ -193,13 +195,13 @@ class RulesEngineV2:
         "NFE_REGIME_ESPECIAL": 7200,  # 2 hours
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._rules: list[BaseRule] = []
         self._rule_map: dict[str, BaseRule] = {}
         self._rule_index: dict[str, list[BaseRule]] = {}  # tag -> rules
         self._cache: redis.Redis | None = None
         self._cache_version = self._get_deploy_version()
-        self._local_cache: dict[str, tuple[Any, float]] = {}  # fallback in-memory cache
+        self._local_cache: dict[str, tuple[DiscrepancyResult, float]] = {}  # fallback in-memory cache
         self._local_cache_ttl = 300  # 5 minutes for local cache
 
     def _get_deploy_version(self) -> str:
@@ -233,7 +235,7 @@ class RulesEngineV2:
     def get_rules_by_tag(self, tag: str) -> list[BaseRule]:
         return self._rule_index.get(tag, [])
 
-    def list_rules(self) -> list[dict]:
+    def list_rules(self) -> list[dict[str, Any]]:
         return [
             {
                 "code": r.rule_code,
@@ -255,7 +257,7 @@ class RulesEngineV2:
         """Initialize Redis connection lazily."""
         if self._cache is None:
             try:
-                self._cache = redis.from_url(
+                self._cache = redis.from_url(  # type: ignore[no-untyped-call]
                     settings.REDIS_URL,
                     encoding="utf-8",
                     decode_responses=True,
@@ -274,7 +276,7 @@ class RulesEngineV2:
 
     def _cache_key(self, rule: BaseRule, context: RuleContext) -> str:
         """Generate cache key based on rule and relevant context fields."""
-        relevant_data = {}
+        relevant_data: dict[str, Any] = {}
 
         # Extract only fields relevant to this rule's tags
         for tag in rule.relevance_tags:
@@ -288,11 +290,11 @@ class RulesEngineV2:
         hash_val = hashlib.md5(data_str.encode()).hexdigest()[:16]
         return f"rule:{rule.rule_code}:{self._cache_version}:{hash_val}"
 
-    def _extract_tag_data(self, context: RuleContext, tag: str) -> Any:
+    def _extract_tag_data(self, context: RuleContext, tag: str) -> dict[str, Any] | None:
         """Extract data relevant to a specific tag from context."""
         doc = context.document
 
-        tag_extractors = {
+        tag_extractors: dict[str, Callable[[], dict[str, Any] | None]] = {
             "icms": lambda: {
                 "v_icms": self._safe_get(doc, "icms.v_icms"),
                 "v_bc": self._safe_get(doc, "icms.v_bc"),
@@ -460,7 +462,6 @@ class RulesEngineV2:
         # Fallback to local in-memory cache
         if cache_key in self._local_cache:
             result, expiry = self._local_cache[cache_key]
-            import time
 
             if time.time() < expiry:
                 logger.debug("cache_hit_local", rule_code=rule.rule_code, key=cache_key)
@@ -504,8 +505,6 @@ class RulesEngineV2:
                 logger.warning("redis_cache_set_error", rule_code=rule.rule_code, error=str(e))
 
         # Fallback to local in-memory cache
-        import time
-
         self._local_cache[cache_key] = (result, time.time() + min(ttl, self._local_cache_ttl))
         logger.debug(
             "cache_set_local",
@@ -580,9 +579,9 @@ class RulesEngineV2:
         logger.info("reference_data_cache_invalidated", total_cleared=total)
         return total
 
-    async def get_cache_stats(self) -> dict:
+    async def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
-        stats = {
+        stats: dict[str, Any] = {
             "local_cache_size": len(self._local_cache),
             "redis_connected": self._cache is not None,
             "cache_version": self._cache_version,
@@ -604,90 +603,7 @@ class RulesEngineV2:
         doc = context.document
 
         # Determine relevant tags from document
-        tags = set()
-
-        # ICMS tags (CT-e)
-        if self._safe_get(doc, "icms.v_icms") is not None:
-            tags.add("icms")
-        if self._safe_get(doc, "uf_inicio") and self._safe_get(doc, "uf_fim"):
-            tags.add("interstate")
-        if self._safe_get(doc, "icms.cst") in ["10", "30", "60", "70", "90"]:
-            tags.add("icms_st")
-
-        # Freight tags
-        if self._safe_get(doc, "freight_value") is not None:
-            tags.add("freight")
-        if self._safe_get(doc, "weight") is not None:
-            tags.add("weight")
-        if self._safe_get(doc, "volume") is not None:
-            tags.add("cubage")
-        if self._safe_get(doc, "components.v_advalorem") is not None:
-            tags.add("advalorem")
-        if self._safe_get(doc, "components.v_gris") is not None:
-            tags.add("gris")
-
-        # Redespacho
-        if self._safe_get(doc, "has_redespacho"):
-            tags.add("redespacho")
-
-        # Pedágio
-        if self._safe_get(doc, "modal_rodoviario.pedagio"):
-            tags.add("toll")
-
-        # CT-e Complementar
-        if self._safe_get(doc, "modelo") in ["57", "67"]:
-            tags.add("cte_complementar")
-
-        # NF-e Tags
-        # Check if document is NF-e (modelo 55) or has NF-e structure
-        modelo = self._safe_get(doc, "modelo") or self._safe_get(doc, "ide.mod")
-        is_nfe = modelo == "55" or "ide" in doc or "emit" in doc or "dest" in doc or "det" in doc
-
-        if is_nfe:
-            # ICMS tags
-            if self._safe_get(doc, "icms.cst") or self._safe_get(doc, "icms.csosn"):
-                tags.add("nfe_icms")
-            if self._safe_get(doc, "emit.enderEmit.UF") and self._safe_get(
-                doc, "dest.enderDest.UF"
-            ):
-                tags.add("nfe_difal")
-            if self._safe_get(doc, "icms.v_fcp") is not None:
-                tags.add("nfe_fcp")
-
-            # Frete tags
-            if self._safe_get(doc, "transp.modFrete") is not None:
-                tags.add("nfe_frete")
-                tags.add("nfe_cfop")
-
-            # NCM/CEST
-            if self._safe_get(doc, "det.prod.NCM") or self._safe_get(doc, "det.prod.CEST"):
-                tags.add("nfe_ncm_cest")
-
-            # Valor total
-            if self._safe_get(doc, "total.ICMSTot.vNF") is not None:
-                tags.add("nfe_valor_total")
-
-            # Transportadora
-            if self._safe_get(doc, "transp.modFrete") in ["0", "1", "2", "3"]:
-                tags.add("nfe_transportadora")
-
-            # Destinatário
-            if self._safe_get(doc, "dest.CNPJ") or self._safe_get(doc, "dest.CPF"):
-                tags.add("nfe_destinatario")
-
-            # Peso/Volume
-            if self._safe_get(doc, "transp.vol.pesoB") or self._safe_get(doc, "transp.vol.qVol"):
-                tags.add("nfe_peso_volume")
-
-            # Complementar/Cancelamento
-            if self._safe_get(doc, "infNFeSupl.refNFe"):
-                tags.add("nfe_complementar")
-            if self._safe_get(doc, "protNFe.infProt.chNFe"):
-                tags.add("nfe_cancelamento")
-
-            # Regime especial
-            if self._safe_get(doc, "emit.CRT"):
-                tags.add("nfe_regime_especial")
+        tags = self._determine_relevant_tags(doc)
 
         # Collect rules matching tags
         seen = set()
@@ -706,6 +622,108 @@ class RulesEngineV2:
             "rules_filtered", total=len(self._rules), relevant=len(relevant), tags=list(tags)
         )
         return relevant
+
+    def _determine_relevant_tags(self, doc: dict[str, Any]) -> set[str]:
+        """Determine relevant tags based on document content."""
+        tags: set[str] = set()
+
+        # ICMS tags (CT-e)
+        self._add_cte_tags(doc, tags)
+
+        # Freight tags
+        self._add_freight_tags(doc, tags)
+
+        # Redespacho
+        if self._safe_get(doc, "has_redespacho"):
+            tags.add("redespacho")
+
+        # Pedágio
+        if self._safe_get(doc, "modal_rodoviario.pedagio"):
+            tags.add("toll")
+
+        # CT-e Complementar
+        if self._safe_get(doc, "modelo") in ["57", "67"]:
+            tags.add("cte_complementar")
+
+        # NF-e Tags
+        if self._is_nfe_document(doc):
+            self._add_nfe_tags(doc, tags)
+
+        return tags
+
+    def _add_cte_tags(self, doc: dict[str, Any], tags: set[str]) -> None:
+        """Add CT-e specific tags."""
+        if self._safe_get(doc, "icms.v_icms") is not None:
+            tags.add("icms")
+        if self._safe_get(doc, "uf_inicio") and self._safe_get(doc, "uf_fim"):
+            tags.add("interstate")
+        if self._safe_get(doc, "icms.cst") in ["10", "30", "60", "70", "90"]:
+            tags.add("icms_st")
+
+    def _add_freight_tags(self, doc: dict[str, Any], tags: set[str]) -> None:
+        """Add freight-related tags."""
+        if self._safe_get(doc, "freight_value") is not None:
+            tags.add("freight")
+        if self._safe_get(doc, "weight") is not None:
+            tags.add("weight")
+        if self._safe_get(doc, "volume") is not None:
+            tags.add("cubage")
+        if self._safe_get(doc, "components.v_advalorem") is not None:
+            tags.add("advalorem")
+        if self._safe_get(doc, "components.v_gris") is not None:
+            tags.add("gris")
+
+    def _is_nfe_document(self, doc: dict[str, Any]) -> bool:
+        """Check if document is NF-e (modelo 55) or has NF-e structure."""
+        modelo = self._safe_get(doc, "modelo") or self._safe_get(doc, "ide.mod")
+        return modelo == "55" or "ide" in doc or "emit" in doc or "dest" in doc or "det" in doc
+
+    def _add_nfe_tags(self, doc: dict[str, Any], tags: set[str]) -> None:
+        """Add NF-e specific tags."""
+        # ICMS tags
+        if self._safe_get(doc, "icms.cst") or self._safe_get(doc, "icms.csosn"):
+            tags.add("nfe_icms")
+        if self._safe_get(doc, "emit.enderEmit.UF") and self._safe_get(
+            doc, "dest.enderDest.UF"
+        ):
+            tags.add("nfe_difal")
+        if self._safe_get(doc, "icms.v_fcp") is not None:
+            tags.add("nfe_fcp")
+
+        # Frete tags
+        if self._safe_get(doc, "transp.modFrete") is not None:
+            tags.add("nfe_frete")
+            tags.add("nfe_cfop")
+
+        # NCM/CEST
+        if self._safe_get(doc, "det.prod.NCM") or self._safe_get(doc, "det.prod.CEST"):
+            tags.add("nfe_ncm_cest")
+
+        # Valor total
+        if self._safe_get(doc, "total.ICMSTot.vNF") is not None:
+            tags.add("nfe_valor_total")
+
+        # Transportadora
+        if self._safe_get(doc, "transp.modFrete") in ["0", "1", "2", "3"]:
+            tags.add("nfe_transportadora")
+
+        # Destinatário
+        if self._safe_get(doc, "dest.CNPJ") or self._safe_get(doc, "dest.CPF"):
+            tags.add("nfe_destinatario")
+
+        # Peso/Volume
+        if self._safe_get(doc, "transp.vol.pesoB") or self._safe_get(doc, "transp.vol.qVol"):
+            tags.add("nfe_peso_volume")
+
+        # Complementar/Cancelamento
+        if self._safe_get(doc, "infNFeSupl.refNFe"):
+            tags.add("nfe_complementar")
+        if self._safe_get(doc, "protNFe.infProt.chNFe"):
+            tags.add("nfe_cancelamento")
+
+        # Regime especial
+        if self._safe_get(doc, "emit.CRT"):
+            tags.add("nfe_regime_especial")
 
     async def evaluate_all(self, context: RuleContext) -> list[DiscrepancyResult]:
         """Run all relevant rules with Redis caching"""
@@ -763,9 +781,9 @@ class RulesEngineV2:
         )
         return results
 
-    def _safe_get(self, data: dict, path: str, default=None):
+    def _safe_get(self, data: dict[str, Any], path: str, default: Any = None) -> Any:
         keys = path.split(".")
-        current = data
+        current: Any = data
         for key in keys:
             if isinstance(current, dict):
                 current = current.get(key)
@@ -780,18 +798,35 @@ class RulesEngineV2:
 # DEFAULT ENGINE FACTORY (Singleton)
 # ============================================
 
-# Module-level singleton instance
-_engine_instance: RulesEngineV2 | None = None
 
-# Built-in rule classes map for fallback
+class _EngineSingleton:
+    """Singleton container for the rules engine instance."""
+
+    def __init__(self) -> None:
+        self._instance: RulesEngineV2 | None = None
+
+    @property
+    def instance(self) -> RulesEngineV2 | None:
+        return self._instance
+
+    @instance.setter
+    def instance(self, value: RulesEngineV2) -> None:
+        self._instance = value
+
+
+# Module-level singleton container
+_engine_singleton = _EngineSingleton()
+
+# Built-in rule classes map for fallback - populated lazily to avoid circular imports
 _BUILTIN_RULES: dict[str, type] = {}
+_builtin_rules_loaded: list[bool] = [False]  # Use list as mutable container
 
 
-def _load_builtin_rules():
+def _load_builtin_rules() -> dict[str, type]:
     """Lazy load built-in rule classes."""
-    global _BUILTIN_RULES
-    if not _BUILTIN_RULES:
-        from app.services.rules_critical import (
+    if not _builtin_rules_loaded[0]:
+        # Import here to avoid circular imports
+        from app.services.rules_critical import (  # noqa: PLC0415
             AdValoremRule,
             ComplementaryCTEAnulationRule,
             ComplementaryCTEComplementRule,
@@ -810,7 +845,7 @@ def _load_builtin_rules():
             ValorMinimoFreteRule,
         )
 
-        _BUILTIN_RULES = {
+        _BUILTIN_RULES.update({
             "ICMS_DIFAL": ICMSDifferentialRule,
             "ICMS_FCP": FCPRule,
             "ICMS_ST": ICMSSTRule,
@@ -827,7 +862,8 @@ def _load_builtin_rules():
             "CTE_SUBSTITUICAO": ComplementaryCTESubstitutionRule,
             "CTE_COMPLEMENTO_VALOR": ComplementaryCTEComplementRule,
             "ML_ANOMALY": MLAnomalyRule,
-        }
+        })
+        _builtin_rules_loaded[0] = True
     return _BUILTIN_RULES
 
 
@@ -882,10 +918,8 @@ async def _register_builtin_fallback(engine: RulesEngineV2) -> int:
 
 async def create_engine_v2() -> RulesEngineV2:
     """Create or get singleton engine with DB rules + built-in fallback"""
-    global _engine_instance
-
-    if _engine_instance is not None:
-        return _engine_instance
+    if _engine_singleton.instance is not None:
+        return _engine_singleton.instance
 
     engine = RulesEngineV2()
 
@@ -897,14 +931,12 @@ async def create_engine_v2() -> RulesEngineV2:
         logger.info("using_builtin_fallback_rules")
         await _register_builtin_fallback(engine)
 
-    _engine_instance = engine
+    _engine_singleton.instance = engine
     return engine
 
 
 async def reload_engine_rules() -> RulesEngineV2:
     """Force reload rules from DB (e.g., after rule updates via API)."""
-    global _engine_instance
-
     engine = RulesEngineV2()
     loaded = await _load_rules_from_db(engine)
 
@@ -912,11 +944,11 @@ async def reload_engine_rules() -> RulesEngineV2:
         logger.info("fallback_to_builtin_on_reload")
         await _register_builtin_fallback(engine)
 
-    _engine_instance = engine
+    _engine_singleton.instance = engine
     logger.info("engine_reloaded", rules_loaded=loaded)
     return engine
 
 
 def get_engine_instance() -> RulesEngineV2 | None:
     """Get the singleton engine instance (for cache invalidation from other services)"""
-    return _engine_instance
+    return _engine_singleton.instance

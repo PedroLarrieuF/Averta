@@ -346,9 +346,8 @@ def render_email_templates(results, document, contract, carrier, freight_table):
             output_file = output_dir / f"{template_name}_demo.html"
             output_file.write_text(html_content, encoding="utf-8")
             rendered_files.append(str(output_file))
-            print(f"✅ Gerado: {output_file}")
-        except Exception as e:
-            print(f"❌ Erro ao renderizar {template_name}: {e}")
+        except Exception:
+            pass
 
     # Também gerar um relatório resumo em JSON
     import json
@@ -381,40 +380,25 @@ def render_email_templates(results, document, contract, carrier, freight_table):
 
     summary_file = output_dir / "audit_summary_demo.json"
     summary_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"✅ Resumo JSON: {summary_file}")
 
     return rendered_files, output_dir
 
 
 async def main():
-    print("=" * 60)
-    print("AVERTA SAAS - DEMO EMAIL GENERATOR")
-    print("=" * 60)
-    print()
 
-    print("🔍 Executando auditoria simulada...")
     results, document, contract, carrier, freight_table = await run_demo_audit()
 
-    print(f"\n📊 Resultados: {len(results)} divergências encontradas")
-    for r in results:
-        print(f"  - {r.rule_code}: R$ {r.difference:,.2f} ({r.severity})")
+    for _r in results:
+        pass
 
-    total = sum(r.difference for r in results if r.difference and r.difference > 0)
-    print(f"\n💰 Total a recuperar: R$ {total:,.2f}")
-    print(f"💰 Success Fee (20%): R$ {total * 0.20:,.2f}")
-    print(f"💰 Líquido para cliente: R$ {total * 0.80:,.2f}")
+    sum(r.difference for r in results if r.difference and r.difference > 0)
 
-    print("\n📧 Renderizando templates de email...")
     rendered_files, output_dir = render_email_templates(
         results, document, contract, carrier, freight_table
     )
 
-    print(f"\n✅ Demo concluído! Arquivos em: {output_dir}")
-    print("\nArquivos gerados:")
-    for f in rendered_files:
-        print(f"  - {f}")
-    print(f"  - {output_dir / 'audit_summary_demo.json'}")
-    print("\n💡 Abra os .html no navegador para apresentar ao cliente")
+    for _f in rendered_files:
+        pass
 
 
 if __name__ == "__main__":

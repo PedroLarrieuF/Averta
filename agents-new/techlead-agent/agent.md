@@ -142,16 +142,17 @@ AvertaSaaS/
 |----|------|-------------|--------|----------|--------|------|
 | TD-001 | xml_parser.py | NF-e 4.00 namespace frágil; migrar para lxml.etree | M | HIGH | ✅ **DONE** | #12 |
 | TD-002 | rules_engine_v2.py | Cache Redis stub (`_cache = None`) | M | HIGH | ✅ **DONE** | #05 |
-| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | S | MEDIUM | 🟡 In Progress | #14 |
+| TD-003 | pdf_generator.py | Bloqueia event loop; usar `run_in_threadpool` | S | MEDIUM | 🟡 In Progress | #14, #41 |
 | TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | M | HIGH | ✅ **DONE** | #04 |
-| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | MEDIUM | 🟡 In Progress | #13 |
-| TD-006 | Frontend Tests | Zero tests; need Vitest + RTL + MSW | L | CRITICAL | ✅ Done | #01 |
-| TD-007 | Frontend Pages | 9 placeholder pages need implementation | XL | CRITICAL | 🔴 In Progress | #08-11,15 |
+| TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | MEDIUM | 🟡 In Progress | #13, #29, #37 |
+| TD-006 | Frontend Tests | Zero tests; need Vitest + RTL + MSW | L | CRITICAL | ✅ Done (infra) | #01 |
+| TD-007 | Frontend Pages | 2 placeholder pages need implementation (Contracts, Profile) | L | CRITICAL | 🔴 Open | #24, #25 |
 | TD-008 | NestJS Backend | Duplicate implementation | L | LOW | ✅ **DECIDED/ARCHIVED** | #06 |
 | TD-009 | Backend Tests | 6 tests were failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | M | HIGH | ✅ **DONE** | #28 |
-| TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | 🔴 Open | NEW |
-| TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🔴 Open | NEW |
-| TD-012 | Linting | 200+ ruff issues (import sorting, deprecated typing, unused imports, print statements) | M | MEDIUM | 🔴 Open | NEW |
+| TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | 🔴 Open | #26 |
+| TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🔴 Open | #27 |
+| TD-012 | Linting | 200+ ruff issues (import sorting, deprecated typing, unused imports, print statements) | M | MEDIUM | 🔴 Open | #33 |
+| TD-013 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | XL | CRITICAL | 🔴 Open | #34, #35, #36 |
 
 ---
 
@@ -177,7 +178,7 @@ AvertaSaaS/
 
 ---
 
-### Sprint Status (Cards - 2026-11-03)
+### Sprint Status (Cards - 2026-11-04)
 
 | Card | Agent | Title | Estimate | Dependency | Status |
 |------|-------|-------|----------|------------|--------|
@@ -192,15 +193,15 @@ AvertaSaaS/
 | #12 | backend | XML Parser Namespace Fix | M | - | ✅ **Done** |
 | #13 | backend-qa | QA Integration Tests (httpx.AsyncClient) | L | - | 🟡 **In Progress** |
 | #14 | backend | PDF Generator Threadpool | M | - | 🟡 **In Progress** |
-| #15 | frontend | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | M | #01 | 🔴 Ready |
+| #15 | frontend | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | M | #01 | ✅ **Done** |
 | #16 | backend | Rules DB-Driven Configuration | M | - | 🔴 Ready |
 | #17 | backend | ML Anomaly Detection | XL | #12 | 🔴 Ready |
 | #18 | backend | Webhooks System | L | - | 🔴 Ready |
 | #19 | backend | Audit Log Middleware | M | - | 🔴 Ready |
 | #20 | backend | Soft Delete Global | M | - | 🔴 Ready |
 | #21 | frontend | Reports Page (PDF/Excel export, scheduling) | L | HIGH | ✅ **Done** (merged into #11) |
-| #22 | frontend | Clients Page (CRUD) | M | HIGH | 🔴 Ready |
-| #23 | frontend | Carriers Page (CRUD) | M | HIGH | 🔴 Ready |
+| #22 | frontend | Clients Page (CRUD) | M | HIGH | ✅ **Done** |
+| #23 | frontend | Carriers Page (CRUD) | M | HIGH | ✅ **Done** |
 | #24 | frontend | Contracts Page (CRUD + FreightTable editor) | L | HIGH | 🔴 Ready |
 | #25 | frontend | Profile Page (user profile management) | S | MEDIUM | 🔴 Ready |
 | #26 | frontend | Code Splitting & Bundle Optimization | M | MEDIUM | 🔴 Ready |

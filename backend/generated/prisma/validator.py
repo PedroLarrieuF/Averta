@@ -53,7 +53,7 @@ def patch_pydantic() -> None:
 # https://github.com/pydantic/pydantic/issues/7111
 
 
-def validate(type: type[T], data: Any) -> T:
+def validate[T](type: type[T], data: Any) -> T:
     """Validate untrusted data matches a given TypedDict
 
     For example:

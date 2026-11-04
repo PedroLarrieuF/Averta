@@ -37,7 +37,7 @@ async def create_client(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> ClientResponse:
     """Create a new client"""
     return await clients_service.create_client(data, company_id, current_user.sub)
 
@@ -56,7 +56,7 @@ async def list_clients(  # noqa: PLR0913, PLR0917
     is_active: bool | None = Query(None),
     search: str | None = Query(None),
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> ClientListResponse:
     """List clients with pagination and filters"""
     return await clients_service.list_clients(company_id, pagination, sort, is_active, search)
 
@@ -72,7 +72,7 @@ async def get_client(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> ClientResponse:
     """Get client details"""
     return await clients_service.get_by_id(client_id, company_id)
 
@@ -88,7 +88,7 @@ async def get_client_details(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> ClientResponse:
     """Get client with branches, contracts, documents count"""
     return await clients_service.get_client_with_relations(client_id, company_id)
 
@@ -105,7 +105,7 @@ async def update_client(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> ClientResponse:
     """Update client (admin only)"""
     return await clients_service.update_client(client_id, data, company_id)
 
@@ -120,6 +120,22 @@ async def deactivate_client(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     clients_service: ClientsService = Depends(get_clients_service),
-):
+) -> None:
     """Deactivate client (admin only)"""
-    await clients_service.update_client(client_id, ClientUpdate(is_active=False), company_id)
+    await clients_service.update_client(
+        client_id,
+        ClientUpdate(
+            name=None,
+            trade_name=None,
+            state_reg=None,
+            email=None,
+            phone=None,
+            address=None,
+            contact_person=None,
+            contact_email=None,
+            contact_phone=None,
+            settings=None,
+            is_active=False,
+        ),
+        company_id,
+    )

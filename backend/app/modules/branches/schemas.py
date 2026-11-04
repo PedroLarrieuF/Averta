@@ -1,6 +1,7 @@
 """Branches module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -9,7 +10,7 @@ class BranchCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
     code: str = Field(..., min_length=1, max_length=20)
     cnpj: str | None = Field(None, min_length=14, max_length=18)
-    address: dict | None = None
+    address: dict[str, Any] | None = None
     client_id: str | None = None
 
 
@@ -17,7 +18,7 @@ class BranchUpdate(BaseModel):
     name: str | None = Field(None, min_length=2, max_length=200)
     code: str | None = Field(None, min_length=1, max_length=20)
     cnpj: str | None = Field(None, min_length=14, max_length=18)
-    address: dict | None = None
+    address: dict[str, Any] | None = None
     client_id: str | None = None
     is_active: bool | None = None
 
@@ -29,7 +30,7 @@ class BranchResponse(BaseModel):
     name: str
     code: str
     cnpj: str | None
-    address: dict | None
+    address: dict[str, Any] | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

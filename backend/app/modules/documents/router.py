@@ -13,7 +13,7 @@ from app.core.dependencies import (
     RequireManager,
     get_database,
 )
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.core.rate_limit import upload_limiter
 from app.modules.documents.schemas import (
     DocumentCreate,
@@ -46,7 +46,7 @@ async def create_document(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentResponse:
     """Create a new document manually"""
     return await documents_service.create_document(data, company_id)
 
@@ -68,7 +68,7 @@ async def list_documents(  # noqa: PLR0913, PLR0917
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentListResponse:
     """List documents with filters"""
     if current_user.role == "CLIENT" and current_user.client_id:
         client_id = current_user.client_id
@@ -89,7 +89,7 @@ async def import_documents(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentImportResponse:
     """Import multiple XML files (CT-e/NF-e)"""
     import_data.client_id = current_user.client_id or import_data.client_id
     return await documents_service.import_batch(import_data, company_id)
@@ -105,17 +105,22 @@ async def import_documents(
 async def upload_documents(  # noqa: PLR0913, PLR0917
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
-    client_id: ClientIdDep,
     files: list[UploadFile] = File(...),
     carrier_id: str | None = Form(None),
     contract_id: str | None = Form(None),
+    client_id: str | None = Form(None),
     auto_match_contract: bool = Form(True),
     auto_run_rules: bool = Form(True),
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentImportResponse:
     """Upload XML files directly"""
+    # Determine client_id: use form value, or current user's client_id for CLIENT role
     if current_user.role == "CLIENT" and current_user.client_id:
-        client_id = current_user.client_id  # noqa: F841
+        effective_client_id = current_user.client_id
+    elif client_id:
+        effective_client_id = client_id
+    else:
+        raise BadRequestError("client_id is required for non-CLIENT users")
 
     file_contents = []
     for file in files:
@@ -123,7 +128,7 @@ async def upload_documents(  # noqa: PLR0913, PLR0917
         file_contents.append(content.decode("utf-8"))
 
     import_data = DocumentImport(
-        client_id=client_id,
+        client_id=effective_client_id,
         carrier_id=carrier_id,
         contract_id=contract_id,
         files=file_contents,
@@ -145,7 +150,7 @@ async def get_document(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentResponse:
     """Get document details"""
     return await documents_service.get_by_id(document_id, company_id)
 
@@ -161,7 +166,7 @@ async def get_document_by_access_key(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentResponse:
     """Get document by access key (chave de acesso)"""
     document = await documents_service.get_by_access_key(access_key, company_id)
     if not document:
@@ -181,7 +186,7 @@ async def update_document(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentResponse:
     """Update document"""
     return await documents_service.update_document(document_id, company_id, data)
 
@@ -197,7 +202,7 @@ async def reprocess_document(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> DocumentResponse:
     """Reprocess document (re-run rules engine)"""
     return await documents_service.reprocess_document(document_id, company_id)
 
@@ -212,6 +217,6 @@ async def delete_document(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     documents_service: DocumentsService = Depends(get_documents_service),
-):
+) -> None:
     """Delete document"""
     await documents_service.delete_document(document_id, company_id)

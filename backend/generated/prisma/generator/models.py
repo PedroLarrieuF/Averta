@@ -16,7 +16,6 @@ from typing import (
     Annotated,
     Any,
     ClassVar,
-    Generic,
     NoReturn,
     Optional,
     TypeVar,
@@ -235,12 +234,12 @@ class BaseModel(pydantic.BaseModel):
             keep_untouched: tuple[type[Any], ...] = (cached_property,)
 
 
-class InterfaceChoices(str, enum.Enum):
+class InterfaceChoices(enum.StrEnum):
     sync = "sync"
     asyncio = "asyncio"
 
 
-class EngineType(str, enum.Enum):
+class EngineType(enum.StrEnum):
     binary = "binary"
     library = "library"
     dataproxy = "dataproxy"
@@ -256,7 +255,7 @@ class Module(BaseModel):
     elif PYDANTIC_V2:
         spec: Annotated[
             machinery.ModuleSpec,
-            PlainSerializer(lambda x: _module_spec_serializer(x), return_type=str),
+            PlainSerializer(_module_spec_serializer, return_type=str),
         ]
     else:
         spec: machinery.ModuleSpec
@@ -317,7 +316,7 @@ class Module(BaseModel):
             raise PartialTypeGeneratorError() from exc
 
 
-class GenericData(GenericModel, Generic[ConfigT]):
+class GenericData[ConfigT: pydantic.BaseModel](GenericModel):
     """Root model for the data that prisma provides to the generator.
 
     WARNING: only one instance of this class may exist at any given time and
@@ -332,7 +331,7 @@ class GenericData(GenericModel, Generic[ConfigT]):
     datasources: list["Datasource"] = FieldInfo(alias="datasources")
     other_generators: list["Generator[_ModelAllowAll]"] = FieldInfo(alias="otherGenerators")
     binary_paths: "BinaryPaths" = FieldInfo(
-        alias="binaryPaths", default_factory=lambda: BinaryPaths()
+        alias="binaryPaths", default_factory=BinaryPaths
     )
 
     if PYDANTIC_V2:
@@ -445,7 +444,7 @@ class Datasource(BaseModel):
     source_file_path: Path | None = FieldInfo(alias="sourceFilePath")
 
 
-class Generator(GenericModel, Generic[ConfigT]):
+class Generator[ConfigT: pydantic.BaseModel](GenericModel):
     name: str
     output: "ValueFromEnvVar"
     provider: "OptionalValueFromEnvVar"

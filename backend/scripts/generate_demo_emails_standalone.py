@@ -280,16 +280,7 @@ def render_template(template_name, context):
 
 
 def main():
-    print("=" * 60)
-    print("AVERTA SAAS - DEMO EMAIL GENERATOR (Standalone)")
-    print("=" * 60)
-    print()
 
-    print(f"📊 Divergências simuladas: {len(DEMO_RESULTS)}")
-    print(f"💰 Total a recuperar: R$ {TOTAL_RECOVERABLE:,.2f}")
-    print(f"💰 Success Fee (20%): R$ {SUCCESS_FEE:,.2f}")
-    print(f"💰 Líquido para cliente: R$ {NET_RECOVERY:,.2f}")
-    print()
 
     base_context = {
         "client_name": "Empresa Demo Ltda",
@@ -376,9 +367,8 @@ def main():
             output_file = OUTPUT_DIR / f"{template_name}_demo.html"
             output_file.write_text(html, encoding="utf-8")
             rendered.append(str(output_file))
-            print(f"✅ Gerado: {output_file}")
         else:
-            print(f"⚠️ Template não encontrado: {template_name}")
+            pass
 
     # Salvar resumo JSON
     summary = {
@@ -409,10 +399,7 @@ def main():
 
     summary_file = OUTPUT_DIR / "audit_summary_demo.json"
     summary_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"✅ Resumo JSON: {summary_file}")
 
-    print(f"\n✅ Demo concluído! Arquivos em: {OUTPUT_DIR}")
-    print("\nAbra os .html no navegador para apresentar ao cliente")
 
 
 if __name__ == "__main__":

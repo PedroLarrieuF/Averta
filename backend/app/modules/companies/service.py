@@ -1,6 +1,9 @@
 """Companies module service"""
 
+from typing import Any
+
 import structlog
+from prisma.models import Company as CompanyModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError
@@ -16,11 +19,11 @@ from prisma import Prisma
 logger = structlog.get_logger()
 
 
-class CompaniesService(BaseService):
+class CompaniesService(BaseService[CompanyModel, CompanyCreate, CompanyUpdate, CompanyResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Company")
 
-    def _to_response(self, company) -> CompanyResponse:
+    def _to_response(self, company: CompanyModel) -> CompanyResponse:
         return CompanyResponse(
             id=company.id,
             name=company.name,
@@ -95,7 +98,7 @@ class CompaniesService(BaseService):
         search: str | None = None,
     ) -> CompanyListResponse:
         """List companies (super admin)"""
-        where: dict = {}
+        where: dict[str, Any] = {}
         if is_active is not None:
             where["isActive"] = is_active
         if search:

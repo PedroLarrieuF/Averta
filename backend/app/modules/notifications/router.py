@@ -42,10 +42,11 @@ async def create_notification(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+    db: Prisma = Depends(get_database),
+) -> NotificationResponse:
     """Create a new notification (admin/manager)"""
     # Verify client belongs to company
-    clients_service = ClientsService(current_user.db)
+    clients_service = ClientsService(db)
     await clients_service.get_by_id(data.client_id, company_id)
 
     return await notifications_service.create_notification(data)
@@ -64,7 +65,7 @@ async def list_notifications(  # noqa: PLR0913, PLR0917
     unread_only: bool = Query(False),
     type: NotificationType | None = Query(None),
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> NotificationListResponse:
     """List notifications for current user/client"""
     # If user is CLIENT role, use their client_id; otherwise use provided client_id
     effective_client_id = current_user.client_id or client_id
@@ -85,7 +86,7 @@ async def get_unread_count(
     current_user: CurrentUserDep,
     client_id: ClientIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> dict[str, int]:
     """Get unread notification count"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
@@ -108,7 +109,7 @@ async def mark_as_read(
     current_user: CurrentUserDep,
     client_id: ClientIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> NotificationResponse:
     """Mark notification as read"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
@@ -125,7 +126,7 @@ async def mark_all_as_read(
     current_user: CurrentUserDep,
     client_id: ClientIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> dict[str, int]:
     """Mark all notifications as read"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
@@ -145,7 +146,7 @@ async def delete_notification(
     current_user: CurrentUserDep,
     client_id: ClientIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> None:
     """Delete notification"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
@@ -167,7 +168,7 @@ async def delete_notification(
 async def get_preferences(
     current_user: CurrentUserDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> NotificationPreferencesResponse:
     """Get current user's notification preferences"""
     return await notifications_service.get_preferences(current_user.sub)
 
@@ -182,7 +183,7 @@ async def update_preferences(
     prefs: NotificationPreferences,
     current_user: CurrentUserDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+) -> NotificationPreferencesResponse:
     """Update current user's notification preferences"""
     return await notifications_service.update_preferences(current_user.sub, prefs)
 
@@ -201,9 +202,10 @@ async def send_weekly_reports(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     notifications_service: NotificationsService = Depends(get_notifications_service),
-):
+    db: Prisma = Depends(get_database),
+) -> dict[str, int]:
     """Send weekly reports to all active clients (called by cron)"""
-    clients_service = ClientsService(current_user.db)
+    clients_service = ClientsService(db)
 
     clients = await clients_service.db.client.find_many(
         where={"companyId": company_id, "isActive": True},

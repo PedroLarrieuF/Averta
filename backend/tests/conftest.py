@@ -1,5 +1,6 @@
 """Pytest configuration with mocked dependencies for unit tests"""
 
+import asyncio
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
@@ -40,16 +41,14 @@ mock_config.get_settings = MagicMock(
     )
 )
 # Don't mock the entire app.core module - let it load normally with mocked dependencies
-# sys.modules['app.core.config'] = mock_config
-# sys.modules['app.core'] = MagicMock(config=mock_config, database=mock_db_module)
 
 
 # Now import the actual conftest fixtures
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
-    import asyncio
-
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()

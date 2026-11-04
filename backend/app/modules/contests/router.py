@@ -1,6 +1,7 @@
 """Contests module router"""
 
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import Response
@@ -59,7 +60,7 @@ async def create_contest(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Create a new contest from approved discrepancies"""
     return await contests_service.create_contest(data, company_id, current_user.sub)
 
@@ -84,7 +85,7 @@ async def list_contests(  # noqa: PLR0913, PLR0917
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestListResponse:
     """List contests with pagination and filters"""
     df = datetime.fromisoformat(date_from) if date_from else None
     dt = datetime.fromisoformat(date_to) if date_to else None
@@ -105,7 +106,7 @@ async def get_contest(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Get contest details with items, communications, payments"""
     return await contests_service.get_contest_detail(contest_id, company_id)
 
@@ -122,7 +123,7 @@ async def update_contest(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Update contest (admin only)"""
     return await contests_service.update_contest(contest_id, data, company_id)
 
@@ -145,9 +146,11 @@ async def generate_pdf(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> Response:
     """Generate contest letter PDF"""
-    pdf_bytes = await contests_service.generate_letter_pdf(contest_id, company_id, data.template)
+    pdf_bytes = await contests_service.generate_letter_pdf(
+        contest_id, company_id, data.template or "default"
+    )
 
     return Response(
         content=pdf_bytes,
@@ -169,7 +172,7 @@ async def send_contest(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Send contest (changes status to SENT)"""
     return await contests_service.send_contest(
         contest_id, company_id, data.send_via, data.recipient_emails
@@ -187,7 +190,7 @@ async def acknowledge_contest(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Mark contest as acknowledged by carrier"""
     return await contests_service.acknowledge_contest(contest_id, company_id)
 
@@ -200,11 +203,11 @@ async def acknowledge_contest(
 )
 async def respond_contest(
     contest_id: str,
-    item_updates: list[dict],
+    item_updates: list[dict[str, Any]],
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Process carrier response (accepted/partial/rejected per item)"""
     return await contests_service.respond_contest(contest_id, company_id, item_updates)
 
@@ -221,7 +224,7 @@ async def record_payment(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> PaymentResponse:
     """Record payment received (recovery, success fee, net payout)"""
     payment_data = PaymentCreate(
         item_id=data.item_id,
@@ -249,7 +252,7 @@ async def add_item(
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestItemResponse:
     """Add item to draft contest"""
     return await contests_service.add_item(contest_id, data, company_id)
 
@@ -267,7 +270,7 @@ async def update_item(  # noqa: PLR0913, PLR0917
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestItemResponse:
     """Update contest item (admin only)"""
     return await contests_service.update_item(contest_id, item_id, data, company_id)
 
@@ -289,7 +292,7 @@ async def add_communication(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> CommunicationResponse:
     """Add communication (email, letter, call, meeting)"""
     return await contests_service.add_communication(contest_id, data, company_id, current_user.sub)
 
@@ -305,7 +308,7 @@ async def list_communications(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> list[CommunicationResponse]:
     """List all communications for contest"""
     contest = await contests_service.get_contest_detail(contest_id, company_id)
     return contest.communications
@@ -322,6 +325,6 @@ async def recalculate_fee(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contests_service: ContestsService = Depends(get_contests_service),
-):
+) -> ContestResponse:
     """Recalculate success fee based on progressive pricing model (month 1: 5%, month 2+: 10%)"""
     return await contests_service.recalculate_success_fee(contest_id, company_id)

@@ -1,8 +1,10 @@
 """Discrepancies module service"""
 
 from datetime import datetime
+from typing import Any
 
 import structlog
+from prisma.models import Discrepancy as DiscrepancyModel
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import NotFoundError
@@ -24,7 +26,7 @@ class DiscrepanciesService:
     def __init__(self, db: Prisma):
         self.db = db
 
-    def _to_response(self, discrepancy) -> DiscrepancyResponse:
+    def _to_response(self, discrepancy: DiscrepancyModel) -> DiscrepancyResponse:
         return DiscrepancyResponse(
             id=discrepancy.id,
             document_id=discrepancy.documentId,
@@ -93,7 +95,7 @@ class DiscrepanciesService:
         date_to: datetime | None = None,
     ) -> DiscrepancyListResponse:
         """List discrepancies with filters"""
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if document_id:
             where["documentId"] = document_id
         if status:
@@ -151,7 +153,7 @@ class DiscrepanciesService:
                 "reviewedAt": datetime.utcnow(),
             },
         )
-        return count
+        return count  # type: ignore[no-any-return]
 
     async def get_summary(
         self,
@@ -161,7 +163,7 @@ class DiscrepanciesService:
         date_to: datetime | None = None,
     ) -> DiscrepancySummary:
         """Get discrepancy summary for dashboard"""
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if client_id:
             where["document"] = {"clientId": client_id}
         if date_from or date_to:

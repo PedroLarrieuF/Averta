@@ -4,7 +4,7 @@ import logging
 import warnings
 from datetime import timedelta
 from types import TracebackType
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from ._builder import dumps
 from ._types import TransactionId
@@ -20,7 +20,7 @@ _SyncPrismaT = TypeVar("_SyncPrismaT", bound="SyncBasePrisma")
 _AsyncPrismaT = TypeVar("_AsyncPrismaT", bound="AsyncBasePrisma")
 
 
-class AsyncTransactionManager(Generic[_AsyncPrismaT]):
+class AsyncTransactionManager[AsyncPrismaT: "AsyncBasePrisma"]:
     """Context manager for wrapping a Prisma instance within a transaction.
 
     This should never be created manually, instead it should be used
@@ -123,7 +123,7 @@ class AsyncTransactionManager(Generic[_AsyncPrismaT]):
             )
 
 
-class SyncTransactionManager(Generic[_SyncPrismaT]):
+class SyncTransactionManager[SyncPrismaT: "SyncBasePrisma"]:
     """Context manager for wrapping a Prisma instance within a transaction.
 
     This should never be created manually, instead it should be used

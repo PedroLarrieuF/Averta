@@ -2,11 +2,21 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum
+from enum import StrEnum
+from typing import Any
 
 import structlog
 
+from app.core.database import get_prisma
+
 logger = structlog.get_logger()
+
+# Constants for rule evaluation
+# Float comparison tolerance (for currency values in BRL)
+FLOAT_TOLERANCE: float = 0.01
+
+# Toll plaza tolerance
+PEDAGIO_TOLERANCE: float = 0.50
 
 
 class DiscrepancyType(StrEnum):
@@ -28,12 +38,12 @@ class DiscrepancyType(StrEnum):
 class RuleContext:
     """Context passed to all rules during evaluation"""
 
-    document: dict
-    contract: dict | None = None
-    freight_table: dict | None = None
-    carrier: dict | None = None
-    client_settings: dict | None = None
-    metadata: dict = field(default_factory=dict)
+    document: dict[str, Any]
+    contract: dict[str, Any] | None = None
+    freight_table: dict[str, Any] | None = None
+    carrier: dict[str, Any] | None = None
+    client_settings: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -48,8 +58,8 @@ class DiscrepancyResult:
     actual_value: float | None = None
     difference: float | None = None
     difference_pct: float | None = None
-    details: dict = field(default_factory=dict)
-    evidence: dict = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
     severity: str = "MEDIUM"  # LOW, MEDIUM, HIGH, CRITICAL
 
 
@@ -64,7 +74,7 @@ class BaseRule(ABC):
     requires_contract: bool = False
     requires_freight_table: bool = False
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
 
     @abstractmethod
@@ -75,11 +85,14 @@ class BaseRule(ABC):
     def _create_result(
         self,
         triggered: bool,
-        expected: float | None = None,
-        actual: float | None = None,
-        details: dict | None = None,
-        evidence: dict | None = None,
+        **kwargs: Any,
     ) -> DiscrepancyResult:
+        expected = kwargs.get("expected")
+        actual = kwargs.get("actual")
+        details = kwargs.get("details")
+        evidence = kwargs.get("evidence")
+        severity = kwargs.get("severity")
+
         diff = None
         diff_pct = None
         if expected is not None and actual is not None:
@@ -98,13 +111,13 @@ class BaseRule(ABC):
             difference_pct=diff_pct,
             details=details or {},
             evidence=evidence or {},
-            severity=self.severity,
+            severity=severity or self.severity,
         )
 
-    def _safe_get(self, data: dict, path: str, default=None):
+    def _safe_get(self, data: dict[str, Any], path: str, default: Any = None) -> Any:
         """Safely get nested dict value using dot notation"""
         keys = path.split(".")
-        current = data
+        current: Any = data
         for key in keys:
             if isinstance(current, dict):
                 current = current.get(key)
@@ -118,7 +131,7 @@ class BaseRule(ABC):
 class RulesEngine:
     """Main rules engine - manages and executes all rules"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._rules: list[BaseRule] = []
         self._rule_map: dict[str, BaseRule] = {}
 
@@ -139,7 +152,7 @@ class RulesEngine:
     def get_rule(self, rule_code: str) -> BaseRule | None:
         return self._rule_map.get(rule_code)
 
-    def list_rules(self) -> list[dict]:
+    def list_rules(self) -> list[dict[str, Any]]:
         return [
             {
                 "code": r.rule_code,
@@ -233,7 +246,7 @@ class ICMSDifferentialRule(BaseRule):
         p_fcp = difal_rule.get("aliquota_fcp", 0)
         expected_icms = round(bc_doc * (p_difal + p_fcp) / 100, 2)
 
-        triggered = abs(icms_doc - expected_icms) > 0.01
+        triggered = abs(icms_doc - expected_icms) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -249,11 +262,12 @@ class ICMSDifferentialRule(BaseRule):
             evidence={"table_rule": difal_rule},
         )
 
-    def _lookup_difal(self, rules: dict, uf_origem: str, uf_destino: str) -> dict | None:
+    def _lookup_difal(self, rules: dict[str, Any], uf_origem: str, uf_destino: str) -> dict[str, Any] | None:
         difal_rules = rules.get("difal", [])
         for rule in difal_rules:
-            if rule.get("uf_origem") == uf_origem and rule.get("uf_destino") == uf_destino:
-                return rule
+            if isinstance(rule, dict):
+                if rule.get("uf_origem") == uf_origem and rule.get("uf_destino") == uf_destino:
+                    return rule
         return None
 
 
@@ -358,7 +372,7 @@ class FreightWeightValueRule(BaseRule):
                 expected_by_cubage = round(volume * cubage_rate, 2)
                 expected = max(expected, expected_by_cubage)
 
-        triggered = abs(freight_charged - expected) > 0.01
+        triggered = abs(freight_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -452,7 +466,7 @@ class TollPlazaRule(BaseRule):
                     total_expected += p_exp.get("valor", 0)
                     break
 
-        triggered = abs(total_charged - total_expected) > 0.50  # R$ 0,50 tolerance
+        triggered = abs(total_charged - total_expected) > PEDAGIO_TOLERANCE  # R$ 0,50 tolerance
 
         return self._create_result(
             triggered=triggered,
@@ -498,7 +512,7 @@ class AdValoremRule(BaseRule):
         if teto:
             expected = min(expected, teto)
 
-        triggered = abs(advalorem_charged - expected) > 0.01
+        triggered = abs(advalorem_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -545,7 +559,7 @@ class GRISRule(BaseRule):
         if teto:
             expected = min(expected, teto)
 
-        triggered = abs(gris_charged - expected) > 0.01
+        triggered = abs(gris_charged - expected) > FLOAT_TOLERANCE
 
         return self._create_result(
             triggered=triggered,
@@ -570,7 +584,6 @@ class SicobanTableRule(BaseRule):
     requires_freight_table = True
 
     async def evaluate(self, context: RuleContext) -> DiscrepancyResult:
-        doc = context.document
         table = context.freight_table
 
         if not table:
@@ -642,10 +655,8 @@ def create_default_engine() -> RulesEngine:
 default_engine = create_default_engine()
 
 
-async def run_rules(document_id: str, parsed_data: dict, company_id: str, client_id: str):
+async def run_rules(document_id: str, parsed_data: dict[str, Any], company_id: str, client_id: str) -> list[DiscrepancyResult]:
     """Main entry point for running rules (called from Celery task)"""
-    from app.core.database import get_prisma
-
     db = await get_prisma()
 
     # Fetch contract and freight table

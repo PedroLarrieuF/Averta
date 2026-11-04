@@ -37,7 +37,7 @@ async def create_user(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     users_service: UsersService = Depends(get_users_service),
-):
+) -> UserResponse:
     """Create a new user (admin only)"""
     return await users_service.create_user(data, company_id, current_user.sub)
 
@@ -57,7 +57,7 @@ async def list_users(  # noqa: PLR0913, PLR0917
     status: str | None = Query(None, pattern="^(ACTIVE|INACTIVE|PENDING|BLOCKED)$"),
     search: str | None = Query(None),
     users_service: UsersService = Depends(get_users_service),
-):
+) -> UserListResponse:
     """List users with pagination and filters"""
     return await users_service.list_users(company_id, pagination, sort, role, status, search)
 
@@ -73,7 +73,7 @@ async def get_user(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     users_service: UsersService = Depends(get_users_service),
-):
+) -> UserResponse:
     """Get user details"""
     return await users_service.get_by_id(user_id, company_id)
 
@@ -90,7 +90,7 @@ async def update_user(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     users_service: UsersService = Depends(get_users_service),
-):
+) -> UserResponse:
     """Update user (admin only)"""
     return await users_service.update_user(user_id, data, company_id)
 
@@ -106,7 +106,7 @@ async def deactivate_user(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     users_service: UsersService = Depends(get_users_service),
-):
+) -> None:
     """Deactivate user (admin only)"""
     await users_service.deactivate_user(user_id, company_id, current_user.sub)
 
@@ -123,6 +123,6 @@ async def reset_password(
     company_id: CompanyIdDep,
     new_password: str = Query(..., min_length=8, max_length=128),
     users_service: UsersService = Depends(get_users_service),
-):
+) -> None:
     """Reset user password (admin only)"""
     await users_service.reset_password(user_id, company_id, new_password)

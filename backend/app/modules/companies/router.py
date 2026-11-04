@@ -36,7 +36,7 @@ async def create_company(
     data: CompanyCreate,
     current_user: RequireAdmin,
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyResponse:
     """Create a new company (super admin only)"""
     return await companies_service.create_company(data, current_user.sub)
 
@@ -54,7 +54,7 @@ async def list_companies(  # noqa: PLR0913, PLR0917
     is_active: bool | None = Query(None),
     search: str | None = Query(None),
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyListResponse:
     """List all companies (super admin)"""
     return await companies_service.list_companies(pagination, sort, is_active, search)
 
@@ -69,7 +69,7 @@ async def get_my_company(
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyResponse:
     """Get current user's company"""
     return await companies_service.get_my_company(company_id)
 
@@ -85,7 +85,7 @@ async def update_my_company(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyResponse:
     """Update current user's company (admin only)"""
     return await companies_service.update_my_company(company_id, data, current_user.sub)
 
@@ -100,7 +100,7 @@ async def get_company(
     company_id: str,
     current_user: RequireAdmin,
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyResponse:
     """Get company by ID (super admin)"""
     return await companies_service.get_by_id(company_id, company_id)
 
@@ -116,6 +116,6 @@ async def update_company(
     data: CompanyUpdate,
     current_user: RequireAdmin,
     companies_service: CompaniesService = Depends(get_companies_service),
-):
+) -> CompanyResponse:
     """Update company (super admin)"""
     return await companies_service.update_company(company_id, data, current_user.sub)

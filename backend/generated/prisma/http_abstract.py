@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Coroutine
 from typing import (
     Any,
-    Generic,
     TypeVar,
     Union,
     cast,
@@ -26,7 +25,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
 }
 
 
-class AbstractHTTP(ABC, Generic[Session, Response]):
+class AbstractHTTP[Session, Response](ABC):
     session_kwargs: dict[str, Any]
 
     __slots__ = (
@@ -93,7 +92,7 @@ class AbstractHTTP(ABC, Generic[Session, Response]):
         return f"<HTTP closed={self.closed}>"
 
 
-class AbstractResponse(ABC, Generic[Response]):
+class AbstractResponse[Response](ABC):
     original: Response
 
     __slots__ = ("original",)

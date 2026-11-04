@@ -5,7 +5,7 @@ import warnings
 from datetime import timedelta
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generic, Literal, Self, TypeVar, overload
+from typing import Any, Literal, Self, TypeVar, overload
 
 from pydantic import BaseModel
 
@@ -74,7 +74,7 @@ def load_env(*, override: bool = False, **kwargs: Any) -> None:
 _EngineT = TypeVar("_EngineT", bound=BaseAbstractEngine)
 
 
-class BasePrisma(Generic[_EngineT]):
+class BasePrisma[EngineT: BaseAbstractEngine]:
     _log_queries: bool
     _datasource: DatasourceOverride | None
     _connect_timeout: int | timedelta

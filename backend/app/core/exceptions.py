@@ -1,5 +1,7 @@
 """Custom exceptions and exception handlers"""
 
+from typing import Any
+
 import structlog
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
@@ -18,7 +20,7 @@ class AppException(Exception):
         message: str,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         code: str = "INTERNAL_ERROR",
-        details: dict | None = None,
+        details: dict[str, Any] | None = None,
     ):
         self.message = message
         self.status_code = status_code
@@ -38,7 +40,7 @@ class NotFoundError(AppException):
 
 
 class ConflictError(AppException):
-    def __init__(self, message: str, details: dict | None = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_409_CONFLICT,
@@ -66,7 +68,7 @@ class ForbiddenError(AppException):
 
 
 class BadRequestError(AppException):
-    def __init__(self, message: str, details: dict | None = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -76,7 +78,7 @@ class BadRequestError(AppException):
 
 
 class ValidationError_(AppException):
-    def __init__(self, message: str, errors: list[dict] | None = None):
+    def __init__(self, message: str, errors: list[dict[str, Any]] | None = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

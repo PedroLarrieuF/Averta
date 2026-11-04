@@ -159,7 +159,7 @@ class Base64:
                 cls._validate,
                 schema=core_schema.any_schema(),
                 serialization=core_schema.plain_serializer_function_ser_schema(
-                    lambda instance: str(instance)
+                    str
                 ),
             )
     else:

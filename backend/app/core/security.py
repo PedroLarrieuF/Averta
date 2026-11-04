@@ -35,12 +35,12 @@ class TokenData(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)  # type: ignore[no-any-return]
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    return pwd_context.hash(password)  # type: ignore[no-any-return]
 
 
 def create_access_token(  # noqa: PLR0913, PLR0917
@@ -69,7 +69,7 @@ def create_access_token(  # noqa: PLR0913, PLR0917
         "type": "access",
     }
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
+    return encoded_jwt  # type: ignore[no-any-return]
 
 
 def create_refresh_token(
@@ -96,7 +96,7 @@ def create_refresh_token(
     encoded_jwt = jwt.encode(
         to_encode, settings.JWT_REFRESH_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
-    return encoded_jwt
+    return encoded_jwt  # type: ignore[no-any-return]
 
 
 def create_tokens(
@@ -152,7 +152,7 @@ def create_password_reset_token(email: str) -> str:
         "iat": int(now.timestamp()),
         "type": "password_reset",
     }
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)  # type: ignore[no-any-return]
 
 
 def verify_password_reset_token(token: str) -> str | None:
@@ -161,6 +161,6 @@ def verify_password_reset_token(token: str) -> str | None:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         if payload.get("type") != "password_reset":
             return None
-        return payload.get("sub")
+        return payload.get("sub")  # type: ignore[no-any-return]
     except JWTError:
         return None

@@ -53,7 +53,7 @@ def maybe_async_run(
     return func(*args, **kwargs)
 
 
-def async_run(coro: Coroutine[Any, Any, _T]) -> _T:
+def async_run[T](coro: Coroutine[Any, Any, _T]) -> _T:
     """Execute the coroutine and return the result."""
     return get_or_create_event_loop().run_until_complete(coro)
 
@@ -129,7 +129,7 @@ def assert_never(value: NoReturn) -> NoReturn:
     raise AssertionError(f"Unhandled type: {type(value).__name__}")  # pragma: no cover
 
 
-def make_optional(value: _T) -> _T | None:
+def make_optional[T](value: _T) -> _T | None:
     """Helper function for type checkers to change the given type to include None.
 
     This is useful in cases where you do not have an explicit type for a symbol (e.g. modules)

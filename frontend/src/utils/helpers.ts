@@ -95,6 +95,7 @@ export const ROLES = {
   MANAGER: 'MANAGER',
   AUDITOR: 'AUDITOR',
   CLIENT: 'CLIENT',
+  CARRIER: 'CARRIER',
 } as const
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
@@ -104,6 +105,7 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   MANAGER: 3,
   AUDITOR: 2,
   CLIENT: 1,
+  CARRIER: 0,
 }
 
 export function hasRole(userRole: Role, requiredRole: Role): boolean {

@@ -2,8 +2,10 @@
 
 from unittest.mock import AsyncMock, Mock, patch
 
+import httpx
 import pytest
 
+from app.services.ml.inference import DOCUMENT_TYPE_ENCODING, FEATURE_ORDER, SEVERITY_ENCODING, UF_ENCODING
 from app.services.rules_critical import MLAnomalyRule
 from app.services.rules_engine_v2 import RuleContext
 
@@ -96,8 +98,6 @@ class TestMLAnomalyRule:
     @pytest.mark.asyncio
     async def test_ml_anomaly_rule_timeout_fallback(self, ml_context):
         """Test ML anomaly rule falls back gracefully on timeout"""
-        import httpx
-
         rule = MLAnomalyRule(
             config={
                 "anomaly_threshold": -0.5,
@@ -117,8 +117,6 @@ class TestMLAnomalyRule:
     @pytest.mark.asyncio
     async def test_ml_anomaly_rule_http_error_fallback(self, ml_context):
         """Test ML anomaly rule falls back gracefully on HTTP error"""
-        import httpx
-
         rule = MLAnomalyRule(
             config={
                 "anomaly_threshold": -0.5,
@@ -195,8 +193,6 @@ class TestMLInferenceService:
 
     def test_feature_order_constant(self):
         """Test that FEATURE_ORDER matches expected features"""
-        from app.services.ml.inference import FEATURE_ORDER
-
         expected = [
             "rule_type_hash",
             "carrier_id_hash",
@@ -219,8 +215,6 @@ class TestMLInferenceService:
 
     def test_uf_encoding(self):
         """Test UF encoding consistency"""
-        from app.services.ml.inference import UF_ENCODING
-
         assert UF_ENCODING["SP"] == 25
         assert UF_ENCODING["RJ"] == 19
         assert UF_ENCODING["MG"] == 13
@@ -228,8 +222,6 @@ class TestMLInferenceService:
 
     def test_severity_encoding(self):
         """Test severity encoding"""
-        from app.services.ml.inference import SEVERITY_ENCODING
-
         assert SEVERITY_ENCODING["LOW"] == 0
         assert SEVERITY_ENCODING["MEDIUM"] == 1
         assert SEVERITY_ENCODING["HIGH"] == 2
@@ -237,8 +229,6 @@ class TestMLInferenceService:
 
     def test_document_type_encoding(self):
         """Test document type encoding"""
-        from app.services.ml.inference import DOCUMENT_TYPE_ENCODING
-
         assert DOCUMENT_TYPE_ENCODING["CTE"] == 1
         assert DOCUMENT_TYPE_ENCODING["NFE"] == 2
         assert DOCUMENT_TYPE_ENCODING["CTE_COMPLEMENTAR"] == 3

@@ -1,6 +1,7 @@
 """Auth module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -83,4 +84,4 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     success: bool = False
-    error: dict
+    error: dict[str, Any]

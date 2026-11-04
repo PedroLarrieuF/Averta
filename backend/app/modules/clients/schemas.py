@@ -1,6 +1,7 @@
 """Clients module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -12,11 +13,11 @@ class ClientCreate(BaseModel):
     state_reg: str | None = Field(None, max_length=20)
     email: EmailStr
     phone: str | None = Field(None, max_length=20)
-    address: dict | None = None
+    address: dict[str, Any] | None = None
     contact_person: str | None = Field(None, max_length=200)
     contact_email: EmailStr | None = None
     contact_phone: str | None = Field(None, max_length=20)
-    settings: dict | None = None  # success_fee_pct, notification_prefs, etc.
+    settings: dict[str, Any] | None = None  # success_fee_pct, notification_prefs, etc.
     user_id: str | None = None  # Link to user account (client portal)
 
 
@@ -26,11 +27,11 @@ class ClientUpdate(BaseModel):
     state_reg: str | None = Field(None, max_length=20)
     email: EmailStr | None = None
     phone: str | None = Field(None, max_length=20)
-    address: dict | None = None
+    address: dict[str, Any] | None = None
     contact_person: str | None = Field(None, max_length=200)
     contact_email: EmailStr | None = None
     contact_phone: str | None = Field(None, max_length=20)
-    settings: dict | None = None
+    settings: dict[str, Any] | None = None
     is_active: bool | None = None
 
 
@@ -44,11 +45,11 @@ class ClientResponse(BaseModel):
     state_reg: str | None
     email: str
     phone: str | None
-    address: dict | None
+    address: dict[str, Any] | None
     contact_person: str | None
     contact_email: str | None
     contact_phone: str | None
-    settings: dict | None
+    settings: dict[str, Any] | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

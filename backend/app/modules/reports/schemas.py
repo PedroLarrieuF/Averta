@@ -1,6 +1,7 @@
 """Reports module schemas"""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,9 +16,9 @@ class DashboardKPIs(BaseModel):
     active_contests: int
     conversion_rate: float  # detected -> approved
     avg_recovery_time_days: float
-    top_carriers_by_volume: list[dict]
-    top_discrepancy_types: list[dict]
-    monthly_trend: list[dict]  # last 12 months
+    top_carriers_by_volume: list[dict[str, Any]]
+    top_discrepancy_types: list[dict[str, Any]]
+    monthly_trend: list[dict[str, Any]]  # last 12 months
 
 
 class RecoveryReportItem(BaseModel):
@@ -45,7 +46,7 @@ class RecoveryReport(BaseModel):
     """Recovery report with summary"""
 
     items: list[RecoveryReportItem]
-    summary: dict
+    summary: dict[str, Any]
     total: int
     page: int
     page_size: int
@@ -74,7 +75,7 @@ class SuccessFeeReport(BaseModel):
     """Success fee report with summary"""
 
     items: list[SuccessFeeReportItem]
-    summary: dict
+    summary: dict[str, Any]
     total: int
     page: int
     page_size: int
@@ -84,10 +85,10 @@ class SuccessFeeReport(BaseModel):
 class DiscrepancyStats(BaseModel):
     """Discrepancy statistics"""
 
-    by_type: list[dict]
-    by_status: list[dict]
-    by_carrier: list[dict]
-    by_client: list[dict]
+    by_type: list[dict[str, Any]]
+    by_status: list[dict[str, Any]]
+    by_carrier: list[dict[str, Any]]
+    by_client: list[dict[str, Any]]
     total_detected: int
     total_approved: int
     total_recovered: int

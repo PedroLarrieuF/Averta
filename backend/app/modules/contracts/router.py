@@ -43,7 +43,7 @@ async def create_contract(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> ContractResponse:
     """Create a new contract"""
     return await contracts_service.create_contract(data, company_id, current_user.sub)
 
@@ -64,7 +64,7 @@ async def list_contracts(  # noqa: PLR0913, PLR0917
     client_id: str | None = Query(None),
     search: str | None = Query(None),
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> ContractListResponse:
     """List contracts with pagination and filters"""
     return await contracts_service.list_contracts(
         company_id, pagination, sort, status, carrier_id, client_id, search
@@ -82,7 +82,7 @@ async def get_contract(
     current_user: RequireManager,
     company_id: CompanyIdDep,
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> ContractResponse:
     """Get contract details with tables"""
     return await contracts_service.get_by_id(contract_id, company_id)
 
@@ -99,7 +99,7 @@ async def update_contract(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> ContractResponse:
     """Update contract (admin only)"""
     return await contracts_service.update_contract(contract_id, data, company_id)
 
@@ -117,7 +117,7 @@ async def create_freight_table(
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> FreightTableResponse:
     """Create a new freight table version for contract"""
     return await contracts_service.create_freight_table(
         contract_id, data, company_id, current_user.sub
@@ -136,7 +136,7 @@ async def list_freight_tables(
     company_id: CompanyIdDep,
     is_active: bool | None = Query(None),
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> list[FreightTableResponse]:
     """List all freight tables for a contract"""
     return await contracts_service.list_freight_tables(contract_id, company_id, is_active)
 
@@ -153,7 +153,7 @@ async def get_active_freight_table(
     company_id: CompanyIdDep,
     date: datetime | None = Query(None),
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> FreightTableResponse | None:
     """Get the active freight table for a specific date (defaults to now)"""
     return await contracts_service.get_active_freight_table(contract_id, company_id, date)
 
@@ -171,6 +171,6 @@ async def update_freight_table(  # noqa: PLR0913, PLR0917
     current_user: RequireAdmin,
     company_id: CompanyIdDep,
     contracts_service: ContractsService = Depends(get_contracts_service),
-):
+) -> FreightTableResponse:
     """Update freight table (admin only)"""
     return await contracts_service.update_freight_table(table_id, data, company_id)

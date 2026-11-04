@@ -20,6 +20,7 @@ import { UsersPage } from './pages/settings/UsersPage'
 import { CarriersPage as SettingsCarriersPage } from './pages/settings/CarriersPage'
 import { ContractsPage } from './pages/settings/ContractsPage'
 import { NotificationsPage } from './pages/settings/NotificationsPage'
+import { Profile } from './pages/Profile'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -114,7 +115,7 @@ export default function App() {
           <Route path="/settings/notifications" element={<NotificationsPage />} />
         </Route>
         <Route path="/settings" element={<Navigate to="/settings/company" replace />} />
-        <Route path="/profile" element={<ComingSoon title="Perfil" description="Gerencie seu perfil e preferências" />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
 
       {/* Redirect root to dashboard or login */}

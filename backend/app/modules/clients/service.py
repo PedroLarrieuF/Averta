@@ -1,6 +1,9 @@
 """Clients module service"""
 
+from typing import Any
+
 import structlog
+from prisma.models import Client as ClientModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
@@ -16,11 +19,11 @@ from prisma import Prisma
 logger = structlog.get_logger()
 
 
-class ClientsService(BaseService):
+class ClientsService(BaseService[ClientModel, ClientCreate, ClientUpdate, ClientResponse]):
     def __init__(self, db: Prisma):
         super().__init__(db, "Client")
 
-    def _to_response(self, client) -> ClientResponse:
+    def _to_response(self, client: ClientModel) -> ClientResponse:
         return ClientResponse(
             id=client.id,
             company_id=client.companyId,
@@ -118,7 +121,7 @@ class ClientsService(BaseService):
         search: str | None = None,
     ) -> ClientListResponse:
         """List clients"""
-        where: dict = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if is_active is not None:
             where["isActive"] = is_active
         if search:

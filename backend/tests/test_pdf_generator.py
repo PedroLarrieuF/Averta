@@ -1,7 +1,8 @@
 """Tests for PDF Generator service"""
 
-import pytest
 import asyncio
+
+import pytest
 
 from app.services.pdf_generator import generate_contest_letter
 
@@ -67,7 +68,9 @@ class TestPDFGenerator:
         }
 
     @pytest.mark.asyncio
-    async def test_generate_small_pdf_sync(self, sample_contest, sample_client, sample_carrier, sample_company):
+    async def test_generate_small_pdf_sync(
+        self, sample_contest, sample_client, sample_carrier, sample_company
+    ):
         """Test generating a small PDF completes quickly and returns valid PDF bytes"""
         pdf_bytes = await generate_contest_letter(
             contest=sample_contest,
@@ -88,7 +91,9 @@ class TestPDFGenerator:
         assert b"%%EOF" in pdf_bytes[-100:]
 
     @pytest.mark.asyncio
-    async def test_generate_pdf_with_many_items(self, sample_client, sample_carrier, sample_company):
+    async def test_generate_pdf_with_many_items(
+        self, sample_client, sample_carrier, sample_company
+    ):
         """Test generating PDF with many discrepancy items (larger PDF)"""
         # Create contest with many items to simulate a larger PDF
         large_contest = {
@@ -124,7 +129,9 @@ class TestPDFGenerator:
         assert b"%%EOF" in pdf_bytes[-100:]
 
     @pytest.mark.asyncio
-    async def test_generate_pdf_timeout_enforcement(self, sample_client, sample_carrier, sample_company):
+    async def test_generate_pdf_timeout_enforcement(
+        self, sample_client, sample_carrier, sample_company
+    ):
         """Test that timeout is enforced for slow PDF generation"""
         # Create a contest that would take a long time
         # We use a very short timeout to force a timeout
@@ -157,7 +164,9 @@ class TestPDFGenerator:
             )
 
     @pytest.mark.asyncio
-    async def test_generate_pdf_with_custom_template(self, sample_contest, sample_client, sample_carrier, sample_company):
+    async def test_generate_pdf_with_custom_template(
+        self, sample_contest, sample_client, sample_carrier, sample_company
+    ):
         """Test generating PDF with custom template parameter"""
         pdf_bytes = await generate_contest_letter(
             contest=sample_contest,
@@ -173,7 +182,9 @@ class TestPDFGenerator:
         assert pdf_bytes.startswith(b"%PDF")
 
     @pytest.mark.asyncio
-    async def test_generate_pdf_uses_default_timeout(self, sample_contest, sample_client, sample_carrier, sample_company):
+    async def test_generate_pdf_uses_default_timeout(
+        self, sample_contest, sample_client, sample_carrier, sample_company
+    ):
         """Test that default timeout is used when not specified"""
         # This test verifies the function works without explicit timeout
         # (using the module-level PDF_GENERATION_TIMEOUT)
@@ -190,7 +201,9 @@ class TestPDFGenerator:
         assert pdf_bytes.startswith(b"%PDF")
 
     @pytest.mark.asyncio
-    async def test_pdf_structure_valid(self, sample_contest, sample_client, sample_carrier, sample_company):
+    async def test_pdf_structure_valid(
+        self, sample_contest, sample_client, sample_carrier, sample_company
+    ):
         """Test that generated PDF has valid structure"""
         pdf_bytes = await generate_contest_letter(
             contest=sample_contest,
@@ -213,7 +226,9 @@ class TestPDFGenerator:
         assert b"endstream" in pdf_bytes
 
     @pytest.mark.asyncio
-    async def test_concurrent_pdf_generation(self, sample_contest, sample_client, sample_carrier, sample_company):
+    async def test_concurrent_pdf_generation(
+        self, sample_contest, sample_client, sample_carrier, sample_company
+    ):
         """Test multiple PDF generations can run concurrently"""
         # Generate multiple PDFs concurrently
         tasks = [

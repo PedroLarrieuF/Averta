@@ -21,8 +21,7 @@ from typing import override
 from . import actions, errors, models, types
 
 # re-exports
-from ._base_client import AsyncBasePrisma
-from ._base_client import load_env as load_env
+from ._base_client import AsyncBasePrisma, load_env
 from ._builder import QueryBuilder, dumps
 from ._compat import model_parse
 from ._constants import (
@@ -33,13 +32,8 @@ from ._constants import (
 )
 from ._raw_query import deserialize_raw_results
 from ._registry import (
-    RegisteredClient as RegisteredClient,
-)
-from ._registry import (
-    get_client as get_client,
-)
-from ._registry import (
-    register as register,
+    get_client,
+    register,
 )
 from ._transactions import AsyncTransactionManager
 from ._types import BaseModelT, Datasource
@@ -131,7 +125,7 @@ class Prisma(AsyncBasePrisma):
             prisma_models=PRISMA_MODELS,
             packaged_schema_path=PACKAGED_SCHEMA_PATH,
             relational_field_mappings=RELATIONAL_FIELD_MAPPINGS,
-            preview_features=set([]),
+            preview_features=set(),
             active_provider='postgresql',
             default_datasource_name='db',
         )

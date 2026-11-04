@@ -3,11 +3,13 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import BytesIO
+from typing import Any
 
 import openpyxl
 import structlog
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import BadRequestError
@@ -75,7 +77,7 @@ class ReportsService:
             avg_days = sum((c.resolvedAt - c.createdAt).days for c in resolved) / len(resolved)
 
         # Top carriers by volume
-        carrier_volumes = defaultdict(float)
+        carrier_volumes: dict[str, float] = defaultdict(float)
         for c in contests:
             carrier_volumes[c.carrierId] += c.totalExpected
 
@@ -92,7 +94,7 @@ class ReportsService:
         ]
 
         # Top discrepancy types
-        disc_types = defaultdict(lambda: {"count": 0, "value": 0})
+        disc_types: dict[str, dict[str, float]] = defaultdict(lambda: {"count": 0.0, "value": 0.0})
         for d in discrepancies:
             disc_types[d.type]["count"] += 1
             disc_types[d.type]["value"] += d.difference
@@ -149,7 +151,7 @@ class ReportsService:
         status: list[str] | None = None,
     ) -> RecoveryReport:
         """Get detailed recovery report"""
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if client_id:
             where["clientId"] = client_id
         if carrier_id:
@@ -249,7 +251,7 @@ class ReportsService:
         date_to: datetime | None = None,
     ) -> SuccessFeeReport:
         """Get success fee report grouped by contract"""
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if client_id:
             where["clientId"] = client_id
         if carrier_id:
@@ -268,16 +270,16 @@ class ReportsService:
         )
 
         # Group by contract
-        contract_data = defaultdict(
+        contract_data: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "contract_id": None,
                 "contract_number": "Sem Contrato",
                 "carrier_name": "",
                 "client_name": "",
-                "success_fee_pct": 0,
-                "total_recovered": 0,
-                "success_fee_collected": 0,
-                "net_to_client": 0,
+                "success_fee_pct": 0.0,
+                "total_recovered": 0.0,
+                "success_fee_collected": 0.0,
+                "net_to_client": 0.0,
                 "contests_count": 0,
             }
         )
@@ -302,8 +304,8 @@ class ReportsService:
 
             # Get contract for progressive pricing info
             pricing_model = "FIXED"
-            progressive_month1_pct = None
-            progressive_month2_pct = None
+            progressive_month1_pct: float | None = None
+            progressive_month2_pct: float | None = None
             if v["contract_id"]:
                 contract = await self.db.contract.find_unique(where={"id": v["contract_id"]})
                 if contract:
@@ -314,15 +316,15 @@ class ReportsService:
 
             items.append(
                 SuccessFeeReportItem(
-                    contract_id=v["contract_id"] or "",
-                    contract_number=v["contract_number"],
-                    carrier_name=v["carrier_name"],
-                    client_name=v["client_name"],
-                    success_fee_pct=v["success_fee_pct"],
-                    total_recovered=v["total_recovered"],
-                    success_fee_collected=v["success_fee_collected"],
-                    net_to_client=v["net_to_client"],
-                    contests_count=v["contests_count"],
+                    contract_id=str(v["contract_id"] or ""),
+                    contract_number=str(v["contract_number"]),
+                    carrier_name=str(v["carrier_name"]),
+                    client_name=str(v["client_name"]),
+                    success_fee_pct=float(v["success_fee_pct"]),
+                    total_recovered=float(v["total_recovered"]),
+                    success_fee_collected=float(v["success_fee_collected"]),
+                    net_to_client=float(v["net_to_client"]),
+                    contests_count=int(v["contests_count"]),
                     pricing_model=pricing_model,
                     progressive_month1_pct=progressive_month1_pct,
                     progressive_month2_pct=progressive_month2_pct,
@@ -365,10 +367,10 @@ class ReportsService:
             include={"carrier": True, "client": True},
         )
 
-        by_type = defaultdict(lambda: {"count": 0, "value": 0})
-        by_status = defaultdict(int)
-        by_carrier = defaultdict(lambda: {"count": 0, "value": 0})
-        by_client = defaultdict(lambda: {"count": 0, "value": 0})
+        by_type: dict[str, dict[str, float]] = defaultdict(lambda: {"count": 0.0, "value": 0.0})
+        by_status: dict[str, int] = defaultdict(int)
+        by_carrier: dict[str, dict[str, float]] = defaultdict(lambda: {"count": 0.0, "value": 0.0})
+        by_client: dict[str, dict[str, float]] = defaultdict(lambda: {"count": 0.0, "value": 0.0})
 
         total_detected = 0
         total_approved = 0
@@ -484,9 +486,9 @@ class ReportsService:
             expires_at=datetime.utcnow() + timedelta(hours=1),
         )
 
-    async def _export_recovery_to_excel(self, wb, company_id: str, data: ExportRequest):
+    async def _export_recovery_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
         """Export recovery report to Excel"""
-        ws = wb.active
+        ws: Worksheet = wb.active
         ws.title = "Recovery Report"
 
         # Headers
@@ -509,7 +511,7 @@ class ReportsService:
         self._write_headers(ws, headers)
 
         # Data
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if data.client_id:
             where["clientId"] = data.client_id
         if data.carrier_id:
@@ -573,9 +575,9 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 9, 10])
         self._auto_width(ws)
 
-    async def _export_success_fee_to_excel(self, wb, company_id: str, data: ExportRequest):  # noqa: PLR0915
+    async def _export_success_fee_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:  # noqa: PLR0915
         """Export success fee report to Excel"""
-        ws = wb.active
+        ws: Worksheet = wb.active
         ws.title = "Success Fee Report"
 
         headers = [
@@ -593,7 +595,7 @@ class ReportsService:
         ]
         self._write_headers(ws, headers)
 
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if data.client_id:
             where["clientId"] = data.client_id
         if data.carrier_id:
@@ -611,15 +613,15 @@ class ReportsService:
         )
 
         # Group by contract
-        contract_data = defaultdict(
+        contract_data: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "contract_number": "Sem Contrato",
                 "carrier_name": "",
                 "client_name": "",
-                "success_fee_pct": 0,
-                "total_recovered": 0,
-                "success_fee_collected": 0,
-                "net_to_client": 0,
+                "success_fee_pct": 0.0,
+                "total_recovered": 0.0,
+                "success_fee_collected": 0.0,
+                "net_to_client": 0.0,
                 "contests_count": 0,
             }
         )
@@ -667,9 +669,9 @@ class ReportsService:
         self._format_currency_columns(ws, [5, 6, 7])
         self._auto_width(ws)
 
-    async def _export_discrepancies_to_excel(self, wb, company_id: str, data: ExportRequest):
+    async def _export_discrepancies_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
         """Export discrepancies to Excel"""
-        ws = wb.active
+        ws: Worksheet = wb.active
         ws.title = "Discrepancies"
 
         headers = [
@@ -690,7 +692,7 @@ class ReportsService:
         ]
         self._write_headers(ws, headers)
 
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if data.date_from or data.date_to:
             where["createdAt"] = {}
             if data.date_from:
@@ -729,9 +731,9 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 8])
         self._auto_width(ws)
 
-    async def _export_contests_to_excel(self, wb, company_id: str, data: ExportRequest):
+    async def _export_contests_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
         """Export contests to Excel"""
-        ws = wb.active
+        ws: Worksheet = wb.active
         ws.title = "Contests"
 
         headers = [
@@ -750,7 +752,7 @@ class ReportsService:
         ]
         self._write_headers(ws, headers)
 
-        where = {"companyId": company_id}
+        where: dict[str, Any] = {"companyId": company_id}
         if data.client_id:
             where["clientId"] = data.client_id
         if data.carrier_id:
@@ -791,7 +793,7 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 9, 10])
         self._auto_width(ws)
 
-    def _write_headers(self, ws, headers: list[str]):
+    def _write_headers(self, ws: Worksheet, headers: list[str]) -> None:
         """Write header row with styling"""
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="1e3a5f", end_color="1e3a5f", fill_type="solid")
@@ -810,7 +812,7 @@ class ReportsService:
             cell.alignment = header_alignment
             cell.border = thin_border
 
-    def _format_currency_columns(self, ws, cols: list[int]):
+    def _format_currency_columns(self, ws: Worksheet, cols: list[int]) -> None:
         """Format columns as currency"""
         for row in ws.iter_rows(
             min_row=2, max_row=ws.max_row, min_col=min(cols), max_col=max(cols)
@@ -819,7 +821,7 @@ class ReportsService:
                 if cell.column in cols and cell.value is not None:
                     cell.number_format = "R$ #,##0.00"
 
-    def _auto_width(self, ws):
+    def _auto_width(self, ws: Worksheet) -> None:
         """Auto-adjust column widths"""
         for column in ws.columns:
             max_length = 0

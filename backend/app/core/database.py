@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 
 import structlog
 
-from app.core.config import settings
 from prisma import Prisma
 
 logger = structlog.get_logger()
@@ -18,11 +17,7 @@ def _get_prisma_instance() -> Prisma:
     """Get or create Prisma client instance."""
     global _prisma  # noqa: PLW0603
     if _prisma is None:
-        _prisma = Prisma(
-            datasource={"url": settings.DATABASE_URL},
-            auto_register=True,
-            log_queries=settings.DEBUG,
-        )
+        _prisma = Prisma()
     return _prisma
 
 

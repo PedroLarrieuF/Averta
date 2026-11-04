@@ -102,7 +102,6 @@ async def fetch_historical_data(prisma: Prisma, days_back: int = 365) -> list[di
         order={"createdAt": "asc"},
     )
 
-    print(f"Fetched {len(discrepancies)} discrepancies with auditor feedback")
     return discrepancies
 
 
@@ -215,9 +214,6 @@ async def prepare_dataset(
         discrepancies = await fetch_historical_data(prisma, days_back)
 
         if len(discrepancies) < 1000:
-            print(
-                f"WARNING: Only {len(discrepancies)} discrepancies found. Need >10k for robust training."
-            )
             # Generate synthetic data for development
             discrepancies = await generate_synthetic_data(prisma, target_count=10000)
 
@@ -246,10 +242,6 @@ async def prepare_dataset(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(output_path, index=False)
 
-        print(f"Dataset saved to {output_path}")
-        print(f"Shape: {df.shape}")
-        print(f"Label distribution:\n{df['label'].value_counts()}")
-        print(f"Feature columns: {FEATURE_COLUMNS}")
 
         return df
 
@@ -259,7 +251,6 @@ async def prepare_dataset(
 
 async def generate_synthetic_data(prisma: Prisma, target_count: int = 10000) -> list[Any]:
     """Generate synthetic discrepancy data for development/testing."""
-    print(f"Generating {target_count} synthetic records for development...")
 
     # Get some real carriers/clients for realistic IDs
     carriers = await prisma.carrier.find_many(take=20)
@@ -344,10 +335,8 @@ async def generate_synthetic_data(prisma: Prisma, target_count: int = 10000) -> 
         if is_anomaly:
             diff_pct *= np.random.uniform(3, 10)  # Anomalies have larger diffs
             status = "REJECTED"
-            label = -1
         else:
             status = "APPROVED"
-            label = 1
 
         doc = MockDoc(
             id=f"doc-{i}",

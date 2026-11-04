@@ -1,5 +1,6 @@
 """FastAPI dependencies: auth, pagination, rate limiting, etc."""
 
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated
 
 import structlog
@@ -20,9 +21,9 @@ logger = structlog.get_logger()
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-# Database dependency
-async def get_database() -> "Prisma":
-    return await get_db()
+async def get_database() -> AsyncGenerator["Prisma", None]:
+    async for db in get_db():
+        yield db
 
 
 DatabaseDep = Annotated["Prisma", Depends(get_database)]
@@ -122,10 +123,12 @@ OptionalUserDep = Annotated[TokenPayload | None, Depends(get_optional_user)]
 
 
 # Role-based access control
-def require_roles(*allowed_roles: str):
+
+
+def require_roles(*allowed_roles: str) -> Callable[[TokenPayload], Awaitable[TokenPayload]]:
     """Dependency factory for role-based access"""
 
-    async def role_checker(current_user: CurrentUserDep) -> TokenPayload:
+    async def role_checker(current_user: TokenPayload) -> TokenPayload:
         if current_user.role not in allowed_roles:
             raise ForbiddenError(f"Required role(s): {', '.join(allowed_roles)}")
         return current_user

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -32,7 +33,7 @@ class NotificationCreate(BaseModel):
     type: NotificationType
     title: str
     message: str
-    data: dict | None = None
+    data: dict[str, Any] | None = None
     channels: list[NotificationChannel] = [NotificationChannel.IN_APP]
 
 
@@ -47,7 +48,7 @@ class NotificationResponse(BaseModel):
     type: str
     title: str
     message: str
-    data: dict | None
+    data: dict[str, Any] | None
     read_at: datetime | None
     sent_at: datetime
     channels: list[str]
