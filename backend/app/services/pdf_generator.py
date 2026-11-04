@@ -1,8 +1,10 @@
 """PDF Generator for contest letters and reports"""
 
+import asyncio
 import io
 from datetime import datetime
 
+import anyio
 import structlog
 from reportlab.lib.colors import HexColor
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
@@ -17,7 +19,6 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from starlette.concurrency import run_in_threadpool
 
 logger = structlog.get_logger()
 
@@ -377,14 +378,19 @@ async def generate_contest_letter(  # noqa: PLR0913, PLR0917
         TimeoutError: If PDF generation exceeds timeout
     """
     timeout = timeout or PDF_GENERATION_TIMEOUT
-    return await run_in_threadpool(
-        _generate_contest_letter_sync,
-        contest,
-        client,
-        carrier,
-        company,
-        template,
-    )
+
+    # Use anyio.to_thread.run_sync for threadpool execution with asyncio.wait_for for timeout
+    async def _run_in_threadpool():
+        return await anyio.to_thread.run_sync(
+            _generate_contest_letter_sync,
+            contest,
+            client,
+            carrier,
+            company,
+            template,
+        )
+
+    return await asyncio.wait_for(_run_in_threadpool(), timeout=timeout)
 
 
 def _format_cnpj(cnpj: str) -> str:

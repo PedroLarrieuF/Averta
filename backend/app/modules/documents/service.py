@@ -17,6 +17,7 @@ from app.modules.documents.schemas import (
     DocumentType,
     DocumentUpdate,
 )
+from app.modules.notifications.service import NotificationsService
 from app.services.rules_engine_v2 import RuleContext, create_engine_v2
 from app.services.storage import storage_service
 from app.services.xml_parser import xml_parser
@@ -103,9 +104,7 @@ class DocumentsService:
             raise NotFoundError("Document", document_id)
         return self._to_response(document)
 
-    async def get_by_access_key(
-        self, access_key: str, company_id: str
-    ) -> DocumentResponse | None:
+    async def get_by_access_key(self, access_key: str, company_id: str) -> DocumentResponse | None:
         """Get document by access key"""
         document = await self.db.document.find_unique(
             where={"accessKey_companyId": {"accessKey": access_key, "companyId": company_id}}
@@ -114,7 +113,7 @@ class DocumentsService:
             return None
         return self._to_response(document)
 
-    async def list_documents(
+    async def list_documents(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
@@ -246,8 +245,6 @@ class DocumentsService:
 
         # Notify if discrepancies found
         if discrepancies:
-            from app.modules.notifications.service import NotificationsService
-
             notifications = NotificationsService(self.db)
             for disc in discrepancies:
                 await notifications.notify_discrepancy_found(

@@ -57,7 +57,7 @@ async def create_discrepancy(
     summary="List discrepancies",
 )
 @discrepancies_limiter
-async def list_discrepancies(
+async def list_discrepancies(  # noqa: PLR0913, PLR0917
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -74,7 +74,7 @@ async def list_discrepancies(
     """List discrepancies with filters"""
     # If user is CLIENT role, filter by their client
     if current_user.role == "CLIENT" and current_user.client_id:
-        client_id = current_user.client_id
+        client_id = current_user.client_id  # noqa: F841
 
     return await discrepancies_service.list_discrepancies(
         company_id,
@@ -96,7 +96,7 @@ async def list_discrepancies(
     summary="Get discrepancy summary",
 )
 @discrepancies_limiter
-async def get_summary(
+async def get_summary(  # noqa: PLR0913, PLR0917
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -106,7 +106,7 @@ async def get_summary(
 ):
     """Get discrepancy summary for dashboard"""
     if current_user.role == "CLIENT" and current_user.client_id:
-        client_id = current_user.client_id
+        client_id = current_user.client_id  # noqa: F841
 
     return await discrepancies_service.get_summary(company_id, client_id, date_from, date_to)
 

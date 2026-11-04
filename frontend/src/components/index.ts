@@ -65,3 +65,26 @@ export { ReportFilters } from './reports/ReportFilters'
 export { ExportPanel } from './reports/ExportPanel'
 export { ScheduleList } from './reports/ScheduleList'
 export { ScheduleForm } from './reports/ScheduleForm'
+
+// Settings components
+export { ContractForm } from './settings/ContractForm'
+export { FreightTableEditor } from './settings/FreightTableEditor'
+export { UserInviteModal } from './settings/UserInviteModal'
+
+// Clients components
+export { ClientsTable } from './clients/ClientsTable'
+export { ClientForm } from './clients/ClientForm'
+export { ClientDetailModal } from './clients/ClientDetailModal'
+export { BranchForm } from './clients/BranchForm'
+export { BranchesTable } from './clients/BranchesTable'
+export { clientSchema, type ClientFormData } from './clients/ClientForm'
+export { branchSchema, type BranchFormData } from './clients/BranchForm'
+
+// Carriers components
+export { CarriersTable } from './carriers/CarriersTable'
+export { CarrierForm } from './carriers/CarrierForm'
+export { CarrierDetailModal } from './carriers/CarrierDetailModal'
+export { BranchForm as CarrierBranchForm } from './carriers/BranchForm'
+export { BranchesTable as CarrierBranchesTable } from './carriers/BranchesTable'
+export { carrierSchema, type CarrierFormData } from './carriers/CarrierForm'
+export { carrierBranchSchema, type CarrierBranchFormData } from './carriers/BranchForm'

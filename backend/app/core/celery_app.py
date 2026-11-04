@@ -1,8 +1,11 @@
 """Celery configuration for async tasks"""
 
+import structlog
 from celery import Celery
 
 from app.core.config import settings
+
+logger = structlog.get_logger()
 
 celery_app = Celery(
     "averta",
@@ -65,4 +68,4 @@ celery_app.autodiscover_tasks()
 
 @celery_app.task(bind=True, ignore_result=True)
 def debug_task(self):
-    print(f"Request: {self.request!r}")
+    logger.debug("celery_debug_task", request=repr(self.request))

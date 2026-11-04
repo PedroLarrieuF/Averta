@@ -1,20 +1,20 @@
 """Rules module schemas"""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class RuleSeverity(str, Enum):
+class RuleSeverity(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
 
 
-class RuleType(str, Enum):
+class RuleType(StrEnum):
     ICMS_DIFFERENTIAL = "ICMS_DIFFERENTIAL"
     ICMS_FCP = "ICMS_FCP"
     ICMS_ST = "ICMS_ST"

@@ -23,9 +23,14 @@ from app.modules.contests.schemas import (
 )
 from app.modules.contracts.service import ContractsService
 from app.services.pdf_generator import generate_contest_letter
+from app.services.storage import upload_file
 from prisma import Prisma
 
 logger = structlog.get_logger()
+
+# Constants
+PROGRESSIVE_MONTH_DAYS = 30
+FEE_PCT_TOLERANCE = 0.01
 
 
 class ContestsService(BaseService):
@@ -94,12 +99,10 @@ class ContestsService(BaseService):
             if contract:
                 pricing_model = contract.pricingModel
                 if contract.pricingModel == "PROGRESSIVE":
-                    from datetime import datetime as dt
-
                     start_date = contract.progressiveStartDate or contract.startDate
-                    check_date = dt.utcnow()
+                    check_date = datetime.utcnow()
                     days_diff = (check_date - start_date).days
-                    progressive_month = 1 if days_diff < 30 else (days_diff // 30) + 1
+                    progressive_month = 1 if days_diff < PROGRESSIVE_MONTH_DAYS else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
 
         return ContestResponse(
             id=contest.id,
@@ -151,7 +154,7 @@ class ContestsService(BaseService):
         new_fee_pct = self.contracts_service.calculate_progressive_fee_pct(contract, reference_date)
 
         # Only update if changed
-        if abs(new_fee_pct - contest.success_fee_pct) > 0.01:
+        if abs(new_fee_pct - contest.success_fee_pct) > FEE_PCT_TOLERANCE:
             new_fee_value = round(contest.total_recovered * new_fee_pct / 100, 2)
             new_net_recovery = round(contest.total_recovered - new_fee_value, 2)
 
@@ -294,7 +297,7 @@ class ContestsService(BaseService):
         logger.info("contest_updated", id=contest_id, company_id=company_id)
         return await self._to_response(contest, include_relations=True)
 
-    async def list_contests(
+    async def list_contests(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
@@ -364,8 +367,6 @@ class ContestsService(BaseService):
         )
 
         # Save PDF to storage and create communication record
-        from app.services.storage import upload_file
-
         object_name = f"contests/{company_id}/{contest_id}/letter_{contest.number}.pdf"
         await upload_file(pdf_bytes, object_name, "application/pdf")
 
@@ -521,7 +522,7 @@ class ContestsService(BaseService):
         self, contest_id: str, company_id: str, data: PaymentCreate
     ) -> PaymentResponse:
         """Record payment received"""
-        contest = await self.get_contest_detail(contest_id, company_id)
+        await self.get_contest_detail(contest_id, company_id)
 
         payment = await self.db.payment.create(
             data={

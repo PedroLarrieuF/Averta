@@ -1,6 +1,5 @@
 """Rules module router"""
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import (
@@ -65,7 +64,7 @@ async def create_rule(
     summary="List rules",
 )
 @api_limiter
-async def list_rules(
+async def list_rules(  # noqa: PLR0913, PLR0917
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

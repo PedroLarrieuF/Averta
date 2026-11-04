@@ -52,7 +52,7 @@ async def get_dashboard(
     summary="Get recovery report",
 )
 @reports_limiter
-async def get_recovery_report(
+async def get_recovery_report(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -78,7 +78,7 @@ async def get_recovery_report(
     summary="Get success fee report",
 )
 @reports_limiter
-async def get_success_fee_report(
+async def get_success_fee_report(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

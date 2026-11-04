@@ -1,6 +1,5 @@
 """Branches module service"""
 
-
 import structlog
 
 from app.core.dependencies import PaginationParams, SortParams
@@ -96,7 +95,7 @@ class BranchesService(BaseService):
         logger.info("branch_updated", id=branch_id, company_id=company_id)
         return self._to_response(branch)
 
-    async def list_branches(
+    async def list_branches(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,

@@ -1,6 +1,5 @@
 """Notifications module router"""
 
-
 from fastapi import APIRouter, Depends, Query, status
 
 from app.core.dependencies import (
@@ -12,6 +11,8 @@ from app.core.dependencies import (
     RequireManager,
     get_database,
 )
+from app.core.exceptions import ForbiddenError
+from app.modules.clients.service import ClientsService
 from app.modules.notifications.schemas import (
     NotificationCreate,
     NotificationListResponse,
@@ -44,8 +45,6 @@ async def create_notification(
 ):
     """Create a new notification (admin/manager)"""
     # Verify client belongs to company
-    from app.modules.clients.service import ClientsService
-
     clients_service = ClientsService(current_user.db)
     await clients_service.get_by_id(data.client_id, company_id)
 
@@ -58,7 +57,7 @@ async def create_notification(
     status_code=status.HTTP_200_OK,
     summary="List notifications",
 )
-async def list_notifications(
+async def list_notifications(  # noqa: PLR0913, PLR0917
     current_user: CurrentUserDep,
     client_id: ClientIdDep,
     pagination: PaginationDep,
@@ -70,8 +69,6 @@ async def list_notifications(
     # If user is CLIENT role, use their client_id; otherwise use provided client_id
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
-        from app.core.exceptions import ForbiddenError
-
         raise ForbiddenError("Client access required")
 
     return await notifications_service.get_notifications(
@@ -115,8 +112,6 @@ async def mark_as_read(
     """Mark notification as read"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
-        from app.core.exceptions import ForbiddenError
-
         raise ForbiddenError("Client access required")
     return await notifications_service.mark_as_read(notification_id, effective_client_id)
 
@@ -134,8 +129,6 @@ async def mark_all_as_read(
     """Mark all notifications as read"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
-        from app.core.exceptions import ForbiddenError
-
         raise ForbiddenError("Client access required")
 
     count = await notifications_service.mark_all_as_read(effective_client_id, current_user.sub)
@@ -156,8 +149,6 @@ async def delete_notification(
     """Delete notification"""
     effective_client_id = current_user.client_id or client_id
     if not effective_client_id:
-        from app.core.exceptions import ForbiddenError
-
         raise ForbiddenError("Client access required")
     await notifications_service.delete_notification(notification_id, effective_client_id)
 
@@ -212,8 +203,6 @@ async def send_weekly_reports(
     notifications_service: NotificationsService = Depends(get_notifications_service),
 ):
     """Send weekly reports to all active clients (called by cron)"""
-    from app.modules.clients.service import ClientsService
-
     clients_service = ClientsService(current_user.db)
 
     clients = await clients_service.db.client.find_many(

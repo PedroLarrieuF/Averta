@@ -3,12 +3,16 @@
 import time
 import uuid
 from collections.abc import Callable
+from contextvars import ContextVar
 
 import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = structlog.get_logger()
+
+# Context variable for request ID in logs
+request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -79,12 +83,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return response
-
-
-# Context variable for request ID in logs
-from contextvars import ContextVar
-
-request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
 class StructlogMiddleware(BaseHTTPMiddleware):

@@ -24,13 +24,15 @@
 
 ### Planos Principais
 
-| Plano | Frete/Mês | Success-Fee | Minimum/Mês | Platform Fee | API/TMS | Contrato |
-|-------|-----------|-------------|-------------|--------------|---------|----------|
+| Plano | Frete/Mês | Success-Fee | Minimum/Mês | Platform Fee | API | Contrato |
+|-------|-----------|-------------|-------------|--------------|-----|----------|
 | **Free Trial** | Até R$ 100k | **12%** | **R$ 0** | **R$ 0** | ✅ Básica | 30 dias |
 | **Starter** | R$ 100k-500k | **14%** | **R$ 1.500** | **R$ 300** | ✅ Completa | Mês a mês |
 | **Growth** | R$ 500k-2M | **16%** | **R$ 3.000** | **R$ 500** | ✅ + Webhooks | Mês a mês |
 | **Scale** | R$ 2M-10M | **14%** | **R$ 6.000** | **R$ 800** | ✅ + SSO + Dedicado | Mês a mês |
 | **Enterprise** | > R$ 10M | **12%** | **R$ 12.000** | Custom | ✅ White-label | Anual (negociado) |
+
+> **Nota:** API **própria** incluída em todos os planos. **Não há conectores ERP/TMS nativos** — o cliente integra via nossa REST API + Webhooks. Documentação OpenAPI/Swagger + Sandbox disponíveis desde o Free Trial.
 
 > **Regra:** Fatura = `max(Success-Fee real, Minimum)` — **sem surpresas**
 
@@ -53,11 +55,11 @@
 
 | Benefício | Detalhe | Expira |
 |-----------|---------|--------|
-| **Success-Fee vitalício** | **12% fixo** (vs 14-16% tabela) | 50 primeiros |
-| **Minimum vitalício** | **50% desconto** na minimum | 50 primeiros |
-| **Platform Fee** | **ZERO para sempre** | 50 primeiros |
-| **API/TMS** | Inclusa desde dia 1 | 50 primeiros |
-| **Onboarding** | **< 7 dias ou mês grátis** | 50 primeiros |
+| **Success-Fee vitalício** | **13% fixo** (vs 14-16% tabela) | 50 primeiros |
+| **Minimum vitalício** | **25% desconto** na minimum | 50 primeiros |
+| **Platform Fee** | **50% desconto** vitalício | 50 primeiros |
+| **API** | Inclusa desde dia 1 (sem platform fee) | 50 primeiros |
+| **Onboarding** | **< 10 dias ou 50% desconto mês 1** | 50 primeiros |
 | **Suporte** | Canal Slack direto com founders | 50 primeiros |
 | **Contrato** | **Mês a mês, cancela quando quiser** | 50 primeiros |
 | **Roadmap vote** | Peso 2x em features | 50 primeiros |
@@ -97,7 +99,7 @@ Mês 12: Enterprise (R$ 15M)      → Recupera R$ 3.75M → Paga R$ 450k (12%)
 
 ---
 
-## 🔌 API & Integrações - Incluído Desde Starter
+## 🔌 API Própria - Incluída Desde Free Trial
 
 | Feature | Free Trial | Starter | Growth | Scale | Enterprise |
 |---------|------------|---------|--------|-------|------------|
@@ -105,13 +107,10 @@ Mês 12: Enterprise (R$ 15M)      → Recupera R$ 3.75M → Paga R$ 450k (12%)
 | Webhooks | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Sandbox | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Rate Limit | 100 req/min | 500 req/min | 2.000 req/min | 10k req/min | Custom |
-| TMS Connectors | 1 | 3 | 10 | Ilimitado | White-label |
-| ERP Connectors | 1 | 2 | 5 | Ilimitado | White-label |
 | SSO (SAML/OIDC) | ❌ | ❌ | ❌ | ✅ | ✅ |
 | SLA API | 99% | 99.5% | 99.9% | 99.95% | 99.99% |
 
-**Connectors prontos (Mês 1):** Tiny, Bling, Omie, ContaAzul, NFe.io, Focus, Sankhya  
-**Em desenvolvimento:** SAP, Totvs, Oracle Netsuite, Microsoft Dynamics
+> **Modelo:** Plataforma **API-first** — cedemos endpoints REST + Webhooks + documentação OpenAPI + Sandbox. **O cliente é responsável pela sua integração** (seu time, seu TMS, seu ERP). Não desenvolvemos nem mantemos conectores nativos para ERPs/TMSs de terceiros.
 
 ---
 
@@ -158,7 +157,7 @@ Ciclo Mensal:
 > **"Barato que não olha frete = caro. ICMS/ST/DIFAL/FCP no frete representam 40-60% da recuperação. Separar perde dinheiro."**
 
 ### vs Audfrete (TMS + auditoria R$ 3-8k)
-> **"TMS preso + auditoria presa. A gente é best-of-breed: plugamos no SEU TMS/ERP via API. Você não troca o que funciona."**
+> **"TMS preso + auditoria presa. A gente é best-of-breed: API aberta para seu time integrar no SEU TMS/ERP. Você não troca o que funciona, nem depende de conector nosso."**
 
 ---
 
@@ -199,7 +198,7 @@ Ciclo Mensal:
 ### Mês 2: Escala Inicial
 - [ ] Content: "Como recuperei R$ 50k em frete no mês 1" (case anônimo)
 - [ ] LinkedIn outbound automatizado (fundador + SDR jr)
-- [ ] Parcerias: Contadores, consultorias tributárias, TMS partners (revshare 20%)
+- [ ] Parcerias: Contadores, consultorias tributárias (revshare 20%)
 - [ ] Meta: **20 pagantes**
 
 ### Mês 3: Traction
@@ -218,7 +217,7 @@ Ciclo Mensal:
 | **Financeiro** | Validar unit economics (LTV/CAC > 3, payback < 4 meses) | CFO/Founder |
 | **Jurídico** | Contrato mês-a-mês 3 páginas + termos API | Legal/Founder |
 | **Produto** | Onboarding < 7 dias validado (3 beta users) | Tech Lead |
-| **Tech** | API sandbox + webhooks + 3 connectors prontos | Tech Lead |
+| **Tech** | API sandbox + webhooks + documentação OpenAPI | Tech Lead |
 | **Vendas** | Deck, 1-pager, calculadora ROI, email sequences | Founder/Sales |
 | **Marketing** | Landing page, trial flow, case study template | Founder/Marketing |
 
@@ -243,7 +242,8 @@ Ciclo Mensal:
 | Versão | Data | Autor | Alterações |
 |--------|------|-------|------------|
 | 1.0 | 2026-11-03 | PO Agent | Versão inicial (conservadora) |
-| **2.0** | **2026-11-03** | **PO Agent** | **Modo Guerra: Setup=0, Mês-a-mês, API inclusa, Free Trial real, Primeiros 50 vitalício** |
+| 2.0 | 2026-11-03 | PO Agent | Modo Guerra: Setup=0, Mês-a-mês, API inclusa, Free Trial real, Primeiros 50 vitalício |
+| **2.1** | **2026-11-03** | **PO Agent** | **API-first (sem conectores ERP/TMS), Primeiros 50 ajustado: 13% success-fee, 25% min, 50% platform fee** |
 
 ---
 
@@ -253,15 +253,15 @@ Ciclo Mensal:
 >
 > - **Setup fee = ZERO** (todos planos)
 > - **Contrato = Mês a mês** (sem fidelidade)
-> - **API = Inclusa desde Starter** (R$ 1.8k/mês total)
+> - **API = Inclusa desde Free Trial** (plataforma API-first, sem conectores ERP/TMS nativos)
 > - **Free Trial real** (30 dias, 12% success-fee, R$ 0 minimum)
-> - **Primeiros 50** = 12% success-fee vitalício + 50% minimum + platform fee zero
+> - **Primeiros 50** = 13% success-fee vitalício + 25% minimum + 50% platform fee
 > - **Garantia ROI 3x em 90 dias** ou devolve diferença
 >
 > **Objetivo:** 50 clientes pagantes em 90 dias, break-even mês 5, ARR R$ 18M mês 12.
 >
 > **Risco:** Baixo (receita success-fee = alinhada, churn controlado por valor entregue).
-> **Upside:** Market share rápido, social proof, network effects via API/TMS partners.
+> **Upside:** Market share rápido, social proof, network effects via API aberta.
 
 ---
 

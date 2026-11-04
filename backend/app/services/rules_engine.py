@@ -2,14 +2,14 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum
 
 import structlog
 
 logger = structlog.get_logger()
 
 
-class DiscrepancyType(str, Enum):
+class DiscrepancyType(StrEnum):
     ICMS_DIFFERENTIAL = "ICMS_DIFFERENTIAL"
     ICMS_FCP = "ICMS_FCP"
     ICMS_ST = "ICMS_ST"

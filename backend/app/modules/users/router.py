@@ -48,7 +48,7 @@ async def create_user(
     status_code=status.HTTP_200_OK,
     summary="List users",
 )
-async def list_users(
+async def list_users(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

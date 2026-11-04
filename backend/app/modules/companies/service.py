@@ -1,6 +1,5 @@
 """Companies module service"""
 
-
 import structlog
 
 from app.core.dependencies import PaginationParams, SortParams

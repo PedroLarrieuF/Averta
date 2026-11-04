@@ -1,13 +1,13 @@
 """Discrepancies module schemas"""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
 
 
-class DiscrepancyStatus(str, Enum):
+class DiscrepancyStatus(StrEnum):
     OPEN = "OPEN"
     IN_REVIEW = "IN_REVIEW"
     CONTESTED = "CONTESTED"
@@ -17,7 +17,7 @@ class DiscrepancyStatus(str, Enum):
     CLOSED = "CLOSED"
 
 
-class DiscrepancySeverity(str, Enum):
+class DiscrepancySeverity(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"

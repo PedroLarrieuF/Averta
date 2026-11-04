@@ -1,6 +1,5 @@
 """Users module service"""
 
-
 import bcrypt
 import structlog
 
@@ -77,7 +76,7 @@ class UsersService(BaseService):
         logger.info("user_updated", id=user_id, company_id=company_id)
         return self._to_response(user)
 
-    async def list_users(
+    async def list_users(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,

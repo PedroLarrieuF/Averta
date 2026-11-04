@@ -47,7 +47,7 @@ async def create_company(
     status_code=status.HTTP_200_OK,
     summary="List companies (super admin)",
 )
-async def list_companies(
+async def list_companies(  # noqa: PLR0913, PLR0917
     current_user: RequireAdmin,
     pagination: PaginationDep,
     sort: SortDep,

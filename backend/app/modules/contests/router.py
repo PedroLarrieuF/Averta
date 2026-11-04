@@ -1,7 +1,9 @@
 """Contests module router"""
 
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 
 from app.core.dependencies import (
     CompanyIdDep,
@@ -69,7 +71,7 @@ async def create_contest(
     summary="List contests",
 )
 @contests_limiter
-async def list_contests(
+async def list_contests(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -84,8 +86,6 @@ async def list_contests(
     contests_service: ContestsService = Depends(get_contests_service),
 ):
     """List contests with pagination and filters"""
-    from datetime import datetime
-
     df = datetime.fromisoformat(date_from) if date_from else None
     dt = datetime.fromisoformat(date_to) if date_to else None
     return await contests_service.list_contests(
@@ -148,7 +148,6 @@ async def generate_pdf(
 ):
     """Generate contest letter PDF"""
     pdf_bytes = await contests_service.generate_letter_pdf(contest_id, company_id, data.template)
-    from fastapi.responses import Response
 
     return Response(
         content=pdf_bytes,
@@ -261,7 +260,7 @@ async def add_item(
     status_code=status.HTTP_200_OK,
     summary="Update contest item",
 )
-async def update_item(
+async def update_item(  # noqa: PLR0913, PLR0917
     contest_id: str,
     item_id: str,
     data: ContestItemUpdate,

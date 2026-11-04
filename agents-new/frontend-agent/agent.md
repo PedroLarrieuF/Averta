@@ -4,12 +4,12 @@ description: Dedicated 100% Frontend Agent for AvertaSaaS - React + Vite + TypeS
 tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 ---
 
-# AvertaSaaS Frontend Agent (Dedicated v2.4 - 6/12 Pages Complete)
+# AvertaSaaS Frontend Agent (Dedicated v2.6 - 8/12 Pages Complete)
 
 > **Location:** `frontend/` (moved from `packages/frontend/` on 2026-11-01)
 > **Mission:** Complete the frontend for freight audit SaaS - replace all placeholder pages with full implementations
 > **Standard:** After each card completion, update this agent + move card to `review/`
-> **Last Updated:** 2026-11-03 (Card #11 Reports Page completed)
+> **Last Updated:** 2026-11-03 (Card #23 Carriers Page completed)
 
 ---
 
@@ -25,19 +25,19 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 | **Discrepancies Page** | ✅ COMPLETE (Card #09) | `DiscrepanciesPage.tsx` + 5 components (Table, Filters, DetailModal, SummaryCards, BulkActionBar) |
 | **Contests Page** | ✅ COMPLETE (Card #10) | `ContestsPage.tsx`, `ContestCreatePage.tsx`, `ContestDetailPage.tsx`, `ContestNegotiatePage.tsx` + 8 components (Table, CreateStepper, Timeline, ItemTable, CommunicationThread, PaymentForm, SuccessFeeCalculator, PDFViewer) |
 | **Reports Page** | ✅ COMPLETE (Card #11) | `ReportsPage.tsx`, `ReportExportPage.tsx` + 7 components (Dashboard, Filters, KPIChart, ExportPanel, ScheduleForm, ScheduleList) + Tabs, Select, Switch, KPICard design system components |
+| **Settings Pages** | ✅ COMPLETE (Card #15) | `SettingsLayout.tsx`, `CompanySettingsPage.tsx`, `UsersPage.tsx`, `CarriersPage.tsx`, `ContractsPage.tsx`, `NotificationsPage.tsx` + components: `UserInviteModal.tsx`, `ContractForm.tsx`, `FreightTableEditor.tsx` |
+| **Clients Page** | ✅ COMPLETE (Card #22) | `Clients.tsx` + 5 components (`ClientsTable`, `ClientForm`, `ClientDetailModal`, `BranchForm`, `BranchesTable`) + 4 branch hooks |
+| **Carriers Page** | ✅ COMPLETE (Card #23) | `Carriers.tsx` + 5 components (`CarriersTable`, `CarrierForm`, `CarrierDetailModal`, `BranchForm`, `BranchesTable`) + 4 branch hooks |
 | **Design System Components** | ✅ COMPLETE | `Button`, `Input`, `Card`, `Badge`, `Table`, `Modal`, `DropdownMenu`, `Avatar`, `Tabs`, `Select`, `Switch`, `KPICard` (Tabs, Select, Switch, KPICard added in Card #11) |
 | **Auth System** | ✅ COMPLETE | `auth-context.tsx`, `auth-storage.ts`, `useAuth()` hook |
 | **API Client** | ✅ COMPLETE | `api.ts` (axios + interceptors + token refresh) |
 | **Utilities** | ✅ COMPLETE | `helpers.ts` (formatters, roles, badges, cn) |
-| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper), `useDiscrepancyActions.ts` |
+| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper), `useDiscrepancyActions.ts`, `useSettings.ts` |
 | **Testing Infrastructure** | ✅ COMPLETE (Card #01) | Vitest + RTL + MSW + jest-axe + @faker-js/faker (72 tests passing) |
 
 ### 🔴 NEEDS IMPLEMENTATION (Replace Placeholders)
 | Page | Card | Priority | Current State |
 |------|------|----------|---------------|
-| **Settings** | #15 | 🟡 HIGH | `ComingSoon` - needs Company, Users, Carriers, Contracts, Notifications |
-| **Clients** | #22 | 🟡 HIGH | `ComingSoon` - needs CRUD |
-| **Carriers** | #23 | 🟡 HIGH | `ComingSoon` - needs CRUD |
 | **Contracts** | #24 | 🟡 HIGH | `ComingSoon` - needs CRUD + FreightTable editor |
 | **Profile** | #25 | 🟢 MEDIUM | `ComingSoon` - needs profile management |
 
@@ -73,10 +73,10 @@ agents-new/frontend-agent/cards/
 | #07 | Build Design System Components | 🔴 Ready | HIGH | L |
 | #10 | Contests Page (create/detail/negotiate/pay) | ✅ **Done** | CRITICAL | XL |
 | #11 | Reports Page (PDF/Excel export, scheduling) | ✅ **Done** | HIGH | L |
-| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | 🔴 Ready | HIGH | M |
+| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | ✅ **Done** | HIGH | XL |
 | #21 | Reports Page (NEW - detailed spec) | ✅ **Done** (merged into #11) | HIGH | L |
-| #22 | Clients Page (CRUD) | 🔴 Ready | HIGH | M |
-| #23 | Carriers Page (CRUD) | 🔴 Ready | HIGH | M |
+| #22 | Clients Page (CRUD) | ✅ **Done** | HIGH | M |
+| #23 | Carriers Page (CRUD) | ✅ **Done** | HIGH | M |
 | #24 | Contracts Page (CRUD + FreightTable editor) | 🔴 Ready | HIGH | L |
 | #25 | Profile Page (user profile management) | 🔴 Ready | MEDIUM | S |
 | #26 | Code Splitting & Bundle Optimization | 🔴 Ready | MEDIUM | M |
@@ -115,6 +115,10 @@ frontend/
 │   │   ├── Modal.tsx               # Dialog + AlertDialog (Radix)
 │   │   ├── DropdownMenu.tsx        # Radix DropdownMenu
 │   │   ├── Avatar.tsx              # Radix Avatar
+│   │   ├── Tabs.tsx                # Radix Tabs
+│   │   ├── Select.tsx              # Radix Select
+│   │   ├── Switch.tsx              # Radix Switch
+│   │   ├── KPICard.tsx             # KPI display card
 │   │   ├── discrepancies/          # Feature components (Card #09) ✅
 │   │   │   ├── DiscrepanciesTable.tsx
 │   │   │   ├── DiscrepancyFilters.tsx
@@ -134,19 +138,24 @@ frontend/
 │   │   │   ├── PaymentForm.tsx
 │   │   │   ├── SuccessFeeCalculator.tsx
 │   │   │   └── ContestPDFViewer.tsx
-│   │   └── reports/                # Feature components (Card #11) ✅
-│   │       ├── ReportDashboard.tsx     # 4 KPI cards + 4 Recharts graphs
-│   │       ├── ReportFilters.tsx       # Period, date range, carrier/client/status/rule selects
-│   │       ├── KPIChart.tsx            # TimeSeries, TopCarriers, TopRules, Severity charts
-│   │       ├── ExportPanel.tsx         # PDF/Excel export with filter summary + KPI preview
-│   │       ├── ScheduleForm.tsx        # Weekly frequency, day/hour, format, recipients
-│   │       └── ScheduleList.tsx        # CRUD with dropdown actions (preview, edit, toggle, delete)
+│   │   ├── reports/                # Feature components (Card #11) ✅
+│   │   │   ├── ReportDashboard.tsx     # 4 KPI cards + 4 Recharts graphs
+│   │   │   ├── ReportFilters.tsx       # Period, date range, carrier/client/status/rule selects
+│   │   │   ├── KPIChart.tsx            # TimeSeries, TopCarriers, TopRules, Severity charts
+│   │   │   ├── ExportPanel.tsx         # PDF/Excel export with filter summary + KPI preview
+│   │   │   ├── ScheduleForm.tsx        # Weekly frequency, day/hour, format, recipients
+│   │   │   └── ScheduleList.tsx        # CRUD with dropdown actions (preview, edit, toggle, delete)
+│   │   └── settings/               # Feature components (Card #15) ✅
+│   │       ├── UserInviteModal.tsx
+│   │       ├── ContractForm.tsx
+│   │       └── FreightTableEditor.tsx
 │   ├── hooks/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── useApi.ts               # TanStack Query wrapper ✅
 │   │   ├── useDiscrepancyActions.ts # Bulk actions, review, export ✅
 │   │   ├── useContestWorkflow.ts   # 10 workflow hooks (send, negotiate, payments, PDF, communications, evidence, success fee) ✅ (Card #10)
-│   │   └── useReports.ts           # 7 report hooks (dashboard, pdf, excel, schedules CRUD) ✅ (Card #11)
+│   │   ├── useReports.ts           # 7 report hooks (dashboard, pdf, excel, schedules CRUD) ✅ (Card #11)
+│   │   └── useSettings.ts          # 15 settings hooks (users, carriers, contracts, company, notifications, freight tables) ✅ (Card #15)
 │   ├── layouts/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── MainLayout.tsx          # Sidebar + header + outlet ✅
@@ -164,10 +173,16 @@ frontend/
 │   │   ├── ContestNegotiatePage.tsx # Status + Communication + Payment ✅ (Card #10)
 │   │   ├── ReportsPage.tsx         # Dashboard/Export/Schedule tabs ✅ (Card #11)
 │   │   ├── ReportExportPage.tsx    # Direct export with URL-synced filters ✅ (Card #11)
-│   │   ├── Clients.tsx             # 🔴 ComingSoon
-│   │   ├── Carriers.tsx            # 🔴 ComingSoon
+│   │   ├── Clients.tsx             # CRUD + Branches ✅ (Card #22)
+│   │   ├── Carriers.tsx            # CRUD + Branches ✅ (Card #23)
 │   │   ├── Contracts.tsx           # 🔴 ComingSoon
-│   │   ├── Settings.tsx            # 🔴 ComingSoon
+│   │   ├── settings/               # Settings pages (Card #15) ✅
+│   │   │   ├── SettingsLayout.tsx
+│   │   │   ├── CompanySettingsPage.tsx
+│   │   │   ├── UsersPage.tsx
+│   │   │   ├── CarriersPage.tsx
+│   │   │   ├── ContractsPage.tsx
+│   │   │   └── NotificationsPage.tsx
 │   │   └── Profile.tsx             # 🔴 ComingSoon
 │   ├── test/                       # Testing infrastructure (Card #01) ✅
 │   │   ├── index.ts                # Barrel exports
@@ -284,6 +299,11 @@ pnpm test:coverage    # Coverage report
 <ExportPanel filters={} kpis={} onExportPDF={} onExportExcel={} />
 <ScheduleForm initialData={} onSubmit={} onCancel={} isSubmitting={} />
 <ScheduleList schedules={} onEdit={} onToggle={} onDelete={} onPreview={} isLoading={} />
+
+// Settings (Card #15)
+<UserInviteModal open={} onOpenChange={} onSubmit={} isSubmitting={} />
+<ContractForm initialData={} clients={} carriers={} onSubmit={} onCancel={} isSubmitting={} mode={} />
+<FreightTableEditor initialRules={} onSave={} onCancel={} isSubmitting={} />
 ```
 
 ### Utility Functions (from `utils/helpers.ts`)
@@ -342,18 +362,17 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 - Card #09: Discrepancies Page → **DONE** (List + Filters + Detail + Bulk + components)
 - Card #10: Contests Page → **DONE** (Create + Detail + Negotiate + Payments + 8 components + 10 hooks)
 - Card #11: Reports Page → **DONE** (Dashboard + Export + Schedule + 7 components + Tabs/Select/Switch/KPICard)
+- Card #15: Settings Pages → **DONE** (Company/Users/Carriers/Contracts/Notifications + 3 components + 8 hooks)
 
 ### 🔴 SPRINT 1 PRIORITY (Start Here)
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
-| **#15** | Settings Pages | Replace `ComingSoon` → Company/Users/Carriers/Contracts/Notifications |
+| **#23** | Carriers Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
+| **#24** | Contracts Page | Replace `ComingSoon` → CRUD + FreightTable editor |
 
 ### 🟡 SPRINT 2
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
-| **#22** | Clients Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
-| **#23** | Carriers Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
-| **#24** | Contracts Page | Replace `ComingSoon` → CRUD + FreightTable editor |
 | **#25** | Profile Page | Replace `ComingSoon` → User profile management |
 | **#03** | Dashboard Charts | Add Recharts to existing Dashboard |
 | **#07** | Design System Enhancements | Tooltip, Toast, Tabs, Select, Pagination, EmptyState, KPICard |
@@ -439,17 +458,17 @@ Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for 
 # 1. Check current card
 ls cards/frontend/in-progress/ || ls cards/frontend/ready/ | head -5
 
-# 2. START WITH CARD #11 (Reports Page)
-cat cards/frontend/ready/11-frontend-reports-pages.md
+# 2. START WITH CARD #23 (Carriers Page)
+cat cards/frontend/ready/23-frontend-carriers-page.md
 
 # 3. Run dev server
 cd frontend && pnpm dev
 ```
 
-**Next Priority:** Card #11 - Reports Page (PDF/Excel export, scheduling)
+**Next Priority:** Card #23 - Carriers Page (CRUD)
 - Uses: MSW handlers, factories, design system components
-- API: `/api/v1/reports` endpoints
-- Components needed: Table, Modal, Forms, Export buttons, Scheduler
+- API: `/api/v1/carriers` endpoints
+- Components needed: Table, Modal, Forms, Contact management
 
 ---
 
@@ -460,7 +479,11 @@ cd frontend && pnpm dev
 | `cards/frontend/done/01-frontend-qa-setup-vitest-rtl-msw.md` | **START HERE** - Card #01 (DONE) |
 | `cards/frontend/done/08-frontend-documents-pages.md` | **DONE** - Card #08 Documents |
 | `cards/frontend/done/09-frontend-discrepancies-pages.md` | **DONE** - Card #09 Discrepancies |
-| `cards/frontend/ready/10-frontend-contests-pages.md` | **NEXT** - Card #10 Contests |
+| `cards/frontend/done/10-frontend-contests-pages.md` | **DONE** - Card #10 Contests |
+| `cards/frontend/done/11-frontend-reports-pages.md` | **DONE** - Card #11 Reports |
+| `cards/frontend/review/15-frontend-settings-pages.md` | **DONE** - Card #15 Settings |
+| `cards/frontend/review/22-frontend-clients-page.md` | **DONE** - Card #22 Clients |
+| `cards/frontend/ready/23-frontend-carriers-page.md` | **NEXT** - Card #23 Carriers |
 | `TECHLEAD_REVIEW.md` | Full architectural review |
 | `frontend/src/index.css` | Complete design system |
 | `frontend/src/utils/helpers.ts` | All utilities |

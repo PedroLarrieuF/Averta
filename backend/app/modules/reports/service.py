@@ -22,10 +22,13 @@ from app.modules.reports.schemas import (
     SuccessFeeReport,
     SuccessFeeReportItem,
 )
-from app.services.storage import upload_file
+from app.services.storage import get_presigned_url, upload_file
 from prisma import Prisma
 
 logger = structlog.get_logger()
+
+# Constants
+PROGRESSIVE_MONTH_DAYS = 30
 
 
 class ReportsService:
@@ -40,8 +43,6 @@ class ReportsService:
     async def get_dashboard_kpis(self, company_id: str) -> DashboardKPIs:
         """Get main dashboard KPIs"""
         now = datetime.utcnow()
-        year_ago = now - timedelta(days=365)
-        month_ago = now - timedelta(days=30)
 
         # Total recoverable (sum of contest expected values)
         contests = await self.db.contest.find_many(
@@ -137,7 +138,7 @@ class ReportsService:
     # RECOVERY REPORT
     # ============================================
 
-    async def get_recovery_report(
+    async def get_recovery_report(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
@@ -184,12 +185,14 @@ class ReportsService:
                 if contract:
                     pricing_model = contract.pricingModel
                     if contract.pricingModel == "PROGRESSIVE":
-                        from datetime import datetime as dt
-
                         start_date = contract.progressiveStartDate or contract.startDate
-                        check_date = dt.utcnow()
+                        check_date = datetime.utcnow()
                         days_diff = (check_date - start_date).days
-                        progressive_month = 1 if days_diff < 30 else (days_diff // 30) + 1
+                        progressive_month = (
+                            1
+                            if days_diff < PROGRESSIVE_MONTH_DAYS
+                            else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+                        )
 
             items.append(
                 RecoveryReportItem(
@@ -236,7 +239,7 @@ class ReportsService:
     # SUCCESS FEE REPORT
     # ============================================
 
-    async def get_success_fee_report(
+    async def get_success_fee_report(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
@@ -473,8 +476,6 @@ class ReportsService:
         )
 
         # Generate presigned URL (valid for 1 hour)
-        from app.services.storage import get_presigned_url
-
         file_url = await get_presigned_url(object_name, expires=3600)
 
         return ExportResponse(
@@ -537,12 +538,14 @@ class ReportsService:
                 if contract:
                     pricing_model = contract.pricingModel
                     if contract.pricingModel == "PROGRESSIVE":
-                        from datetime import datetime as dt
-
                         start_date = contract.progressiveStartDate or contract.startDate
-                        check_date = dt.utcnow()
+                        check_date = datetime.utcnow()
                         days_diff = (check_date - start_date).days
-                        progressive_month = 1 if days_diff < 30 else (days_diff // 30) + 1
+                        progressive_month = (
+                            1
+                            if days_diff < PROGRESSIVE_MONTH_DAYS
+                            else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+                        )
 
             ws.cell(row=row_idx, column=1, value=c.number)
             ws.cell(row=row_idx, column=2, value=c.client.name if c.client else "")
@@ -570,7 +573,7 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 9, 10])
         self._auto_width(ws)
 
-    async def _export_success_fee_to_excel(self, wb, company_id: str, data: ExportRequest):
+    async def _export_success_fee_to_excel(self, wb, company_id: str, data: ExportRequest):  # noqa: PLR0915
         """Export success fee report to Excel"""
         ws = wb.active
         ws.title = "Success Fee Report"
@@ -824,7 +827,7 @@ class ReportsService:
             for cell in column:
                 try:
                     max_length = max(max_length, len(str(cell.value)))
-                except:
+                except Exception:
                     pass
             adjusted_width = min(max_length + 2, 50)
             ws.column_dimensions[column_letter].width = adjusted_width

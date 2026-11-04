@@ -72,7 +72,7 @@ class EmailService:
                 context.get("message", "Notification"),
             )
 
-    async def send_email(
+    async def send_email(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,
@@ -128,7 +128,7 @@ class EmailService:
     # High-level notification methods
     # ============================================
 
-    async def send_discrepancy_alert(
+    async def send_discrepancy_alert(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,
@@ -158,7 +158,7 @@ class EmailService:
             context=context,
         )
 
-    async def send_contest_created(
+    async def send_contest_created(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,
@@ -179,11 +179,9 @@ class EmailService:
 
         attachments = None
         if pdf_path:
-            import os
-
-            if os.path.exists(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    pdf_content = base64.b64encode(f.read()).decode()
+            pdf_file = Path(pdf_path)
+            if pdf_file.exists():
+                pdf_content = base64.b64encode(pdf_file.read_bytes()).decode()
                 attachments = [
                     {
                         "content": pdf_content,
@@ -201,7 +199,7 @@ class EmailService:
             attachments=attachments,
         )
 
-    async def send_weekly_report(
+    async def send_weekly_report(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,
@@ -225,11 +223,9 @@ class EmailService:
 
         attachments = []
         if pdf_path:
-            import os
-
-            if os.path.exists(pdf_path):
-                with open(pdf_path, "rb") as f:
-                    pdf_content = base64.b64encode(f.read()).decode()
+            pdf_file = Path(pdf_path)
+            if pdf_file.exists():
+                pdf_content = base64.b64encode(pdf_file.read_bytes()).decode()
                 attachments.append(
                     {
                         "content": pdf_content,
@@ -238,11 +234,9 @@ class EmailService:
                     }
                 )
         if excel_path:
-            import os
-
-            if os.path.exists(excel_path):
-                with open(excel_path, "rb") as f:
-                    excel_content = base64.b64encode(f.read()).decode()
+            excel_file = Path(excel_path)
+            if excel_file.exists():
+                excel_content = base64.b64encode(excel_file.read_bytes()).decode()
                 attachments.append(
                     {
                         "content": excel_content,
@@ -260,7 +254,7 @@ class EmailService:
             attachments=attachments if attachments else None,
         )
 
-    async def send_contract_expiring(
+    async def send_contract_expiring(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,
@@ -286,7 +280,7 @@ class EmailService:
             context=context,
         )
 
-    async def send_payment_received(
+    async def send_payment_received(  # noqa: PLR0913, PLR0917
         self,
         to_email: str,
         to_name: str,

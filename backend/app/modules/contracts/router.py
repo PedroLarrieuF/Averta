@@ -54,7 +54,7 @@ async def create_contract(
     status_code=status.HTTP_200_OK,
     summary="List contracts",
 )
-async def list_contracts(
+async def list_contracts(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -164,7 +164,7 @@ async def get_active_freight_table(
     status_code=status.HTTP_200_OK,
     summary="Update freight table",
 )
-async def update_freight_table(
+async def update_freight_table(  # noqa: PLR0913, PLR0917
     contract_id: str,
     table_id: str,
     data: FreightTableUpdate,

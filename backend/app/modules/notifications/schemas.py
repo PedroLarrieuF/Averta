@@ -1,12 +1,12 @@
 """Notifications module schemas"""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     DISCREPANCY_FOUND = "DISCREPANCY_FOUND"
     CONTEST_APPROVED = "CONTEST_APPROVED"
     CONTEST_SENT = "CONTEST_SENT"
@@ -19,7 +19,7 @@ class NotificationType(str, Enum):
     PASSWORD_RESET = "PASSWORD_RESET"
 
 
-class NotificationChannel(str, Enum):
+class NotificationChannel(StrEnum):
     EMAIL = "EMAIL"
     PUSH = "PUSH"
     IN_APP = "IN_APP"

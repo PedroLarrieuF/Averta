@@ -514,9 +514,7 @@ class RulesEngineV2:
             ttl=min(ttl, self._local_cache_ttl),
         )
 
-    async def invalidate_cache(
-        self, rule_code: str | None = None, tag: str | None = None
-    ) -> int:
+    async def invalidate_cache(self, rule_code: str | None = None, tag: str | None = None) -> int:
         """Invalidate cache entries. Can invalidate by rule_code, tag, or all."""
         if not self._cache:
             # Clear local cache

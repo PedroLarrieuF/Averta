@@ -54,6 +54,7 @@ export interface Client {
   zipCode?: string
   contacts: ClientContact[]
   branches: ClientBranch[]
+  status: 'ACTIVE' | 'INACTIVE'
   createdAt: string
   updatedAt: string
 }
@@ -69,12 +70,14 @@ export interface ClientContact {
 
 export interface ClientBranch {
   id: string
+  clientId: string
   name: string
   code: string
   address?: string
   city?: string
   state?: string
   zipCode?: string
+  is_main: boolean
 }
 
 export interface Carrier {
@@ -84,12 +87,14 @@ export interface Carrier {
   cnpj: string
   email?: string
   phone?: string
+  antt_registry?: string
   address?: string
   city?: string
   state?: string
   zipCode?: string
   contacts: CarrierContact[]
-  isActive: boolean
+  branches: CarrierBranch[]
+  status: 'ACTIVE' | 'INACTIVE'
   createdAt: string
   updatedAt: string
 }
@@ -100,6 +105,19 @@ export interface CarrierContact {
   email: string
   phone?: string
   role: string
+}
+
+export interface CarrierBranch {
+  id: string
+  carrierId: string
+  name: string
+  code: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  is_main: boolean
+  antt_code?: string
 }
 
 export interface Contract {

@@ -4,6 +4,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+# Constants
+CNPJ_LENGTH = 14
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -22,7 +25,7 @@ class RegisterRequest(BaseModel):
     def validate_cnpj(cls, v: str) -> str:
         # Remove non-digits
         digits = "".join(filter(str.isdigit, v))
-        if len(digits) != 14:
+        if len(digits) != CNPJ_LENGTH:
             raise ValueError("CNPJ must have 14 digits")
         return digits
 

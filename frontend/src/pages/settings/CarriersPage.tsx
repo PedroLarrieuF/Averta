@@ -23,7 +23,7 @@ export function CarriersPage() {
     city: '',
     state: '',
     zipCode: '',
-    isActive: true,
+    status: 'ACTIVE' as const,
     contacts: [],
   })
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', role: '' })
@@ -31,7 +31,7 @@ export function CarriersPage() {
 
   const { data, isLoading, refetch } = useSettingsCarriers({
     search: search || undefined,
-    isActive: statusFilter === 'ACTIVE' ? true : statusFilter === 'INACTIVE' ? false : undefined,
+    status: statusFilter || undefined,
     page,
     limit: pageSize,
   })
@@ -51,7 +51,7 @@ export function CarriersPage() {
       city: '',
       state: '',
       zipCode: '',
-      isActive: true,
+      status: 'ACTIVE' as const,
       contacts: [],
     })
     setContactForm({ name: '', email: '', phone: '', role: '' })
@@ -74,7 +74,7 @@ export function CarriersPage() {
       city: carrier.city,
       state: carrier.state,
       zipCode: carrier.zipCode,
-      isActive: carrier.isActive,
+      status: carrier.status,
       contacts: [...carrier.contacts],
     })
     setContactForm({ name: '', email: '', phone: '', role: '' })
@@ -124,10 +124,11 @@ export function CarriersPage() {
     }
   }
 
-  const handleStatusToggle = async (id: string, isActive: boolean) => {
+  const handleStatusToggle = async (id: string, status: 'ACTIVE' | 'INACTIVE') => {
+    const newStatus = status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     try {
-      await toggleStatus.mutateAsync({ id, isActive: !isActive })
-      toast.success(`Transportadora ${!isActive ? 'ativada' : 'desativada'} com sucesso!`)
+      await toggleStatus.mutateAsync({ id, isActive: newStatus === 'ACTIVE' })
+      toast.success(`Transportadora ${newStatus === 'ACTIVE' ? 'ativada' : 'desativada'} com sucesso!`)
       refetch()
     } catch (_err) {
       toast.error('Erro ao alterar status')
@@ -218,8 +219,8 @@ export function CarriersPage() {
       key: 'status',
       header: 'Status',
       render: (c: Carrier) => (
-        <Badge variant={c.isActive ? 'success' : 'secondary'}>
-          {c.isActive ? 'Ativa' : 'Inativa'}
+        <Badge variant={c.status === 'ACTIVE' ? 'success' : 'secondary'}>
+          {c.status === 'ACTIVE' ? 'Ativa' : 'Inativa'}
         </Badge>
       ),
     },
@@ -241,10 +242,10 @@ export function CarriersPage() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => handleStatusToggle(c.id, c.isActive)}
-              className={c.isActive ? 'text-warning-600' : 'text-success-600'}
+              onClick={() => handleStatusToggle(c.id, c.status)}
+              className={c.status === 'ACTIVE' ? 'text-warning-600' : 'text-success-600'}
             >
-              {c.isActive ? (
+              {c.status === 'ACTIVE' ? (
                 <>
                   <ToggleLeft className="h-4 w-4 mr-2" />
                   Desativar
@@ -545,11 +546,11 @@ export function CarriersPage() {
             <div className="pt-4 border-t border-secondary-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Switch
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(value) => setFormData({...formData, isActive: value})}
+                  id="status"
+                  checked={formData.status === 'ACTIVE'}
+                  onCheckedChange={(value) => setFormData({...formData, status: value ? 'ACTIVE' : 'INACTIVE'})}
                 />
-                <Label htmlFor="isActive" className="text-sm font-medium text-secondary-700 cursor-pointer">
+                <Label htmlFor="status" className="text-sm font-medium text-secondary-700 cursor-pointer">
                   Transportadora ativa
                 </Label>
               </div>

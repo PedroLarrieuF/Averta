@@ -48,7 +48,7 @@ async def create_carrier(
     status_code=status.HTTP_200_OK,
     summary="List carriers",
 )
-async def list_carriers(
+async def list_carriers(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

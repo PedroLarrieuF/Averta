@@ -7,6 +7,19 @@ import { Register } from './pages/Register'
 import { Dashboard } from './pages/Dashboard'
 import { Documents } from './pages/Documents'
 import { DiscrepanciesPage } from './pages/DiscrepanciesPage'
+import { ContestsPage } from './pages/ContestsPage'
+import { ContestCreatePage } from './pages/ContestCreatePage'
+import { ContestDetailPage } from './pages/ContestDetailPage'
+import { ContestNegotiatePage } from './pages/ContestNegotiatePage'
+import { ReportsPage } from './pages/ReportsPage'
+import { ClientsPage } from './pages/Clients'
+import { CarriersPage } from './pages/Carriers'
+import { SettingsLayout } from './pages/settings/SettingsLayout'
+import { CompanySettingsPage } from './pages/settings/CompanySettingsPage'
+import { UsersPage } from './pages/settings/UsersPage'
+import { CarriersPage as SettingsCarriersPage } from './pages/settings/CarriersPage'
+import { ContractsPage } from './pages/settings/ContractsPage'
+import { NotificationsPage } from './pages/settings/NotificationsPage'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -69,34 +82,6 @@ function ComingSoon({ title, description }: { title: string; description: string
   )
 }
 
-function Contests() {
-  return <ComingSoon title="Contestações" description="Acompanhe o fluxo completo de contestações com transportadoras" />
-}
-
-function Clients() {
-  return <ComingSoon title="Clientes" description="Cadastre e gerencie seus clientes e filiais" />
-}
-
-function Carriers() {
-  return <ComingSoon title="Transportadoras" description="Gerencie transportadoras e seus contatos" />
-}
-
-function Contracts() {
-  return <ComingSoon title="Contratos" description="Crie e gerencie contratos com tabelas de frete versionadas" />
-}
-
-function Reports() {
-  return <ComingSoon title="Relatórios" description="Dashboards, KPIs e exportação PDF/Excel" />
-}
-
-function Settings() {
-  return <ComingSoon title="Configurações" description="Configurações da empresa, usuários e preferências" />
-}
-
-function Profile() {
-  return <ComingSoon title="Perfil" description="Gerencie seu perfil e preferências" />
-}
-
 export default function App() {
   return (
     <Routes>
@@ -109,15 +94,27 @@ export default function App() {
       {/* Protected routes */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/discrepancies" element={<DiscrepanciesPage />} />
-        <Route path="/contests" element={<Contests />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/carriers" element={<Carriers />} />
-        <Route path="/contracts" element={<Contracts />} />
+        <Route path="/clients" element={<ClientsPage />} />
+        <Route path="/carriers" element={<CarriersPage />} />
+        <Route path="/contracts" element={<ComingSoon title="Contratos" description="Crie e gerencie contratos com tabelas de frete versionadas" />} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/discrepancies" element={<DiscrepanciesPage />} />
+        <Route path="/contests" element={<ContestsPage />} />
+        <Route path="/contests/create" element={<ContestCreatePage />} />
+        <Route path="/contests/:id" element={<ContestDetailPage />} />
+        <Route path="/contests/:id/negotiate" element={<ContestNegotiatePage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+
+        {/* Settings routes with nested layout */}
+        <Route element={<SettingsLayout />}>
+          <Route path="/settings/company" element={<CompanySettingsPage />} />
+          <Route path="/settings/users" element={<UsersPage />} />
+          <Route path="/settings/carriers" element={<SettingsCarriersPage />} />
+          <Route path="/settings/contracts" element={<ContractsPage />} />
+          <Route path="/settings/notifications" element={<NotificationsPage />} />
+        </Route>
+        <Route path="/settings" element={<Navigate to="/settings/company" replace />} />
+        <Route path="/profile" element={<ComingSoon title="Perfil" description="Gerencie seu perfil e preferências" />} />
       </Route>
 
       {/* Redirect root to dashboard or login */}

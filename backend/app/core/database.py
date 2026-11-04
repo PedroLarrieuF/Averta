@@ -2,33 +2,34 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from prisma import Prisma
 
 import structlog
 
 from app.core.config import settings
+from prisma import Prisma
 
 logger = structlog.get_logger()
 
 # Global Prisma client instance
-prisma: "Prisma" = None
+_prisma: Prisma | None = None
 
 
-async def get_prisma() -> "Prisma":
-    """Get Prisma client instance"""
-    global prisma
-    if prisma is None:
-        # Import here to avoid import-time errors
-        from prisma import Prisma as PrismaClient
-
-        prisma = PrismaClient(
+def _get_prisma_instance() -> Prisma:
+    """Get or create Prisma client instance."""
+    global _prisma  # noqa: PLW0603
+    if _prisma is None:
+        _prisma = Prisma(
             datasource={"url": settings.DATABASE_URL},
             auto_register=True,
             log_queries=settings.DEBUG,
         )
+    return _prisma
+
+
+async def get_prisma() -> Prisma:
+    """Get Prisma client instance"""
+    prisma = _get_prisma_instance()
+    if not prisma.is_connected():
         await prisma.connect()
         logger.info("database_connected")
     return prisma
@@ -36,10 +37,10 @@ async def get_prisma() -> "Prisma":
 
 async def close_prisma() -> None:
     """Close Prisma connection"""
-    global prisma
-    if prisma is not None:
-        await prisma.disconnect()
-        prisma = None
+    global _prisma  # noqa: PLW0603
+    if _prisma is not None and _prisma.is_connected():
+        await _prisma.disconnect()
+        _prisma = None
         logger.info("database_disconnected")
 
 

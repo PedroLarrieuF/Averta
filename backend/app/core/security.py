@@ -43,7 +43,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(
+def create_access_token(  # noqa: PLR0913, PLR0917
     subject: str,
     email: str,
     role: str,

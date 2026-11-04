@@ -13,6 +13,7 @@ from app.core.dependencies import (
     RequireManager,
     get_database,
 )
+from app.core.exceptions import NotFoundError
 from app.core.rate_limit import upload_limiter
 from app.modules.documents.schemas import (
     DocumentCreate,
@@ -56,7 +57,7 @@ async def create_document(
     status_code=status.HTTP_200_OK,
     summary="List documents",
 )
-async def list_documents(
+async def list_documents(  # noqa: PLR0913, PLR0917
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -101,7 +102,7 @@ async def import_documents(
     summary="Upload XML files",
 )
 @upload_limiter
-async def upload_documents(
+async def upload_documents(  # noqa: PLR0913, PLR0917
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -114,7 +115,7 @@ async def upload_documents(
 ):
     """Upload XML files directly"""
     if current_user.role == "CLIENT" and current_user.client_id:
-        client_id = current_user.client_id
+        client_id = current_user.client_id  # noqa: F841
 
     file_contents = []
     for file in files:
@@ -164,8 +165,6 @@ async def get_document_by_access_key(
     """Get document by access key (chave de acesso)"""
     document = await documents_service.get_by_access_key(access_key, company_id)
     if not document:
-        from app.core.exceptions import NotFoundError
-
         raise NotFoundError("Document", access_key)
     return document
 

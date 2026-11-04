@@ -4,8 +4,11 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from jose import JWTError
+from prisma.errors import PrismaError
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
@@ -40,9 +43,6 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.reports.router import router as reports_router
 from app.modules.rules.router import router as rules_router
 from app.modules.users.router import router as users_router
-
-# from app.modules.audit.router import router as audit_router
-
 
 # Configure structlog
 structlog.configure(
@@ -104,10 +104,6 @@ app.add_middleware(
 init_rate_limiter(app)
 
 # Exception Handlers
-from fastapi.exceptions import RequestValidationError
-from jose import JWTError
-from prisma.errors import PrismaError
-
 app.add_exception_handler(AppException, app_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(PrismaError, prisma_exception_handler)
@@ -160,7 +156,6 @@ app.include_router(contests_router, prefix=settings.API_PREFIX)
 app.include_router(reports_router, prefix=settings.API_PREFIX)
 app.include_router(notifications_router, prefix=settings.API_PREFIX)
 app.include_router(rules_router, prefix=settings.API_PREFIX)
-# app.include_router(audit_router, prefix=settings.API_PREFIX)
 
 
 if __name__ == "__main__":

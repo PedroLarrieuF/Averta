@@ -4,7 +4,9 @@ import type {
   User,
   Company,
   Client,
+  ClientBranch,
   Carrier,
+  CarrierBranch,
   Contract,
   Document,
   Discrepancy,
@@ -38,6 +40,7 @@ export const queryKeys = {
   carriers: {
     all: (params?: Record<string, unknown>) => ['carriers', params] as const,
     detail: (id: string) => ['carriers', id] as const,
+    branches: (carrierId: string) => ['carriers', carrierId, 'branches'] as const,
   },
   contracts: {
     all: (params?: Record<string, unknown>) => ['contracts', params] as const,
@@ -208,6 +211,53 @@ export function useDeleteClient() {
   })
 }
 
+// Client Branch hooks
+export function useClientBranches(clientId: string, options?: UseQueryOptions<ClientBranch[]>) {
+  return useQuery({
+    queryKey: queryKeys.clients.branches(clientId),
+    queryFn: () => apiClient.get<ClientBranch[]>(`/clients/${clientId}/branches`),
+    enabled: !!clientId,
+    ...options,
+  })
+}
+
+export function useCreateBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ clientId, data }: { clientId: string; data: Partial<ClientBranch> }) =>
+      apiClient.post<ClientBranch>(`/clients/${clientId}/branches`, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.branches(variables.clientId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) })
+    },
+  })
+}
+
+export function useUpdateBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ClientBranch> }) =>
+      apiClient.patch<ClientBranch>(`/branches/${id}`, data),
+    onSuccess: (_, _variables) => {
+      // We need the clientId from the variables, but it's not in the mutation params
+      // The API should return the updated branch with clientId, but if not, we'd need to pass it
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all() })
+    },
+  })
+}
+
+export function useDeleteBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, clientId: _clientId }: { id: string; clientId: string }) =>
+      apiClient.delete(`/branches/${id}`),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.branches(variables.clientId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) })
+    },
+  })
+}
+
 // Carrier hooks
 export function useCarriers(params?: Record<string, unknown>, options?: UseQueryOptions<PaginatedResponse<Carrier>>) {
   return useQuery({
@@ -244,6 +294,61 @@ export function useUpdateCarrier() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.carriers.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.carriers.all() })
+    },
+  })
+}
+
+export function useDeleteCarrier() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/carriers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.all() })
+    },
+  })
+}
+
+// Carrier Branch hooks
+export function useCarrierBranches(carrierId: string, options?: UseQueryOptions<CarrierBranch[]>) {
+  return useQuery({
+    queryKey: queryKeys.carriers.branches(carrierId),
+    queryFn: () => apiClient.get<CarrierBranch[]>(`/carriers/${carrierId}/branches`),
+    enabled: !!carrierId,
+    ...options,
+  })
+}
+
+export function useCreateCarrierBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ carrierId, data }: { carrierId: string; data: Partial<CarrierBranch> }) =>
+      apiClient.post<CarrierBranch>(`/carriers/${carrierId}/branches`, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.branches(variables.carrierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.detail(variables.carrierId) })
+    },
+  })
+}
+
+export function useUpdateCarrierBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CarrierBranch> }) =>
+      apiClient.patch<CarrierBranch>(`/branches/${id}`, data),
+    onSuccess: (_, _variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.all() })
+    },
+  })
+}
+
+export function useDeleteCarrierBranch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, carrierId: _carrierId }: { id: string; carrierId: string }) =>
+      apiClient.delete(`/branches/${id}`),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.branches(variables.carrierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.carriers.detail(variables.carrierId) })
     },
   })
 }

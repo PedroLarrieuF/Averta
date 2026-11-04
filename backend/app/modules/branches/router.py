@@ -48,7 +48,7 @@ async def create_branch(
     status_code=status.HTTP_200_OK,
     summary="List branches",
 )
-async def list_branches(
+async def list_branches(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

@@ -1,5 +1,6 @@
 """Contracts module service"""
 
+from datetime import datetime
 
 import structlog
 
@@ -19,6 +20,9 @@ from app.services.rules_engine_v2 import get_engine_instance
 from prisma import Prisma
 
 logger = structlog.get_logger()
+
+# Constants
+PROGRESSIVE_MONTH_DAYS = 30
 
 
 class ContractsService(BaseService):
@@ -167,7 +171,7 @@ class ContractsService(BaseService):
         logger.info("contract_updated", id=contract_id, company_id=company_id)
         return self._to_response(contract)
 
-    async def list_contracts(
+    async def list_contracts(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
@@ -324,9 +328,7 @@ class ContractsService(BaseService):
         self, contract_id: str, company_id: str, date: datetime | None = None
     ):
         """Get active freight table for a given date"""
-        from datetime import datetime as dt
-
-        check_date = date or dt.utcnow()
+        check_date = date or datetime.utcnow()
 
         await self.get_by_id(contract_id, company_id)
 
@@ -371,8 +373,6 @@ class ContractsService(BaseService):
 
         For FIXED model: returns the standard success_fee_pct
         """
-        from datetime import datetime as dt
-
         if contract.pricingModel == "FIXED":
             return contract.successFeePct
 
@@ -381,14 +381,14 @@ class ContractsService(BaseService):
         if not start_date:
             return contract.successFeePct
 
-        check_date = reference_date or dt.utcnow()
+        check_date = reference_date or datetime.utcnow()
 
         # Calculate months difference
         # Month 1 = first 30 days (0-29 days)
         # Month 2+ = 30+ days
         days_diff = (check_date - start_date).days
 
-        if days_diff < 30:
+        if days_diff < PROGRESSIVE_MONTH_DAYS:
             return contract.progressiveMonth1Pct or 5.0
         else:
             return contract.progressiveMonth2Pct or 10.0

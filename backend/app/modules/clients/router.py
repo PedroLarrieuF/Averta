@@ -48,7 +48,7 @@ async def create_client(
     status_code=status.HTTP_200_OK,
     summary="List clients",
 )
-async def list_clients(
+async def list_clients(  # noqa: PLR0913, PLR0917
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,

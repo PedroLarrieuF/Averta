@@ -1,13 +1,13 @@
 """Documents module schemas"""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
 
 
-class DocumentType(str, Enum):
+class DocumentType(StrEnum):
     CTE = "CTE"
     NFE = "NFE"
     CTE_COMPLEMENTAR = "CTE_COMPLEMENTAR"
@@ -15,7 +15,7 @@ class DocumentType(str, Enum):
     OTHER = "OTHER"
 
 
-class DocumentStatus(str, Enum):
+class DocumentStatus(StrEnum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"

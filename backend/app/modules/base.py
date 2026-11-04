@@ -1,7 +1,7 @@
 """Base module classes for consistent CRUD patterns"""
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 import structlog
 from prisma.types import OrderByInput, WhereInput
@@ -19,7 +19,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 ResponseSchemaType = TypeVar("ResponseSchemaType", bound=BaseModel)
 
 
-class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType], ABC):
+class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType](ABC):
     """Base service with common CRUD operations"""
 
     def __init__(self, db: Prisma, model_name: str):

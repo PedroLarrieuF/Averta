@@ -64,7 +64,6 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@averta.com"
     SMTP_TLS: bool = True
 
-    # SendGrid (preferred)
     SENDGRID_API_KEY: str | None = None
     SENDGRID_FROM_EMAIL: str = "noreply@averta.com"
     SENDGRID_FROM_NAME: str = "Averta Auditoria"
@@ -92,7 +91,6 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
-    # Monitoring (optional)
     SENTRY_DSN: str | None = None
 
     # Pagination defaults

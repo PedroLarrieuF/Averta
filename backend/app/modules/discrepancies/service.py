@@ -80,7 +80,7 @@ class DiscrepanciesService:
             raise NotFoundError("Discrepancy", discrepancy_id)
         return self._to_response(discrepancy)
 
-    async def list_discrepancies(
+    async def list_discrepancies(  # noqa: PLR0913, PLR0917
         self,
         company_id: str,
         pagination: PaginationParams,
