@@ -26,12 +26,12 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent, Bash
 | **Environment Config** | ✅ COMPLETE | `.env.example`, `.env.local` templates |
 | **CI/CD Pipeline** | ✅ COMPLETE | `.github/workflows/` (lint, test, build, deploy) |
 
-### 🔴 NEEDS IMPLEMENTATION / IMPROVEMENT
+### 🟢 IN PROGRESS / NEEDS IMPLEMENTATION
 
 | Area | Card | Priority | Current State |
 |------|------|----------|---------------|
-| **Docker Production Hardening** | #01 | HIGH | Multi-stage build exists but needs: distroless base, security scanning, SBOM |
-| **Prisma Performance Optimization** | #02 | HIGH | Missing: connection pooling (PgBouncer), query optimization, read replicas |
+| **Docker Production Hardening** | #01 | HIGH | 🟢 **REVIEW** - Distroless Dockerfile, docker-compose.prod.yml, Trivy/Syft/cosign CI complete |
+| **Prisma Performance Optimization** | #02 | HIGH | 🟢 **REVIEW** - PgBouncer, read replica, composite indexes, query middleware complete |
 | **Database Backup & Restore** | #03 | HIGH | No automated backup strategy, point-in-time recovery not configured |
 | **AWS Infrastructure (Terraform)** | #04 | MEDIUM | **NEW** - ECS Fargate, RDS, ElastiCache, S3, ALB, Route53, ACM |
 | **Monitoring & Observability** | #05 | MEDIUM | **NEW** - CloudWatch, DataDog, or Grafana stack (logs, metrics, traces) |
@@ -57,8 +57,8 @@ agents-new/infra-agent/cards/
 
 | Card | Title | Status | Priority | Estimate |
 |------|-------|--------|----------|----------|
-| #01 | Docker Production Hardening | 🔴 Ready | HIGH | M |
-| #02 | Prisma Performance Optimization | 🔴 Ready | HIGH | L |
+| #01 | Docker Production Hardening | 🟢 **Review** | HIGH | M |
+| #02 | Prisma Performance Optimization | 🟢 **Review** | HIGH | L |
 | #03 | Database Backup & Restore Strategy | 🔴 Ready | HIGH | M |
 | #04 | AWS Infrastructure (Terraform) | 🔴 Ready | MEDIUM | XL |
 | #05 | Monitoring & Observability Stack | 🔴 Ready | MEDIUM | L |
@@ -116,106 +116,94 @@ infra/                              # NEW - Terraform modules (TODO)
 
 ---
 
-## 🐳 Docker Configuration (Current)
+## 🐳 Docker Configuration (Current - Production Hardened)
 
-### docker-compose.yml Services
+### Dockerfile (Multi-stage → Distroless)
 
+```dockerfile
+# Stage 1: Builder (python:3.12-slim)
+FROM python:3.12-slim AS builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev
+RUN pip install --no-cache-dir poetry==1.8.2
+COPY pyproject.toml poetry.lock ./
+RUN poetry config virtualenvs.create false
+RUN poetry install --only=main --no-interaction --no-ansi
+COPY prisma ./prisma
+RUN prisma generate
+RUN pip cache purge
+
+# Stage 2: Runtime (gcr.io/distroless/python3-debian12:nonroot)
+FROM gcr.io/distroless/python3-debian12:nonroot AS runtime
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /app/app ./app
+COPY --from=builder /app/prisma ./prisma
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**Key Hardening Applied:**
+- ✅ Distroless base (no shell, no pkg mgr, minimal attack surface)
+- ✅ Non-root user (UID 65532, built into distroless)
+- ✅ Multi-stage with layer caching optimization
+- ✅ Prisma client generated in builder (distroless has no prisma CLI)
+- ✅ Health check using Python stdlib (no curl needed)
+- ✅ OCI labels for SBOM/traceability
+- ✅ Target: <200MB, 0 HIGH/CRITICAL vulns
+
+### docker-compose.yml Services (Dev - Unchanged)
 ```yaml
 services:
   postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: averta
-      POSTGRES_USER: averta
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports: ["5432:5432"]
-    healthcheck: pg_isready
-
+    ...
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports: ["6379:6379"]
-    healthcheck: redis-cli ping
-
+    ...
   minio:
     image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    volumes:
-      - minio_data:/data
-    ports: ["9000:9000", "9001:9001"]
-
+    ...
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://averta:${POSTGRES_PASSWORD}@postgres:5432/averta
-      - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
-      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-    ports: ["8000:8000"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_started
-
+    ...
   celery-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.core.celery_app worker --loglevel=info
-    environment: *same as backend*
-    depends_on: [postgres, redis]
-
+    ...
   celery-beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.core.celery_app beat --loglevel=info
-    environment: *same as backend*
-    depends_on: [postgres, redis]
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports: ["3000:3000"]
-    environment:
-      - VITE_API_URL=http://localhost:8000
+    ...
+  flower:
+    ...
 ```
 
-### Dockerfile (Multi-stage)
-
-```dockerfile
-# Stage 1: Builder
-FROM python:3.11-slim AS builder
-WORKDIR /app
-RUN pip install --no-cache-dir poetry
-COPY pyproject.toml poetry.lock ./
-RUN poetry export -f requirements.txt --output requirements.txt
-
-# Stage 2: Runtime
-FROM python:3.11-slim AS runtime
-WORKDIR /app
-RUN useradd -m -u 1000 appuser
-COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY --chown=appuser:appuser . .
-USER appuser
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+### docker-compose.prod.yml (NEW - Production Overrides)
+```yaml
+# Production-hardened overrides with:
+# - Resource limits (CPU, memory) per service
+# - Restart policies (unless-stopped)
+# - JSON-file logging with rotation (max-size: 10m, max-file: 3-5)
+# - Read-only root filesystem
+# - Dropped ALL capabilities (minimal cap_add for postgres)
+# - Security opt: no-new-privileges
+# - tmpfs for writable directories
+# - Replicas for celery-worker (2x)
+# - Dedicated network subnet (172.28.0.0/16)
 ```
+
+**Usage:**
+```bash
+# Development
+docker compose up -d
+
+# Production
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+---
 
 ---
 
@@ -378,34 +366,46 @@ infra/
 ## 🔧 Development Commands
 
 ```bash
-# Docker
+# Docker (Development)
 cd backend
-docker compose up -d              # Start all services
+docker compose up -d              # Start all services (dev)
 docker compose down -v            # Stop + remove volumes
 docker compose logs -f backend    # Follow backend logs
-docker compose exec backend bash  # Shell into backend
+docker compose exec backend bash  # Shell into backend (not available in distroless prod)
+
+# Docker (Production)
+cd backend
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d  # Start prod stack
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down   # Stop prod stack
+docker compose -f docker-compose.yml -f docker-compose.prod.yml config # Validate config
+
+# Docker Security Testing (Local)
+trivy image averta/backend:latest --severity HIGH,CRITICAL
+syft averta/backend:latest -o spdx-json
+docker buildx build --platform linux/amd64,linux/arm64 -t averta/backend:test --load .
 
 # Prisma
 cd backend
 npx prisma generate               # Generate client
 npx prisma migrate dev            # Create & apply migration
 npx prisma migrate deploy         # Apply migrations (prod)
-npx prisma db seed                # Run seed script
+npx prisma db seed                # Run seed script (TypeScript)
+poetry run db-seed                # Run seed script (Python - comprehensive)
 npx prisma studio                 # Visual DB browser
 
 # Database
 docker compose exec postgres psql -U averta -d averta
-./scripts/backup.sh               # Backup database (TODO)
-./scripts/restore.sh backup.sql   # Restore database (TODO)
+./scripts/backup.sh               # Backup database (TODO - Card #03)
+./scripts/restore.sh backup.sql   # Restore database (TODO - Card #03)
 
-# AWS (Terraform)
+# AWS (Terraform) - Card #04
 cd infra
 terraform init
 terraform plan -var-file=environments/staging/terraform.tfvars
 terraform apply -var-file=environments/staging/terraform.tfvars
 
 # CI/CD
-git push origin main              # Triggers GitHub Actions
+git push origin main              # Triggers GitHub Actions (lint, test, security-scan, sbom, build, sign, deploy)
 gh workflow run deploy.yml        # Manual deploy
 ```
 
@@ -551,9 +551,13 @@ CORS_ORIGINS=https://app.averta.com.br
 ### Quality Gates (Must Pass)
 ```bash
 # Docker
-trivy image averta/backend:latest        # Security scan
-syft averta/backend:latest -o spdx       # SBOM generation
-docker compose -f docker-compose.prod.yml config  # Validate prod compose
+trivy image averta/backend:latest --severity HIGH,CRITICAL --exit-code 1  # Security scan (fail on HIGH/CRITICAL)
+syft averta/backend:latest -o spdx-json=sbom.spdx.json  # SBOM generation (SPDX)
+cosign sign-blob --yes sbom.spdx.json  # Sign SBOM (keyless)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml config  # Validate prod compose
+
+# Multi-arch build test
+docker buildx build --platform linux/amd64,linux/arm64 -t averta/backend:test .
 
 # Prisma
 npx prisma validate                      # Schema validation
@@ -599,10 +603,10 @@ checkov -d infra/                        # IaC security
 
 ```bash
 # 1. Check current card
-ls cards/infra/in-progress/ || ls cards/infra/ready/ | head -5
+ls cards/infra/in-progress/ || ls cards/infra/ready/ | head-5
 
 # 2. Next Cards Available (Priority Order):
-#    Card #01 - Docker Production Hardening (High) - Security first
+#    Card #01 - Docker Production Hardening (High) - **IN REVIEW** ✅
 #    Card #06 - Secrets Management (High) - Blocks production
 #    Card #03 - Database Backup & Restore (High) - Data protection
 #    Card #02 - Prisma Performance Optimization (High) - Scale prep
@@ -615,6 +619,9 @@ cd backend && docker compose up -d
 
 # 4. Verify Prisma
 cd backend && npx prisma generate && npx prisma migrate status
+
+# 5. Test production compose (when Docker available)
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml config
 ```
 
 ---

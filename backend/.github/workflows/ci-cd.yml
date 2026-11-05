@@ -9,6 +9,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/backend
+  # Trivy severity thresholds
+  TRIVY_SEVERITY: HIGH,CRITICAL
+  TRIVY_EXIT_CODE: 1
 
 jobs:
   lint-and-test:
@@ -50,13 +53,132 @@ jobs:
           files: ./coverage.xml
           flags: unittests
 
-  build-and-push:
-    needs: lint-and-test
+  security-scan:
+    name: Security Scan (Trivy)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: lint-and-test
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: ${{ env.TRIVY_SEVERITY }}
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
+          vuln-type: 'os,library'
+          scanners: 'vuln,secret,config'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+      - name: Run Trivy config scan (IaC)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './backend'
+          format: 'sarif'
+          output: 'trivy-config-results.sarif'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy config results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-config-results.sarif
+          category: trivy-config
+
+  sbom-generate:
+    name: Generate SBOM (Syft)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for SBOM
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sbom-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sbom-${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 90
+
+      - name: Attach SBOM to container image
+        uses: anchore/sbom-action/attach@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sbom-${{ github.sha }}
+          sbom-file: sbom.spdx.json
+
+      - name: Sign SBOM with cosign (keyless)
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.0'
+
+      - name: Sign SBOM
+        run: |
+          cosign sign-blob \
+            --yes \
+            --type spdx \
+            sbom.spdx.json
+
+  build-and-push:
+    name: Build & Push Multi-Arch Image
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, security-scan, sbom-generate]
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -82,19 +204,45 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
+      - name: Build and push multi-arch
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: ./backend
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Sign image with cosign (keyless)
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.0'
+
+      - name: Sign container image
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          cosign sign --yes \
+            --annotations "git.sha=${{ github.sha }}" \
+            --annotations "git.ref=${{ github.ref }}" \
+            ${{ steps.meta.outputs.tags }}
+
+      - name: Verify signatures
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --certificate-github-workflow-repository "${{ github.repository }}" \
+            ${{ steps.meta.outputs.tags }}
 
   deploy-staging:
-    needs: build-and-push
+    name: Deploy to Staging
     runs-on: ubuntu-latest
+    needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: staging
     steps:
@@ -105,8 +253,9 @@ jobs:
           # Example: kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop
 
   deploy-production:
-    needs: build-and-push
+    name: Deploy to Production
     runs-on: ubuntu-latest
+    needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     steps:
@@ -117,8 +266,9 @@ jobs:
           # Example: kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   notify:
-    needs: [lint-and-test, build-and-push, deploy-staging, deploy-production]
+    name: Pipeline Notification
     runs-on: ubuntu-latest
+    needs: [lint-and-test, security-scan, sbom-generate, build-and-push, deploy-staging, deploy-production]
     if: always()
     steps:
       - name: Send notification

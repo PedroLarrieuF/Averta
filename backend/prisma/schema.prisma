@@ -384,6 +384,11 @@ model Document {
   @@index([accessKey])
   @@index([issueDate])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([companyId, status, createdAt])
+  @@index([companyId, type, status])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
 }
 
 model Discrepancy {
@@ -429,6 +434,12 @@ model Discrepancy {
   @@index([status])
   @@index([ruleCode])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([documentId, ruleCode, status])
+  @@index([companyId, status, createdAt])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
+  @@index([contractId, status, createdAt])
 }
 
 // ============================================
@@ -473,6 +484,11 @@ model Contest {
   @@index([contractId])
   @@index([status])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([companyId, status, createdAt])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
+  @@index([contractId, status, createdAt])
 }
 
 model ContestItem {
@@ -608,10 +624,14 @@ model Rule {
   version       Int              @default(1)
   isActive      Boolean          @default(true)
   description   String?
+  tags          String[]         @default([])
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
   @@index([code])
   @@index([type])
   @@index([isActive])
+  @@index([severity])
+  // GIN index for tags array (PostgreSQL specific)
+  @@index([tags], map: "rule_tags_gin", type: Gin)
 }

@@ -27,6 +27,10 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/averta"
+    DATABASE_READ_REPLICA_URL: str | None = None
+    DATABASE_CONNECT_TIMEOUT: int = 10
+    DATABASE_POOL_SIZE: int = 20
+    DATABASE_POOL_TIMEOUT: int = 10
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
