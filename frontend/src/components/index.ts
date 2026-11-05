@@ -42,6 +42,8 @@ export { Tooltip } from './Tooltip'
 
 export { Toast, ToastManager, useToast } from './Toast'
 
+export { PageSkeleton, PageSkeletonMinimal } from './PageSkeleton'
+
 export { EmptyState, EmptyDiscrepancies, EmptyDocuments, EmptyContests, EmptySearch, EmptyGeneric } from './EmptyState'
 
 export { Alert, AlertTitle, AlertDescription } from './Alert'
@@ -54,7 +56,7 @@ export { Switch } from './Switch'
 
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs'
 
-export { KPICard, KPIValue, KPILabel } from './KPICard'
+export { KPICard, KPIValue, KPILabel, KPITrend } from './KPICard'
 
 // Data Grid components
 export { FreightTable } from './data-grid'
@@ -90,8 +92,6 @@ export { ScheduleList } from './reports/ScheduleList'
 export { ScheduleForm } from './reports/ScheduleForm'
 
 // Settings components
-export { ContractForm } from './settings/ContractForm'
-export { FreightTableEditor } from './settings/FreightTableEditor'
 export { UserInviteModal } from './settings/UserInviteModal'
 
 // Clients components
@@ -111,6 +111,20 @@ export { BranchForm as CarrierBranchForm } from './carriers/BranchForm'
 export { BranchesTable as CarrierBranchesTable } from './carriers/BranchesTable'
 export { carrierSchema, type CarrierFormData } from './carriers/CarrierForm'
 export { carrierBranchSchema, type CarrierBranchFormData } from './carriers/BranchForm'
+
+// Contracts components
+export { ContractsTable } from './contracts/ContractsTable'
+export type { ContractsTableProps } from './contracts/ContractsTable'
+export { ContractForm } from './contracts/ContractForm'
+export type { ContractFormData } from './contracts/ContractForm'
+export { contractSchema } from './contracts/ContractForm'
+export { ContractDetailModal } from './contracts/ContractDetailModal'
+export type { FreightTableSummary } from './contracts/ContractDetailModal'
+export { FreightTableEditor } from './contracts/FreightTableEditor'
+export type { FreightTableEditorProps } from './contracts/FreightTableEditor'
+export { FreightTableGrid } from './contracts/FreightTableGrid'
+export type { FreightRateRow } from './contracts/FreightTableGrid'
+export { FreightTableVersionManager } from './contracts/FreightTableVersionManager'
 
 // Profile components
 export { ProfileHeader } from './profile/ProfileHeader'

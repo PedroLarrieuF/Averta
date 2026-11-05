@@ -255,6 +255,64 @@
   .modal-footer {
     @apply px-6 py-4 border-t border-secondary-200 bg-secondary-50 rounded-b-xl flex items-center justify-end gap-2;
   }
+
+  /* Skeleton loading styles for lazy routes */
+  .skeleton {
+    @apply bg-gradient-to-r from-secondary-200 via-secondary-300 to-secondary-200 bg-[length:200%_100%] animate-shimmer rounded-lg;
+  }
+
+  .skeleton-title {
+    @apply h-7 w-2/5 rounded;
+  }
+
+  .skeleton-subtitle {
+    @apply h-4 w-3/5 rounded mt-2;
+  }
+
+  .skeleton-card {
+    @apply h-28 rounded-xl;
+  }
+
+  .skeleton-chart {
+    @apply h-[300px] rounded-xl;
+  }
+
+  .skeleton-text {
+    @apply h-4 w-full rounded;
+  }
+
+  .skeleton-text-short {
+    @apply h-4 w-1/2 rounded;
+  }
+
+  .skeleton-avatar {
+    @apply h-12 w-12 rounded-full;
+  }
+
+  .skeleton-button {
+    @apply h-10 w-24 rounded-lg;
+  }
+
+  .skeleton-table-row {
+    @apply h-12;
+  }
+
+  .skeleton-table-cell {
+    @apply h-4 w-full rounded;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite linear;
+  }
 }
 
 @layer utilities {
