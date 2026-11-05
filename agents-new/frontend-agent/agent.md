@@ -73,18 +73,20 @@ agents-new/frontend-agent/cards/
 | #01 | QA Setup: Vitest + RTL + MSW | ✅ **Done** | CRITICAL | M |
 | #03 | Build Dashboard with Charts | 🔴 Ready | HIGH | M |
 | #07 | Build Design System Components | 🔴 Ready | HIGH | L |
+| #08 | Documents Page (Upload + List + Detail) | ✅ **Done** | CRITICAL | L |
+| #09 | Discrepancies Page (List + Filters + Detail + Bulk) | ✅ **Done** | CRITICAL | L |
 | #10 | Contests Page (create/detail/negotiate/pay) | ✅ **Done** | CRITICAL | XL |
 | #11 | Reports Page (PDF/Excel export, scheduling) | ✅ **Done** | HIGH | L |
-| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | ✅ **Done** (in review) | HIGH | XL |
+| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | ✅ **Done** | HIGH | XL |
 | #21 | Reports Page (NEW - detailed spec) | ✅ **Done** (merged into #11) | HIGH | L |
-| #22 | Clients Page (CRUD) | ✅ **Done** (in review) | HIGH | M |
-| #23 | Carriers Page (CRUD) | ✅ **Done** (in review) | HIGH | M |
-| #24 | Contracts Page (CRUD + FreightTable editor) | ✅ **Done** (in review) | HIGH | L |
-| #25 | Profile Page (user profile management) | 🔴 Ready | MEDIUM | S |
-| #26 | Code Splitting & Bundle Optimization | ✅ **Done** (in review) | MEDIUM | M |
+| #22 | Clients Page (CRUD) | ✅ **Done** | HIGH | M |
+| #23 | Carriers Page (CRUD) | ✅ **Done** | HIGH | M |
+| #24 | Contracts Page (CRUD + FreightTable editor) | ✅ **Done** | HIGH | L |
+| #25 | Profile Page (user profile management) | ✅ **Done** | MEDIUM | S |
+| #26 | Code Splitting & Bundle Optimization | ✅ **Done** | MEDIUM | M |
 | #27 | TypeScript Types Barrel Exports | 🔴 Ready (in review) | LOW | S |
 | #38 | NF-e Rules Dashboard & Discrepancy Views | 🔴 **Ready (NEW)** | HIGH | L |
-| #40 | Developer Portal (Dashboard, Docs, Keys, Analytics, Webhooks) | ✅ **Done** (in review) | CRITICAL | L |
+| #40 | Developer Portal (Dashboard, Docs, Keys, Analytics, Webhooks) | ✅ **Done** | CRITICAL | L |
 
 ### Card Lifecycle (This Agent Owns)
 1. **Tech Lead assigns** → Card moved to `ready/`
@@ -389,6 +391,7 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 - Card #22: Clients Page → **DONE** (CRUD + Branches + 5 components + 4 hooks)
 - Card #23: Carriers Page → **DONE** (CRUD + Branches + 5 components + 4 hooks)
 - Card #24: Contracts Page → **DONE** (CRUD + FreightTable Editor + 6 components + 12 hooks)
+- Card #25: Profile Page → **DONE** (Profile management + components + hooks)
 - Card #26: Code Splitting & Bundle Optimization → **DONE** (Lazy routes, Suspense, PageSkeleton, manualChunks)
 - Card #40: Developer Portal → **DONE** (Dashboard, Docs, Keys, Analytics, Webhooks + 5 pages + Layout)
 
@@ -401,7 +404,6 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
 | **#38** | **NF-e Dashboard & Discrepancy Views** | **NEW FEATURE** - Rules dashboard, discrepancy detail, validation table, admin config (4 components + hooks + types) |
-| **#25** | Profile Page | Replace `ComingSoon` → User profile management |
 | **#03** | Dashboard Charts | Add Recharts to existing Dashboard |
 | **#07** | Design System Enhancements | Tooltip, Toast, Tabs, Select, Pagination, EmptyState, KPICard |
 
@@ -487,7 +489,6 @@ ls cards/frontend/in-progress/ || ls cards/frontend/ready/ | head -5
 
 # 2. Next Cards Available:
 #    Card #38 - NF-e Dashboard & Discrepancy Views (Sprint 2, High) - NEW FEATURE
-#    Card #25 - Profile Page (Sprint 2, Medium)
 #    Card #03 - Dashboard Charts (Sprint 2, High)
 #    Card #07 - Design System Enhancements (Sprint 2, High)
 #    Card #27 - TypeScript Types Barrel Exports (Sprint 3, Low)

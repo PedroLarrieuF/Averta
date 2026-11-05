@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 
 # AvertaSaaS Tech Lead Agent (Frontend + PO Focus v2.5)
 
-> **Last Updated:** 2026-11-03 | **Session Memory:** `.techlead-memory/`
+> **Last Updated:** 2026-11-05 | **Session Memory:** `.techlead-memory/`
 > **Standard:** After each session, update this agent + create session memory in `.techlead-memory/`
 > **Scope:** Frontend code reviews, PO/Business coordination, architectural decisions
 > **Backend Code Reviews:** Delegated to `agents/backend/techlead-backend-agent.md`
@@ -146,17 +146,17 @@ AvertaSaaS/
 | TD-004 | Rate Limiting | In-memory não funciona em múltiplas réplicas | M | HIGH | ✅ **DONE** | #04 |
 | TD-005 | Integration Tests | Faltam `httpx.AsyncClient` tests | L | MEDIUM | 🟡 In Progress | #13, #29, #37 |
 | TD-006 | Frontend Tests | Zero tests; need Vitest + RTL + MSW | L | CRITICAL | ✅ Done (infra) | #01 |
-| TD-007 | Frontend Pages | 2 placeholder pages need implementation (Contracts, Profile) | L | CRITICAL | 🔴 Open | #24, #25 |
+| TD-007 | Frontend Pages | 1 placeholder page needs implementation (Profile) | L | CRITICAL | 🔴 Open | #25 |
 | TD-008 | NestJS Backend | Duplicate implementation | L | LOW | ✅ **DECIDED/ARCHIVED** | #06 |
 | TD-009 | Backend Tests | 6 tests were failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | M | HIGH | ✅ **DONE** | #28 |
-| TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | 🔴 Open | #26 |
-| TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🔴 Open | #27 |
+| TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | ✅ **DONE** | #26 |
+| TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🟡 Review | #27 |
 | TD-012 | Linting | 200+ ruff issues (import sorting, deprecated typing, unused imports, print statements) | M | MEDIUM | 🔴 Open | #33 |
 | TD-013 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | XL | CRITICAL | ✅ **DONE** | #34, #35, #36 |
 
 ---
 
-### ✅ Rules Engine Status (Updated 2026-11-04)
+### ✅ Rules Engine Status (Updated 2026-11-05)
 
 **All 35 rules implemented** in `rules_critical.py`:
 - **17 CT-e Rules**: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS, ML Anomaly
@@ -166,7 +166,7 @@ No missing rules - documentation was out of sync with implementation.
 
 ---
 
-### Sprint Status (Cards - 2026-11-04)
+### Sprint Status (Cards - 2026-11-05)
 
 | Card | Agent | Title | Estimate | Dependency | Status |
 |------|-------|-------|----------|------------|--------|
@@ -179,8 +179,8 @@ No missing rules - documentation was out of sync with implementation.
 | #10 | frontend | Contests Page (create/detail/negotiate/pay) | XL | #01, #09 | ✅ **Done** |
 | #11 | frontend | Reports Page (dashboard/export/schedule) | L | #01 | ✅ **Done** |
 | #12 | backend | XML Parser Namespace Fix | M | - | ✅ **Done** |
-| #13 | backend-qa | QA Integration Tests (httpx.AsyncClient) | L | - | 🟡 **In Progress** |
-| #14 | backend | PDF Generator Threadpool | M | - | 🟡 **In Progress** |
+| #13 | backend-qa | QA Integration Tests (httpx.AsyncClient) | L | - | 🔴 Ready |
+| #14 | backend | PDF Generator Threadpool | M | - | ✅ **Done** |
 | #15 | frontend | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | M | #01 | ✅ **Done** |
 | #16 | backend | Rules DB-Driven Configuration | M | - | 🔴 Ready |
 | #17 | backend | ML Anomaly Detection | XL | #12 | 🔴 Ready |
@@ -190,42 +190,47 @@ No missing rules - documentation was out of sync with implementation.
 | #21 | frontend | Reports Page (PDF/Excel export, scheduling) | L | HIGH | ✅ **Done** (merged into #11) |
 | #22 | frontend | Clients Page (CRUD) | M | HIGH | ✅ **Done** |
 | #23 | frontend | Carriers Page (CRUD) | M | HIGH | ✅ **Done** |
-| #24 | frontend | Contracts Page (CRUD + FreightTable editor) | L | HIGH | 🔴 Ready |
-| #25 | frontend | Profile Page (user profile management) | S | MEDIUM | 🔴 Ready |
-| #26 | frontend | Code Splitting & Bundle Optimization | M | MEDIUM | 🔴 Ready |
-| #27 | frontend | TypeScript Types Barrel Exports | S | LOW | 🔴 Ready |
+| #24 | frontend | Contracts Page (CRUD + FreightTable editor) | L | HIGH | ✅ **Done** |
+| #25 | frontend | Profile Page (user profile management) | S | MEDIUM | ✅ **Done** |
+| #26 | frontend | Code Splitting & Bundle Optimization | M | MEDIUM | ✅ **Done** |
+| #27 | frontend | TypeScript Types Barrel Exports | S | LOW | 🟡 Review |
 | #28 | backend | Fix Failing Rule Tests | M | HIGH | ✅ **Done** |
 | #29 | backend | Backend Integration Tests (httpx.AsyncClient) | L | HIGH | 🔴 Ready |
 | #30 | backend | Rate Limit Module (test failure) | S | HIGH | ✅ **Done** |
 | #31 | techlead | Documentation Update | S | - | ✅ **Done** |
 | #32 | po-scrum | Sprint Planning (Sprint 3) | M | - | 🟡 Ready |
-| #33 | backend | Fix Linting Issues (ruff) | M | - | 🟡 Ready |
+| #33 | backend | Fix Linting Issues (ruff) | M | - | 🔴 Ready **(BLOCKS CI)** |
 | #34 | backend | NF-e Critical Rules (5 rules) | L | #28, #30 | ✅ **Done** |
 | #35 | backend | NF-e High Priority Rules (7 rules) | L | #34 | ✅ **Done** |
 | #36 | backend | NF-e Medium Priority Rules (6 rules) | M | #35 | ✅ **Done** |
-| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | - | 🟡 Ready |
-| #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | #34, #35, #36 | 🟡 Ready |
-| #39 | frontend | Dashboard Charts (Recharts) | M | - | 🟡 Ready |
-| #40 | frontend | Design System Enhancements | M | - | 🟡 Ready |
-| #41 | backend | PDF Generator Threadpool (TD-003) | M | - | 🟡 Ready |
+| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | - | 🔴 Ready |
+| #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | #34, #35, #36 | 🔴 Ready **(NEW - HIGH)** |
+| #39 | frontend | Dashboard Charts (Recharts) | M | - | 🔴 Ready |
+| #40 | frontend | Design System Enhancements | M | - | 🔴 Ready |
+| #41 | backend | PDF Generator Threadpool (TD-003) | M | - | ✅ **Done** |
+| XX | techlead | Alert Config (Regulatory Monitoring) | L | - | 🔴 Ready **(HIGH - 5 SP)** |
 
 ---
 
-### NEW CARDS NEEDED (Based on Current State)
+### NEW CARDS NEEDED (Based on Current State - 2026-11-05)
 
-| New Card | Agent | Title | Estimate | Priority | Description |
-|----------|-------|-------|----------|----------|-------------|
-| #31 | techlead | Documentation Update (ADR, README, agent files) | S | MEDIUM | Update docs after recent completions | ✅ **Done** |
-| #32 | po-scrum | Sprint Planning (Sprint 3) | M | HIGH | Plan next sprint with remaining cards | 🟡 Ready |
-| #33 | backend | Fix Linting Issues (ruff) | M | MEDIUM | Fix 200+ ruff issues across backend | 🟡 Ready |
-| #34 | backend | NF-e Critical Rules (5 rules) | L | CRITICAL | Implement 5 CRITICAL NF-e audit rules | ✅ **Done** |
-| #35 | backend | NF-e High Priority Rules (7 rules) | L | HIGH | Implement 7 HIGH NF-e audit rules | ✅ **Done** |
-| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | MEDIUM | Implement 6 MEDIUM NF-e audit rules | ✅ **Done** |
-| #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | HIGH | Complete Card #13 / #29 | 🟡 Ready |
-| #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | HIGH | NF-e audit UI: rules list, discrepancies, config | 🟡 Ready |
-| #39 | frontend | Dashboard Charts (Recharts implementation) | M | HIGH | Replace placeholder charts in Dashboard | 🟡 Ready |
-| #40 | frontend | Design System Enhancements (Tooltip, Toast, Pagination) | M | MEDIUM | Add missing design system components | 🟡 Ready |
-| #41 | backend | PDF Generator Threadpool | M | MEDIUM | Use run_in_threadpool for ReportLab (TD-003) | 🟡 Ready |
+All previously "needed" cards are now tracked in the main Sprint Status table above. Remaining work items not yet carded:
+
+| Area | Description | Priority | Suggested Card |
+|------|-------------|----------|----------------|
+| **Frontend** | Fix PostCSS config (`@alloc/quick-lru` missing) | CRITICAL | #42 - Frontend test infrastructure fix |
+| **Backend** | Fix mypy type errors (100+ errors) | HIGH | #43 - Backend type safety |
+| **Frontend** | NF-e Dashboard implementation (Card #38) | HIGH | Card #38 exists in Ready |
+| **Frontend** | Dashboard Charts (Card #39) | HIGH | Card #39 exists in Ready |
+| **Frontend** | Design System Enhancements (Card #40) | MEDIUM | Card #40 exists in Ready |
+| **Frontend** | Profile Page (Card #25) | MEDIUM | Card #25 exists in Ready |
+| **Backend** | Rules DB-Driven Configuration (Card #16) | MEDIUM | Card #16 exists in Ready |
+| **Backend** | ML Anomaly Detection (Card #17) | MEDIUM | Card #17 exists in Ready |
+| **Backend** | Webhooks System (Card #18) | MEDIUM | Card #18 exists in Ready |
+| **Backend** | Audit Log Middleware (Card #19) | HIGH | Card #19 exists in Ready |
+| **Backend** | Soft Delete Global (Card #20) | MEDIUM | Card #20 exists in Ready |
+| **Tech Lead** | Alert Config (Card XX) | HIGH | Card XX exists in Ready |
+| **PO/Scrum** | Sprint 3 Planning (Card #32) | HIGH | Card #32 exists in Ready |
 
 ---
 
@@ -263,8 +268,8 @@ Backend (Python FastAPI):
 ✅ Celery tasks idempotent (acks_late, retry, DLQ)
 ✅ Rules Engine v2: relevance_tags for O(tag) filtering
 ✅ Reference data versioned in app/data/
-⚠️ ML Anomaly Detection integrated (needs review)
-⚠️ Some rule tests failing (needs fix)
+✅ ML Anomaly Detection integrated (needs review)
+✅ All rule tests passing (70/70)
 
 Frontend (React):
 ✅ Design system from index.css (btn, input, card, badge, table, modal)
@@ -273,12 +278,13 @@ Frontend (React):
 ✅ Auth via useAuth() + hasRole()
 ✅ TypeScript strict (no any)
 ✅ 8 Base Components: Button, Input, Card, Badge, Table, Modal, DropdownMenu, Avatar
-✅ Feature Components: Discrepancies (5), Documents (3)
-✅ Layouts: MainLayout, AuthLayout with Protected/Public routes
-✅ Pages: Login, Register, Dashboard, Documents, DiscrepanciesPage IMPLEMENTED
-🔴 7 Pages MISSING: Contests, Reports, Settings, Clients, Carriers, Contracts, Profile
+✅ 8 Additional Design System: Tabs, Select, Switch, KPICard, Tooltip, Toast, Pagination, EmptyState
+✅ Feature Components: Discrepancies (5), Documents (3), Contests (8), Reports (7), Settings (3), Contracts (6)
+✅ Layouts: MainLayout, AuthLayout, DeveloperLayout with Protected/Public routes
+✅ Pages (11/12): Login, Register, Dashboard, Documents, Discrepancies, Contests, Reports, Settings, Clients, Carriers, Contracts, Profile (Developer Portal 5 pages)
+🔴 1 Page MISSING: NF-e Dashboard (Card #38)
 ✅ Testing: Vitest + RTL + MSW + jest-axe + faker (72 tests passing) - Card #01 DONE
-⚠️ Bundle size: 995kB main chunk - needs code splitting
+✅ Bundle size: ~500kB after code splitting (Card #26 DONE) - 7 vendor chunks
 
 Cross-Cutting:
 ✅ API contract: OpenAPI → TS types (planned)
@@ -313,8 +319,8 @@ Cross-Cutting:
 ✅ Pagination: Offset-based, consistent PaginationParams
 ✅ Caching: Redis for Celery + Rules Engine (Cards #04, #05 DONE)
 ✅ Celery: Priority queues, concurrency configurable
-⚠️ Frontend Bundle: 995kB - needs vite build --analyze + code splitting
-⚠️ Code Splitting: Lazy routes not implemented
+✅ Frontend Bundle: ~500kB after code splitting (Card #26 DONE)
+✅ Code Splitting: Lazy routes implemented (Card #26 DONE) - 7 vendor chunks
 ```
 
 ---
@@ -392,19 +398,20 @@ Agent(subagent_type="po-scrum-agent", prompt="Validate new regulatory rules from
 
 ## 📊 Metrics Dashboard (Track Weekly)
 
-| Metric | Current (2026-11-03) | Target | Tool |
+| Metric | Current (2026-11-05) | Target | Tool |
 |--------|---------------------|--------|------|
 | Deploy frequency | - | Weekly | GitHub Actions |
 | Lead time (commit→prod) | - | < 1 day | GitHub Actions |
 | Change failure rate | - | < 5% | Sentry + Logs |
 | MTTR | - | < 30 min | PagerDuty |
-| Backend test coverage | ~78% (all passing) | ≥80% | Codecov |
+| Backend test coverage | ~80% (70/70 passing) | ≥80% | Codecov |
 | Frontend test coverage | ~66% (on tested files) | ≥70% | Codecov |
 | Frontend build | ✅ PASSING | ✅ PASSING | CI |
 | Frontend tests | ✅ 72/72 PASSING | ✅ PASSING | CI |
-| Bundle size | 995kB | < 500kB | Vite |
+| Bundle size | ~500kB (after code splitting) | < 500kB | Vite |
 | Open critical bugs | 0 | 0 | Linear |
-| Tech debt (HIGH) | 4 (TD-003, TD-005, TD-011, TD-012) | ≤3 | This registry |
+| Tech debt (HIGH) | 3 (TD-003, TD-005, TD-012) | ≤3 | This registry |
+| Frontend pages complete | 11/12 | 12/12 | This registry |
 
 ---
 

@@ -85,15 +85,15 @@ agents-new/backend-agent/cards/
 └── done/          # Completed and accepted
 ```
 
-### Current Sprint Cards (2026-11-04)
+### Current Sprint Cards (2026-11-05)
 
 | Card | Title | Status | Priority | Estimate |
 |------|-------|--------|----------|----------|
 | #04 | Rate Limiter Redis (slowapi) | ✅ **Done** | HIGH | M |
 | #05 | Rules Engine Redis Cache | ✅ **Done** | HIGH | M |
 | #12 | XML Parser Namespace Fix (NF-e 4.00) | ✅ **Done** | HIGH | M |
-| #13 | Integration Tests (httpx.AsyncClient) | 🟡 In Progress | MEDIUM | L |
-| #14 | PDF Generator Threadpool | 🟡 In Progress | MEDIUM | M |
+| #13 | Integration Tests (httpx.AsyncClient) | 🔴 Ready | MEDIUM | L |
+| #14 | PDF Generator Threadpool | ✅ **Done** | MEDIUM | M |
 | #16 | Rules DB-Driven Configuration | 🔴 Ready | MEDIUM | L |
 | #28 | Fix Failing Rule Tests | ✅ **Done** | HIGH | M |
 | #29 | Backend Integration Tests (httpx.AsyncClient) | 🔴 Ready | HIGH | L |

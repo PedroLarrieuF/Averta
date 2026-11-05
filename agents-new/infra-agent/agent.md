@@ -1,0 +1,636 @@
+---
+name: averta-infra-agent
+description: Infrastructure Agent for AvertaSaaS - Docker, Prisma, and AWS. Owns all infrastructure Kanban cards.
+tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent, Bash
+---
+
+# AvertaSaaS Infrastructure Agent
+
+> **Location:** `backend/` (Dockerfile, docker-compose, Prisma schema)
+> **Mission:** Own and maintain all infrastructure - Docker containers, Prisma ORM, database migrations, and future AWS deployment
+> **Standard:** After each card completion, update this agent + move card to `review/`
+> **Last Updated:** 2026-11-05 (Agent created)
+
+---
+
+## 🎯 Current State (2026-11-05)
+
+### ✅ Already Built (DO NOT REBUILD)
+
+| Area | Status | Files |
+|------|--------|-------|
+| **Dockerfile** | ✅ COMPLETE | `backend/Dockerfile` (multi-stage, Python 3.11, non-root user) |
+| **docker-compose.yml** | ✅ COMPLETE | `docker-compose.yml` (postgres, redis, minio, backend, frontend, celery) |
+| **Prisma Schema** | ✅ COMPLETE | `backend/prisma/schema.prisma` (100+ models, multi-tenant, RBAC) |
+| **Database Migrations** | ✅ COMPLETE | `backend/prisma/migrations/` (15+ migrations) |
+| **Environment Config** | ✅ COMPLETE | `.env.example`, `.env.local` templates |
+| **CI/CD Pipeline** | ✅ COMPLETE | `.github/workflows/` (lint, test, build, deploy) |
+
+### 🔴 NEEDS IMPLEMENTATION / IMPROVEMENT
+
+| Area | Card | Priority | Current State |
+|------|------|----------|---------------|
+| **Docker Production Hardening** | #01 | HIGH | Multi-stage build exists but needs: distroless base, security scanning, SBOM |
+| **Prisma Performance Optimization** | #02 | HIGH | Missing: connection pooling (PgBouncer), query optimization, read replicas |
+| **Database Backup & Restore** | #03 | HIGH | No automated backup strategy, point-in-time recovery not configured |
+| **AWS Infrastructure (Terraform)** | #04 | MEDIUM | **NEW** - ECS Fargate, RDS, ElastiCache, S3, ALB, Route53, ACM |
+| **Monitoring & Observability** | #05 | MEDIUM | **NEW** - CloudWatch, DataDog, or Grafana stack (logs, metrics, traces) |
+| **Secrets Management** | #06 | HIGH | **NEW** - AWS Secrets Manager / Parameter Store integration |
+| **Disaster Recovery Plan** | #07 | MEDIUM | **NEW** - RPO/RTO definitions, cross-region replication, runbooks |
+
+---
+
+## 📋 Kanban Board (Local to This Agent)
+
+**Location:** `agents-new/infra-agent/cards/`
+
+```
+agents-new/infra-agent/cards/
+├── backlog/       # Future work, not yet prioritized
+├── ready/         # Prioritized, ready to start
+├── in-progress/   # Currently being worked on
+├── review/        # Completed, awaiting review
+└── done/          # Completed and accepted
+```
+
+### Current Sprint Cards
+
+| Card | Title | Status | Priority | Estimate |
+|------|-------|--------|----------|----------|
+| #01 | Docker Production Hardening | 🔴 Ready | HIGH | M |
+| #02 | Prisma Performance Optimization | 🔴 Ready | HIGH | L |
+| #03 | Database Backup & Restore Strategy | 🔴 Ready | HIGH | M |
+| #04 | AWS Infrastructure (Terraform) | 🔴 Ready | MEDIUM | XL |
+| #05 | Monitoring & Observability Stack | 🔴 Ready | MEDIUM | L |
+| #06 | Secrets Management (AWS Secrets Manager) | 🔴 Ready | HIGH | M |
+| #07 | Disaster Recovery Plan | 🔴 Ready | MEDIUM | L |
+
+### Card Lifecycle (This Agent Owns)
+1. **Tech Lead assigns** → Card moved to `ready/`
+2. **Agent picks up** → Move to `in-progress/`, start implementation
+3. **Implementation complete** → Move to `review/`, notify Tech Lead
+4. **Tech Lead approves** → Move to `done/`, update this agent.md
+
+---
+
+## 📁 Project Structure (Infrastructure)
+
+```
+backend/
+├── Dockerfile                      # Multi-stage Python 3.11 build
+├── docker-compose.yml              # Local dev stack (6 services)
+├── docker-compose.prod.yml         # Production overrides (TODO)
+├── .dockerignore
+├── prisma/
+│   ├── schema.prisma               # 100+ models (Company, User, Document, etc.)
+│   ├── migrations/                 # 15+ migration files
+│   └── seed.ts                     # Development seed data
+├── .env.example                    # Template with all required vars
+├── .env.local                      # Local overrides (gitignored)
+├── scripts/
+│   ├── migrate.sh                  # Migration runner
+│   ├── seed.sh                     # Seed runner
+│   └── backup.sh                   # Backup script (TODO)
+└── pyproject.toml                  # Python deps including prisma client
+
+.github/
+└── workflows/
+    ├── ci.yml                      # Lint, type-check, test
+    ├── build.yml                   # Docker build + push
+    └── deploy.yml                  # Deploy to AWS (TODO)
+
+infra/                              # NEW - Terraform modules (TODO)
+├── main.tf
+├── modules/
+│   ├── vpc/
+│   ├── ecs/
+│   ├── rds/
+│   ├── elasticache/
+│   ├── s3/
+│   ├── alb/
+│   └── route53/
+└── environments/
+    ├── staging/
+    └── production/
+```
+
+---
+
+## 🐳 Docker Configuration (Current)
+
+### docker-compose.yml Services
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: averta
+      POSTGRES_USER: averta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+    healthcheck: pg_isready
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports: ["6379:6379"]
+    healthcheck: redis-cli ping
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports: ["9000:9000", "9001:9001"]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://averta:${POSTGRES_PASSWORD}@postgres:5432/averta
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    ports: ["8000:8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app worker --loglevel=info
+    environment: *same as backend*
+    depends_on: [postgres, redis]
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app beat --loglevel=info
+    environment: *same as backend*
+    depends_on: [postgres, redis]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports: ["3000:3000"]
+    environment:
+      - VITE_API_URL=http://localhost:8000
+```
+
+### Dockerfile (Multi-stage)
+
+```dockerfile
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+WORKDIR /app
+RUN pip install --no-cache-dir poetry
+COPY pyproject.toml poetry.lock ./
+RUN poetry export -f requirements.txt --output requirements.txt
+
+# Stage 2: Runtime
+FROM python:3.11-slim AS runtime
+WORKDIR /app
+RUN useradd -m -u 1000 appuser
+COPY --from=builder /app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=appuser:appuser . .
+USER appuser
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+---
+
+## 🗄️ Prisma Schema (Current)
+
+### Key Models (100+ total)
+
+```prisma
+// Multi-tenancy
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  cnpj      String   @unique
+  settings  Json?
+  users     User[]
+  documents Document[]
+  // ... RBAC, billing, carriers, contracts
+}
+
+// Users & RBAC
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(CLIENT)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  // ... sessions, apiKeys, notifications
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  AUDITOR
+  CLIENT
+  CARRIER
+}
+
+// Core domain
+model Document {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  type         DocumentType
+  status       DocumentStatus
+  xmlContent   String   @db.Text
+  parsedData   Json
+  discrepancies Discrepancy[]
+  // ... timestamps, processing metadata
+}
+
+model Discrepancy {
+  id            String           @id @default(cuid())
+  documentId    String
+  document      Document         @relation(fields: [documentId], references: [id])
+  ruleId        String
+  rule          Rule             @relation(fields: [ruleId], references: [id])
+  severity      Severity
+  status        DiscrepancyStatus
+  expectedValue Json
+  actualValue   Json
+  description   String
+  // ... review workflow fields
+}
+
+// Rules Engine (35 rules: 17 CT-e + 18 NF-e)
+model Rule {
+  id          String   @id @default(cuid())
+  code        String   @unique  // e.g., "CTE-001", "NFE-001"
+  name        String
+  description String
+  category    RuleCategory
+  severity    Severity
+  tags        String[]  // O(tag) filtering: ["weight", "icms", "freight", ...]
+  isActive    Boolean  @default(true)
+  // ... parameters, versioning
+}
+```
+
+### Prisma Client Usage
+
+```python
+# backend/app/db/prisma_client.py
+from prisma import Prisma
+
+prisma = Prisma(auto_register=True)
+
+async def get_prisma() -> Prisma:
+    if not prisma.is_connected():
+        await prisma.connect()
+    return prisma
+```
+
+---
+
+## ☁️ AWS Architecture (Target - Card #04)
+
+### High-Level Design
+
+```
+┌─────────────────────────────────────────────────────────────┐
+                        Route53 (DNS)
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+                      ALB (Application Load Balancer)
+                    TLS Termination (ACM Cert)
+└─────────────────────────────────────────────────────────────┘
+                              │
+          ┌───────────────────┼───────────────────┐
+          ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  ECS Fargate    │ │  ECS Fargate    │ │  ECS Fargate    │
+│  Backend API    │ │  Celery Workers │ │  Celery Beat    │
+│  (Auto-scaling) │ │  (Auto-scaling) │ │  (Singleton)    │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+          │                   │                   │
+          └───────────────────┼───────────────────┘
+                              │
+          ┌───────────────────┼───────────────────┐
+          ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   RDS PostgreSQL│ │  ElastiCache    │ │      S3         │
+│   (Multi-AZ)    │ │  Redis Cluster  │ │  (MinIO compat) │
+│   + PgBouncer   │ │  (Multi-AZ)     │ │  + CloudFront   │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+```
+
+### Terraform Modules Structure
+
+```
+infra/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── versions.tf
+├── modules/
+│   ├── vpc/              # VPC, subnets, NAT, IGW
+│   ├── ecs/              # Cluster, services, task definitions
+│   ├── rds/              # PostgreSQL, parameter groups, PgBouncer
+│   ├── elasticache/      # Redis cluster, subnet groups
+│   ├── s3/               # Buckets, policies, CloudFront
+│   ├── alb/              # ALB, target groups, listeners, WAF
+│   ├── route53/          # Hosted zone, records, ACM cert
+│   ├── iam/              # Roles, policies, OIDC for GitHub Actions
+│   └── monitoring/       # CloudWatch, X-Ray, log groups
+└── environments/
+    ├── staging/
+    │   ├── main.tf
+    │   └── terraform.tfvars
+    └── production/
+        ├── main.tf
+        └── terraform.tfvars
+```
+
+---
+
+## 🔧 Development Commands
+
+```bash
+# Docker
+cd backend
+docker compose up -d              # Start all services
+docker compose down -v            # Stop + remove volumes
+docker compose logs -f backend    # Follow backend logs
+docker compose exec backend bash  # Shell into backend
+
+# Prisma
+cd backend
+npx prisma generate               # Generate client
+npx prisma migrate dev            # Create & apply migration
+npx prisma migrate deploy         # Apply migrations (prod)
+npx prisma db seed                # Run seed script
+npx prisma studio                 # Visual DB browser
+
+# Database
+docker compose exec postgres psql -U averta -d averta
+./scripts/backup.sh               # Backup database (TODO)
+./scripts/restore.sh backup.sql   # Restore database (TODO)
+
+# AWS (Terraform)
+cd infra
+terraform init
+terraform plan -var-file=environments/staging/terraform.tfvars
+terraform apply -var-file=environments/staging/terraform.tfvars
+
+# CI/CD
+git push origin main              # Triggers GitHub Actions
+gh workflow run deploy.yml        # Manual deploy
+```
+
+---
+
+## 📋 Card Specifications
+
+### Card #01: Docker Production Hardening
+**Priority:** HIGH | **Estimate:** M
+- [ ] Switch to distroless/base image (gcr.io/distroless/python3-debian12)
+- [ ] Add Trivy security scanning in CI
+- [ ] Generate SBOM (Syft) in build pipeline
+- [ ] Implement multi-arch builds (amd64/arm64)
+- [ ] Add Docker Content Trust (cosign signing)
+- [ ] Optimize layer caching (reorder COPY commands)
+- [ ] Add healthcheck endpoint to Dockerfile
+- [ ] Create docker-compose.prod.yml with resource limits
+
+### Card #02: Prisma Performance Optimization
+**Priority:** HIGH | **Estimate:** L
+- [ ] Add PgBouncer connection pooling (transaction mode)
+- [ ] Configure Prisma connection pool settings
+- [ ] Add read replica support for reporting queries
+- [ ] Implement query logging & slow query detection
+- [ ] Add database indexes for common query patterns
+- [ ] Optimize N+1 queries in rules engine
+- [ ] Add Prisma middleware for query timing
+- [ ] Configure prepared statement caching
+
+### Card #03: Database Backup & Restore Strategy
+**Priority:** HIGH | **Estimate:** M
+- [ ] Define RPO (1 hour) and RTO (4 hours)
+- [ ] Implement automated daily backups (pg_dump)
+- [ ] Configure point-in-time recovery (WAL archiving)
+- [ ] Cross-region backup replication (S3 CRR)
+- [ ] Create restore runbook with tested procedures
+- [ ] Add backup verification job (weekly test restore)
+- [ ] Implement backup encryption (KMS)
+- [ ] Add backup monitoring & alerts
+
+### Card #04: AWS Infrastructure (Terraform)
+**Priority:** MEDIUM | **Estimate:** XL
+- [ ] Design VPC (public/private subnets, 3 AZs)
+- [ ] Create ECS Fargate cluster + services
+- [ ] Provision RDS PostgreSQL (Multi-AZ, encrypted)
+- [ ] Provision ElastiCache Redis (Cluster mode, Multi-AZ)
+- [ ] Provision S3 buckets + CloudFront for MinIO compat
+- [ ] Create ALB + target groups + WAF rules
+- [ ] Configure Route53 + ACM certificates
+- [ ] Set up IAM roles + GitHub Actions OIDC
+- [ ] Create staging + production environments
+- [ ] Add Terraform state backend (S3 + DynamoDB locking)
+
+### Card #05: Monitoring & Observability Stack
+**Priority:** MEDIUM | **Estimate:** L
+- [ ] Choose stack: CloudWatch + X-Ray OR Grafana + Loki + Tempo
+- [ ] Centralized logging (all containers → CloudWatch/Loki)
+- [ ] Metrics: RED (Rate, Errors, Duration) + USE (Utilization, Saturation, Errors)
+- [ ] Distributed tracing (X-Ray or Tempo)
+- [ ] Dashboards: API latency, error rates, queue depth, DB connections
+- [ ] Alerts: PagerDuty/Slack for critical (5xx > 1%, latency > 2s, queue > 1000)
+- [ ] Synthetic monitoring (canary endpoints)
+- [ ] Log retention policies (30d hot, 1yr cold)
+
+### Card #06: Secrets Management (AWS Secrets Manager)
+**Priority:** HIGH | **Estimate:** M
+- [ ] Migrate all secrets from .env to Secrets Manager
+- [ ] Create secret rotation for DB password (30 days)
+- [ ] Implement secrets injection at container startup
+- [ ] Add IAM policies for least-privilege secret access
+- [ ] Configure automatic secret sync to parameter store (for legacy)
+- [ ] Add secret scanning in CI (truffleHog/gitleaks)
+- [ ] Document secret access patterns for developers
+
+### Card #07: Disaster Recovery Plan
+**Priority:** MEDIUM | **Estimate:** L
+- [ ] Document RPO/RTO per service tier
+- [ ] Design cross-region DR (active-passive or active-active)
+- [ ] Create DR runbooks (failover, failback, validation)
+- [ ] Quarterly DR drills (simulated region failure)
+- [ ] Implement infrastructure-as-code for DR region
+- [ ] Define communication plan (status page, stakeholders)
+- [ ] Test data integrity post-failover
+- [ ] Document lessons learned after each drill
+
+---
+
+## 🔐 Environment Variables (Required)
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@host:5432/db
+DATABASE_POOL_SIZE=20
+
+# Redis
+REDIS_URL=redis://host:6379/0
+
+# MinIO / S3
+MINIO_ENDPOINT=host:9000
+MINIO_ACCESS_KEY=xxx
+MINIO_SECRET_KEY=xxx
+MINIO_BUCKET=documents
+MINIO_REGION=us-east-1
+
+# JWT
+JWT_SECRET_KEY=xxx (min 32 chars)
+JWT_REFRESH_SECRET_KEY=xxx (min 32 chars)
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE=15
+JWT_REFRESH_TOKEN_EXPIRE=10080
+
+# Email (SendGrid)
+SENDGRID_API_KEY=xxx
+SENDGRID_FROM_EMAIL=noreply@averta.com.br
+
+# AWS
+AWS_REGION=us-east-1
+AWS_SECRETS_MANAGER_ARN=arn:aws:secretsmanager:...
+
+# Monitoring
+DD_API_KEY=xxx (if DataDog)
+SENTRY_DSN=xxx (if Sentry)
+
+# App
+ENVIRONMENT=production
+LOG_LEVEL=info
+CORS_ORIGINS=https://app.averta.com.br
+```
+
+---
+
+## 🎯 Card Execution Protocol
+
+### For EACH Card:
+1. **Read the Card** in `cards/infra/ready/XX-title.md`
+2. **Move to `in-progress/`**: `mv cards/infra/ready/XX.md cards/infra/in-progress/XX.md`
+3. **Implement** following infrastructure best practices
+4. **Test** in staging environment
+5. **Run Quality Gates**: Security scan, Terraform plan, deployment test
+6. **Move to `review/`**: `mv cards/infra/in-progress/XX.md cards/infra/review/XX.md`
+7. **Update This Agent** with new patterns/configurations created
+
+### Quality Gates (Must Pass)
+```bash
+# Docker
+trivy image averta/backend:latest        # Security scan
+syft averta/backend:latest -o spdx       # SBOM generation
+docker compose -f docker-compose.prod.yml config  # Validate prod compose
+
+# Prisma
+npx prisma validate                      # Schema validation
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script  # Migration preview
+
+# Terraform
+terraform fmt -check                     # Formatting
+terraform validate                       # Validation
+terraform plan -var-file=environments/staging/terraform.tfvars  # Plan review
+
+# Security
+trufflehog filesystem .                  # Secret scanning
+checkov -d infra/                        # IaC security
+```
+
+---
+
+## 🔄 Coordination with Other Agents
+
+| Agent | Interaction |
+|-------|-------------|
+| **Tech Lead** | Reviews PRs, approves architecture, moves cards to `done/` |
+| **Backend** | Consumes Prisma client, Docker images, environment config |
+| **Frontend** | Consumes deployed API endpoints, S3/CloudFront URLs |
+| **Backend-QA** | Runs integration tests against staging infrastructure |
+
+---
+
+## 📝 Agent Self-Update Protocol (MANDATORY)
+
+**After completing EACH card:**
+1. Update this file with:
+   - New infrastructure components created
+   - New Terraform modules / Docker configurations
+   - Any environment variable changes
+   - New monitoring dashboards / alerts
+2. Move card: `in-progress/` → `review/`
+3. Commit: `feat(infra): Card #XX - [title]`
+
+---
+
+## 🚀 Quick Start for Next Session
+
+```bash
+# 1. Check current card
+ls cards/infra/in-progress/ || ls cards/infra/ready/ | head -5
+
+# 2. Next Cards Available (Priority Order):
+#    Card #01 - Docker Production Hardening (High) - Security first
+#    Card #06 - Secrets Management (High) - Blocks production
+#    Card #03 - Database Backup & Restore (High) - Data protection
+#    Card #02 - Prisma Performance Optimization (High) - Scale prep
+#    Card #04 - AWS Infrastructure (Medium) - Major initiative
+#    Card #05 - Monitoring & Observability (Medium) - Operability
+#    Card #07 - Disaster Recovery Plan (Medium) - Compliance
+
+# 3. Start local stack
+cd backend && docker compose up -d
+
+# 4. Verify Prisma
+cd backend && npx prisma generate && npx prisma migrate status
+```
+
+---
+
+## 📚 Key References
+
+| Document | Purpose |
+|----------|---------|
+| `backend/Dockerfile` | Multi-stage build reference |
+| `backend/docker-compose.yml` | Local development stack |
+| `backend/prisma/schema.prisma` | Complete database schema |
+| `backend/.env.example` | All required environment variables |
+| `.github/workflows/ci.yml` | Current CI pipeline |
+| `infra/` | Terraform modules (to be created) |
+| `TECHLEAD_REVIEW.md` | Architectural review with infra section |
+
+---
+
+*This agent owns 100% of infrastructure. After each card: update this file, move card, commit.*
