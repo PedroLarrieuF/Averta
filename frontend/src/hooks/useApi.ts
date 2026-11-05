@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query'
-import { api } from '../services/api'
+import { demoAwareApi } from '../services/api'
 import type {
   User,
   Company,
@@ -74,15 +74,15 @@ export const queryKeys = {
 // Generic API functions
 export const apiClient = {
   get: <T>(url: string, params?: Record<string, unknown>) =>
-    api.get<T>(url, { params }).then((r) => r.data),
+    demoAwareApi.get<T>(url, { params }).then((r) => r.data),
   post: <T>(url: string, data?: unknown) =>
-    api.post<T>(url, data).then((r) => r.data),
+    demoAwareApi.post<T>(url, data).then((r) => r.data),
   put: <T>(url: string, data?: unknown) =>
-    api.put<T>(url, data).then((r) => r.data),
+    demoAwareApi.put<T>(url, data).then((r) => r.data),
   patch: <T>(url: string, data?: unknown) =>
-    api.patch<T>(url, data).then((r) => r.data),
+    demoAwareApi.patch<T>(url, data).then((r) => r.data),
   delete: <T>(url: string) =>
-    api.delete<T>(url).then((r) => r.data),
+    demoAwareApi.delete<T>(url).then((r) => r.data),
 }
 
 // Auth hooks

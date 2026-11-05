@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/auth-context'
+import { useDemo } from '../store/demo-context'
 import { cn } from '../utils/helpers'
 import { Avatar, Badge } from '../components'
 import {
@@ -18,6 +19,8 @@ import {
   User as UserIcon,
   HelpCircle,
   BarChart2,
+  Monitor,
+  Code,
 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '../components'
 
@@ -30,11 +33,13 @@ const navigation = [
   { name: 'Contratos', href: '/contracts', icon: FileText, roles: ['ADMIN', 'MANAGER'] },
   { name: 'Documentos', href: '/documents', icon: FileText, roles: ['ADMIN', 'MANAGER', 'AUDITOR'] },
   { name: 'Relatórios', href: '/reports', icon: BarChart2, roles: ['ADMIN', 'MANAGER'] },
+  { name: 'Developer Portal', href: '/developer', icon: Code, roles: ['ADMIN', 'MANAGER'] },
   { name: 'Configurações', href: '/settings', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
 ]
 
 export function MainLayout() {
   const { user, logout, hasAnyRole } = useAuth()
+  const { isDemoMode, disableDemoMode } = useDemo()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -131,6 +136,23 @@ export function MainLayout() {
             >
               <Menu className="h-6 w-6" />
             </button>
+
+            {/* Demo mode indicator */}
+            {isDemoMode && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-lg mr-4" role="status" aria-live="polite">
+                <Monitor className="h-4 w-4 text-primary-600" aria-hidden="true" />
+                <span className="text-sm font-medium text-primary-700">Modo Demo</span>
+                <button
+                  onClick={disableDemoMode}
+                  className="p-1 text-primary-500 hover:text-primary-700 hover:bg-primary-100 rounded transition-colors"
+                  aria-label="Sair do modo demo"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             <div className="flex-1 lg:flex-none" />
 

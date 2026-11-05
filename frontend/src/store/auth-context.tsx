@@ -1,7 +1,16 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { User } from '../store/auth-storage'
-import { getUser, isAuthenticated, getAuthTokens, clearAuthTokens } from '../store/auth-storage'
+import { getUser, isAuthenticated, getAuthTokens, clearAuthTokens, setAuthTokens } from '../store/auth-storage'
 import { hasRole, Role } from '../utils/helpers'
+import { useDemo } from './demo-context'
+import { demoApi } from '../services/demo-api'
+
+const DEMO_MODE_KEY = 'averta_demo_mode'
+
+function isDemoModeEnabled(): boolean {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem(DEMO_MODE_KEY) === 'true'
+}
 
 interface AuthContextType {
   user: User | null
@@ -26,10 +35,42 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUserState] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { isDemoMode } = useDemo()
+
+  const setUser = useCallback((userData: User | null) => {
+    setUserState(userData)
+    if (!userData) {
+      clearAuthTokens()
+    }
+  }, [])
 
   const checkAuth = useCallback(async () => {
+    // In demo mode, auto-login as demo user - check localStorage directly
+    if (isDemoModeEnabled()) {
+      try {
+        const demoResponse = await demoApi.login('demo@averta.com', 'demo')
+        const { user: demoUser, access_token, refresh_token, expires_in, token_type } = demoResponse
+
+        const tokens = {
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          expiresIn: expires_in,
+          tokenType: token_type,
+        }
+
+        setAuthTokens(tokens)
+        setUser(demoUser)
+      } catch (error) {
+        console.error('Demo login failed:', error)
+        setUser(null)
+      }
+      setIsLoading(false)
+      return
+    }
+
+    // Normal authentication flow
     if (isAuthenticated()) {
       const storedUser = getUser()
       if (storedUser) {
@@ -37,13 +78,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     setIsLoading(false)
-  }, [])
+  }, [isDemoMode])
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
 
   const login = async (email: string, password: string) => {
+    // In demo mode, use demo API - check localStorage directly to avoid race conditions
+    if (isDemoModeEnabled()) {
+      const demoResponse = await demoApi.login(email, password)
+      const { user: userData, access_token, refresh_token, expires_in, token_type } = demoResponse
+
+      const tokens = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresIn: expires_in,
+        tokenType: token_type,
+      }
+
+      setAuthTokens(tokens)
+      setUser(userData)
+      return
+    }
+
+    // Normal login flow
     const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,12 +124,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenType: token_type,
     }
 
-    localStorage.setItem('averta_tokens', JSON.stringify(tokens))
-    localStorage.setItem('averta_user', JSON.stringify(userData))
+    setAuthTokens(tokens)
     setUser(userData)
   }
 
   const register = async (data: RegisterData) => {
+    // In demo mode, use demo API - check localStorage directly to avoid race conditions
+    if (isDemoModeEnabled()) {
+      const demoResponse = await demoApi.register(data)
+      const { user: userData, access_token, refresh_token, expires_in, token_type } = demoResponse
+
+      const tokens = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresIn: expires_in,
+        tokenType: token_type,
+      }
+
+      setAuthTokens(tokens)
+      setUser(userData)
+      return
+    }
+
+    // Normal register flow
     const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api/v1'}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,12 +168,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenType: token_type,
     }
 
-    localStorage.setItem('averta_tokens', JSON.stringify(tokens))
-    localStorage.setItem('averta_user', JSON.stringify(userData))
+    setAuthTokens(tokens)
     setUser(userData)
   }
 
   const logout = async () => {
+    // In demo mode, just clear local state - check localStorage directly
+    if (isDemoModeEnabled()) {
+      setUser(null)
+      return
+    }
+
+    // Normal logout flow
     try {
       const tokens = getAuthTokens()
       if (tokens?.refreshToken) {
@@ -119,6 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshUser = async () => {
+    if (isDemoModeEnabled()) {
+      const demoResponse = await demoApi.me()
+      setUser(demoResponse)
+      return
+    }
+
     const storedUser = getUser()
     if (storedUser) {
       setUser(storedUser)

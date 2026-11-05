@@ -26,9 +26,6 @@ export {
   useCreateCarrierBranch,
   useUpdateCarrierBranch,
   useDeleteCarrierBranch,
-  useContracts,
-  useContract,
-  useCreateContract,
   useDocuments,
   useDocument,
   useUploadDocument,
@@ -58,6 +55,22 @@ export {
   useDeleteAccount,
   type NotificationPreferences,
 } from './useApi'
+
+export {
+  useContracts,
+  useContract,
+  useCreateContract,
+  useUpdateContract,
+  useDeleteContract,
+  useFreightTables,
+  useFreightTable,
+  useCreateFreightTable,
+  useUpdateFreightTable,
+  useActivateFreightTable,
+  useDeleteFreightTable,
+  useClientsSimple,
+  useCarriersSimple,
+} from './useContracts'
 
 export {
   useBulkUpdateDiscrepancyStatus,

@@ -1,26 +1,39 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Suspense, lazy } from 'react'
 import { useAuth } from './store/auth-context'
 import { MainLayout } from './layouts/MainLayout'
 import { AuthLayout } from './layouts/AuthLayout'
-import { Login } from './pages/Login'
-import { Register } from './pages/Register'
-import { Dashboard } from './pages/Dashboard'
-import { Documents } from './pages/Documents'
-import { DiscrepanciesPage } from './pages/DiscrepanciesPage'
-import { ContestsPage } from './pages/ContestsPage'
-import { ContestCreatePage } from './pages/ContestCreatePage'
-import { ContestDetailPage } from './pages/ContestDetailPage'
-import { ContestNegotiatePage } from './pages/ContestNegotiatePage'
-import { ReportsPage } from './pages/ReportsPage'
-import { ClientsPage } from './pages/Clients'
-import { CarriersPage } from './pages/Carriers'
 import { SettingsLayout } from './pages/settings/SettingsLayout'
-import { CompanySettingsPage } from './pages/settings/CompanySettingsPage'
-import { UsersPage } from './pages/settings/UsersPage'
-import { CarriersPage as SettingsCarriersPage } from './pages/settings/CarriersPage'
-import { ContractsPage } from './pages/settings/ContractsPage'
-import { NotificationsPage } from './pages/settings/NotificationsPage'
-import { Profile } from './pages/Profile'
+import { DeveloperLayout } from './layouts/DeveloperLayout'
+import { PageSkeleton, PageSkeletonMinimal } from './components/PageSkeleton'
+
+// Lazy load all pages for code splitting (named exports)
+const lazyLoad = <T extends React.ComponentType<any>>(importFn: () => Promise<{ [key: string]: T }>, exportName: string) =>
+  lazy(() => importFn().then((module) => ({ default: module[exportName] })))
+
+const Login = lazyLoad(() => import('./pages/Login'), 'Login')
+const Register = lazyLoad(() => import('./pages/Register'), 'Register')
+const Dashboard = lazyLoad(() => import('./pages/Dashboard'), 'Dashboard')
+const Documents = lazyLoad(() => import('./pages/Documents'), 'Documents')
+const DiscrepanciesPage = lazyLoad(() => import('./pages/DiscrepanciesPage'), 'DiscrepanciesPage')
+const ContractsPage = lazyLoad(() => import('./pages/Contracts'), 'ContractsPage')
+const ContestsPage = lazyLoad(() => import('./pages/ContestsPage'), 'ContestsPage')
+const ContestCreatePage = lazyLoad(() => import('./pages/ContestCreatePage'), 'ContestCreatePage')
+const ContestDetailPage = lazyLoad(() => import('./pages/ContestDetailPage'), 'ContestDetailPage')
+const ContestNegotiatePage = lazyLoad(() => import('./pages/ContestNegotiatePage'), 'ContestNegotiatePage')
+const ReportsPage = lazyLoad(() => import('./pages/ReportsPage'), 'ReportsPage')
+const ClientsPage = lazyLoad(() => import('./pages/Clients'), 'ClientsPage')
+const CarriersPage = lazyLoad(() => import('./pages/Carriers'), 'CarriersPage')
+const CompanySettingsPage = lazyLoad(() => import('./pages/settings/CompanySettingsPage'), 'CompanySettingsPage')
+const UsersPage = lazyLoad(() => import('./pages/settings/UsersPage'), 'UsersPage')
+const SettingsCarriersPage = lazyLoad(() => import('./pages/settings/CarriersPage'), 'CarriersPage')
+const NotificationsPage = lazyLoad(() => import('./pages/settings/NotificationsPage'), 'NotificationsPage')
+const Profile = lazyLoad(() => import('./pages/Profile'), 'Profile')
+const DeveloperDashboard = lazyLoad(() => import('./pages/developer/DeveloperDashboard'), 'DeveloperDashboard')
+const DeveloperDocs = lazyLoad(() => import('./pages/developer/DeveloperDocs'), 'DeveloperDocs')
+const DeveloperKeys = lazyLoad(() => import('./pages/developer/DeveloperKeys'), 'DeveloperKeys')
+const DeveloperAnalytics = lazyLoad(() => import('./pages/developer/DeveloperAnalytics'), 'DeveloperAnalytics')
+const DeveloperWebhooks = lazyLoad(() => import('./pages/developer/DeveloperWebhooks'), 'DeveloperWebhooks')
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -60,62 +73,149 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Placeholder pages for future implementation
-function ComingSoon({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="space-y-6">
-      <div className="page-header">
-        <h1 className="page-title">{title}</h1>
-        <p className="page-subtitle">{description}</p>
-      </div>
-      <div className="card p-12 text-center">
-        <div className="mx-auto w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mb-4">
-          <svg className="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-semibold text-secondary-900 mb-2">Em desenvolvimento</h2>
-        <p className="text-secondary-500 max-w-md mx-auto">
-          Esta página está sendo desenvolvida. Volte em breve para ver as funcionalidades completas.
-        </p>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   return (
     <Routes>
       {/* Public routes */}
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/login" element={
+          <Suspense fallback={<PageSkeletonMinimal />}>
+            <PublicRoute><Login /></PublicRoute>
+          </Suspense>
+        } />
+        <Route path="/register" element={
+          <Suspense fallback={<PageSkeletonMinimal />}>
+            <PublicRoute><Register /></PublicRoute>
+          </Suspense>
+        } />
       </Route>
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/clients" element={<ClientsPage />} />
-        <Route path="/carriers" element={<CarriersPage />} />
-        <Route path="/contracts" element={<ComingSoon title="Contratos" description="Crie e gerencie contratos com tabelas de frete versionadas" />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/discrepancies" element={<DiscrepanciesPage />} />
-        <Route path="/contests" element={<ContestsPage />} />
-        <Route path="/contests/create" element={<ContestCreatePage />} />
-        <Route path="/contests/:id" element={<ContestDetailPage />} />
-        <Route path="/contests/:id/negotiate" element={<ContestNegotiatePage />} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/dashboard" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <Dashboard />
+          </Suspense>
+        } />
+        <Route path="/clients" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ClientsPage />
+          </Suspense>
+        } />
+        <Route path="/carriers" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <CarriersPage />
+          </Suspense>
+        } />
+        <Route path="/contracts" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ContractsPage />
+          </Suspense>
+        } />
+        <Route path="/documents" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <Documents />
+          </Suspense>
+        } />
+        <Route path="/discrepancies" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <DiscrepanciesPage />
+          </Suspense>
+        } />
+        <Route path="/contests" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ContestsPage />
+          </Suspense>
+        } />
+        <Route path="/contests/create" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ContestCreatePage />
+          </Suspense>
+        } />
+        <Route path="/contests/:id" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ContestDetailPage />
+          </Suspense>
+        } />
+        <Route path="/contests/:id/negotiate" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ContestNegotiatePage />
+          </Suspense>
+        } />
+        <Route path="/reports" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ReportsPage />
+          </Suspense>
+        } />
 
         {/* Settings routes with nested layout */}
         <Route element={<SettingsLayout />}>
-          <Route path="/settings/company" element={<CompanySettingsPage />} />
-          <Route path="/settings/users" element={<UsersPage />} />
-          <Route path="/settings/carriers" element={<SettingsCarriersPage />} />
-          <Route path="/settings/contracts" element={<ContractsPage />} />
-          <Route path="/settings/notifications" element={<NotificationsPage />} />
+          <Route path="/settings/company" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <CompanySettingsPage />
+            </Suspense>
+          } />
+          <Route path="/settings/users" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <UsersPage />
+            </Suspense>
+          } />
+          <Route path="/settings/carriers" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <SettingsCarriersPage />
+            </Suspense>
+          } />
+          <Route path="/settings/contracts" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <ContractsPage />
+            </Suspense>
+          } />
+          <Route path="/settings/notifications" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <NotificationsPage />
+            </Suspense>
+          } />
         </Route>
         <Route path="/settings" element={<Navigate to="/settings/company" replace />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <Profile />
+          </Suspense>
+        } />
+
+        {/* Developer Portal routes with nested layout */}
+        <Route element={<DeveloperLayout />}>
+          <Route path="/developer" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperDashboard />
+            </Suspense>
+          } />
+          <Route path="/developer/docs" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperDocs />
+            </Suspense>
+          } />
+          <Route path="/developer/keys" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperKeys />
+            </Suspense>
+          } />
+          <Route path="/developer/keys/new" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperKeys />
+            </Suspense>
+          } />
+          <Route path="/developer/analytics" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperAnalytics />
+            </Suspense>
+          } />
+          <Route path="/developer/webhooks" element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DeveloperWebhooks />
+            </Suspense>
+          } />
+        </Route>
       </Route>
 
       {/* Redirect root to dashboard or login */}

@@ -99,9 +99,9 @@ agents-new/backend-agent/cards/
 | #29 | Backend Integration Tests (httpx.AsyncClient) | 🔴 Ready | HIGH | L |
 | #30 | Fix Rate Limit Module Test Import | ✅ **Done** | HIGH | S |
 | #33 | Fix Linting Issues (ruff) | 🔴 Ready | MEDIUM | M |
-| #34 | NF-e Critical Rules (5 rules) | 🔴 Ready | CRITICAL | L |
-| #35 | NF-e High Priority Rules (7 rules) | 🔴 Ready | HIGH | L |
-| #36 | NF-e Medium Priority Rules (6 rules) | 🔴 Ready | MEDIUM | M |
+| #34 | NF-e Critical Rules (5 rules) | ✅ **Done** | CRITICAL | L |
+| #35 | NF-e High Priority Rules (7 rules) | ✅ **Done** | HIGH | L |
+| #36 | NF-e Medium Priority Rules (6 rules) | ✅ **Done** | MEDIUM | M |
 
 ### Backlog Cards
 
@@ -138,8 +138,9 @@ POST /documents/upload (XML CT-e/NF-e)
         → notify_discrepancy_found() → email
 ```
 
-### Rules Engine v2 (17 Rules)
+### Rules Engine v2 (35 Rules)
 
+**CT-e Rules (17):**
 | Code | Name | Type | Severity | Tags |
 |------|------|------|----------|------|
 | ICMS_DIFAL | ICMS Diferencial (DIFAL) | ICMS_DIFFERENTIAL | HIGH | icms, interstate |
@@ -158,6 +159,29 @@ POST /documents/upload (XML CT-e/NF-e)
 | CTE_SUBSTITUICAO | CT-e Substituição (tpEmis=2) | COMPLEMENTARY_CTE | HIGH | cte_complementar |
 | CTE_COMPLEMENTO_VALOR | CT-e Complemento (tpEmis=4) | COMPLEMENTARY_CTE | MEDIUM | cte_complementar |
 | COMPLEMENTARY_CTE | (Genérico) | COMPLEMENTARY_CTE | MEDIUM | cte_complementar |
+| ML_ANOMALY | ML Anomaly Detection | OTHER | MEDIUM | ml, anomaly |
+
+**NF-e Rules (18 implemented):**
+| Code | Name | Type | Severity | Tags |
+|------|------|------|----------|------|
+| NFE_ICMS_CALCULO | Validação Cálculo ICMS NF-e | ICMS_CALCULO | CRITICAL | nfe, icms |
+| NFE_ICMS_ST | Validação ICMS ST NF-e | ICMS_ST | CRITICAL | nfe, icms_st |
+| NFE_DIFAL | Validação DIFAL NF-e | DIFAL | CRITICAL | nfe, interstate |
+| NFE_FRETE_NA_BASE | Frete na Base ICMS NF-e | FRETE_BASE | CRITICAL | nfe, freight |
+| NFE_CTE_CROSS | Cross-validation NF-e/CT-e | CTE_CROSS | CRITICAL | nfe, cte |
+| NFE_FCP | Validação FCP NF-e | ICMS_FCP | HIGH | nfe, fcp, interstate |
+| NFE_CFOP_FRETE | Validação CFOP Frete NF-e | CFOP_VALIDATION | HIGH | nfe, cfop, freight |
+| NFE_CFOP_INTERSTADUAL | Validação CFOP Interestadual NF-e | CFOP_VALIDATION | HIGH | nfe, cfop, interstate |
+| NFE_NCM_CEST | Validação NCM/CEST NF-e | NCM_CEST | HIGH | nfe, ncm, cest |
+| NFE_VALOR_TOTAL | Validação Valor Total NF-e | VALOR_TOTAL | HIGH | nfe, total |
+| NFE_TRANSPORTADORA | Validação Transportadora NF-e | TRANSPORTADORA | HIGH | nfe, carrier |
+| NFE_DESTINATARIO | Validação Destinatário NF-e | DESTINATARIO | HIGH | nfe, recipient |
+| NFE_PESO_VOLUME | Validação Peso/Volume NF-e | PESO_VOLUME | MEDIUM | nfe, weight, volume |
+| NFE_COMPLEMENTAR | Validação NF-e Complementar | COMPLEMENTAR | MEDIUM | nfe, complementary |
+| NFE_CARTA_CORRECAO | Validação Carta Correção NF-e | CARTA_CORRECAO | MEDIUM | nfe, correction |
+| NFE_CANCELAMENTO | Validação Cancelamento NF-e | CANCELAMENTO | MEDIUM | nfe, cancellation |
+| NFE_INUTILIZACAO | Validação Inutilização NF-e | INUTILIZACAO | MEDIUM | nfe, inutilization |
+| NFE_REGIME_ESPECIAL | Validação Regime Especial NF-e | REGIME_ESPECIAL | MEDIUM | nfe, regime |
 
 **Smart Filtering:** `engine.get_relevant_rules(context)` uses `relevance_tags` for O(tag) vs O(total) performance
 
@@ -308,7 +332,7 @@ The following tests are FAILING and need to be fixed (Card #28):
 | TD-009 | Rules Tests | 6 tests failing (PesoReal, ValorMinimo, CTE_Anulacao, Cache, Integration) | ✅ **DONE** (Card #28) |
 | TD-010 | Rate Limit Module | `app.core.rate_limit` import failing in tests | ✅ **DONE** (Card #30) |
 | TD-011 | Linting | 200+ ruff issues (import sorting, print statements, unused imports) | 🔴 Open (Card #33) |
-| TD-012 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | 🔴 Open (Cards #34, #35, #36) |
+| TD-012 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | ✅ **DONE** (Cards #34, #35, #36 - all 18 implemented) |
 
 ## Future Roadmap (from README)
 

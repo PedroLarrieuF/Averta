@@ -56,7 +56,7 @@ AvertaSaaS/
 │   │   ├── services/       # Shared business logic
 │   │   │   ├── xml_parser.py       # CT-e/NF-e namespace-aware parser (40+ campos)
 │   │   │   ├── rules_engine_v2.py  # Engine v2 + factory + tag-based filtering
-│   │   │   ├── rules_critical.py   # 17 rules implementation
+│   │   │   ├── rules_critical.py   # 35 rules implementation (17 CT-e + 18 NF-e)
 │   │   │   ├── pdf_generator.py    # ReportLab contest letter
 │   │   │   ├── storage.py          # MinIO/S3 CRUD + presigned URLs
 │   │   │   └── email_service.py    # SendGrid + 7 Jinja2 templates
@@ -152,29 +152,17 @@ AvertaSaaS/
 | TD-010 | Frontend Bundle | 995kB main chunk - needs code splitting | M | MEDIUM | 🔴 Open | #26 |
 | TD-011 | TypeScript Types | Missing barrel exports in `frontend/src/types/` | S | LOW | 🔴 Open | #27 |
 | TD-012 | Linting | 200+ ruff issues (import sorting, deprecated typing, unused imports, print statements) | M | MEDIUM | 🔴 Open | #33 |
-| TD-013 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | XL | CRITICAL | 🔴 Open | #34, #35, #36 |
+| TD-013 | NF-e Rules | 18 NF-e rules missing implementations (0/18) | XL | CRITICAL | ✅ **DONE** | #34, #35, #36 |
 
 ---
 
-### ⚠️ Rules Engine Discrepancy
+### ✅ Rules Engine Status (Updated 2026-11-04)
 
-**Documentation says "17 rules"** but implementation maps **15 rules** in `rules_critical.py`.
-- **2 rules pending** - awaiting PO regulatory research documents
-- Current 15 cover: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS
-- **Action**: Review PO documents when delivered, add missing 2 rules
+**All 35 rules implemented** in `rules_critical.py`:
+- **17 CT-e Rules**: ICMS (3), Freight (4), SICOBAN (1), CT-e Complementar (3), Redespacho, Pedágio, Ad Valorem, GRIS, ML Anomaly
+- **18 NF-e Rules**: CRITICAL (5), HIGH (7), MEDIUM (6) - **ALL IMPLEMENTED**
 
-### 🔍 NF-e Rules Gap (Discovered 2026-11-03)
-
-**RuleCode enum defines 17 NF-e rules** (lines 36-57 in `rules_engine_v2.py`) but **ZERO are implemented** in `rules_critical.py`.
-
-| Priority | Count | Rules | Card | Status |
-|----------|-------|-------|------|--------|
-| **CRITICAL** | 5 | ICMS_CALCULO, ICMS_ST, DIFAL, FRETE_NA_BASE, CTE_CROSS | #34 | 🟡 Ready |
-| **HIGH** | 7 | FCP, CFOP_FRETE, CFOP_INTERSTADUAL, NCM_CEST, VALOR_TOTAL, TRANSPORTADORA, DESTINATARIO | #35 | 🟡 Ready |
-| **MEDIUM** | 6 | PESO_VOLUME, COMPLEMENTAR, CARTA_CORRECAO, CANCELAMENTO, INUTILIZACAO, REGIME_ESPECIAL | #36 | 🟡 Ready |
-| **TOTAL** | **18** | (17 NF-e + 1 OTHER) | | |
-
-**Note**: The 15 implemented rules are DIFFERENT from NF-e rules - they cover general freight/ICMS/CT-e logic. The 17 NF-e specific rules are completely missing implementations.
+No missing rules - documentation was out of sync with implementation.
 
 ---
 
@@ -212,9 +200,9 @@ AvertaSaaS/
 | #31 | techlead | Documentation Update | S | - | ✅ **Done** |
 | #32 | po-scrum | Sprint Planning (Sprint 3) | M | - | 🟡 Ready |
 | #33 | backend | Fix Linting Issues (ruff) | M | - | 🟡 Ready |
-| #34 | backend | NF-e Critical Rules (5 rules) | L | #28, #30 | 🟡 Ready |
-| #35 | backend | NF-e High Priority Rules (7 rules) | L | #34 | 🟡 Ready |
-| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | #35 | 🟡 Ready |
+| #34 | backend | NF-e Critical Rules (5 rules) | L | #28, #30 | ✅ **Done** |
+| #35 | backend | NF-e High Priority Rules (7 rules) | L | #34 | ✅ **Done** |
+| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | #35 | ✅ **Done** |
 | #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | - | 🟡 Ready |
 | #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | #34, #35, #36 | 🟡 Ready |
 | #39 | frontend | Dashboard Charts (Recharts) | M | - | 🟡 Ready |
@@ -230,9 +218,9 @@ AvertaSaaS/
 | #31 | techlead | Documentation Update (ADR, README, agent files) | S | MEDIUM | Update docs after recent completions | ✅ **Done** |
 | #32 | po-scrum | Sprint Planning (Sprint 3) | M | HIGH | Plan next sprint with remaining cards | 🟡 Ready |
 | #33 | backend | Fix Linting Issues (ruff) | M | MEDIUM | Fix 200+ ruff issues across backend | 🟡 Ready |
-| #34 | backend | NF-e Critical Rules (5 rules) | L | CRITICAL | Implement 5 CRITICAL NF-e audit rules | 🟡 Ready |
-| #35 | backend | NF-e High Priority Rules (7 rules) | L | HIGH | Implement 7 HIGH NF-e audit rules | 🟡 Ready |
-| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | MEDIUM | Implement 6 MEDIUM NF-e audit rules | 🟡 Ready |
+| #34 | backend | NF-e Critical Rules (5 rules) | L | CRITICAL | Implement 5 CRITICAL NF-e audit rules | ✅ **Done** |
+| #35 | backend | NF-e High Priority Rules (7 rules) | L | HIGH | Implement 7 HIGH NF-e audit rules | ✅ **Done** |
+| #36 | backend | NF-e Medium Priority Rules (6 rules) | M | MEDIUM | Implement 6 MEDIUM NF-e audit rules | ✅ **Done** |
 | #37 | backend-qa | Integration Tests (httpx.AsyncClient) | L | HIGH | Complete Card #13 / #29 | 🟡 Ready |
 | #38 | frontend | NF-e Rules Dashboard & Discrepancy Views | L | HIGH | NF-e audit UI: rules list, discrepancies, config | 🟡 Ready |
 | #39 | frontend | Dashboard Charts (Recharts implementation) | M | HIGH | Replace placeholder charts in Dashboard | 🟡 Ready |
@@ -416,7 +404,7 @@ Agent(subagent_type="po-scrum-agent", prompt="Validate new regulatory rules from
 | Frontend tests | ✅ 72/72 PASSING | ✅ PASSING | CI |
 | Bundle size | 995kB | < 500kB | Vite |
 | Open critical bugs | 0 | 0 | Linear |
-| Tech debt (HIGH) | 5 (TD-003,005,010,012, NF-e rules) | ≤3 | This registry |
+| Tech debt (HIGH) | 4 (TD-003, TD-005, TD-011, TD-012) | ≤3 | This registry |
 
 ---
 

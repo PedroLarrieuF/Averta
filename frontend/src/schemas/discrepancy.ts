@@ -1,14 +1,4 @@
 import { z } from 'zod';
-import type {
-  DiscrepancyStatus,
-  DiscrepancySeverity,
-  DiscrepancyType,
-} from '../types/enums';
-
-// Type-only imports for JSDoc reference
-type _DiscrepancyStatus = DiscrepancyStatus;
-type _DiscrepancySeverity = DiscrepancySeverity;
-type _DiscrepancyType = DiscrepancyType;
 
 // ============================================================================
 // Enum Schemas

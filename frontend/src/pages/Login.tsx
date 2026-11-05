@@ -5,10 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { useAuth } from '../store/auth-context'
+import { useDemo } from '../store/demo-context'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
 import { cn } from '../utils/helpers'
-import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Monitor, CheckCircle } from 'lucide-react'
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -20,6 +21,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const { isDemoMode, enableDemoMode } = useDemo()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,6 +47,26 @@ export function Login() {
       navigate('/dashboard')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Credenciais inválidas'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDemoLogin = async () => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      if (!isDemoMode) {
+        enableDemoMode()
+      }
+      await login('demo@averta.com', 'demo')
+      toast.success('Modo demo ativado! Bem-vindo ao painel de demonstração.')
+      navigate('/dashboard')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao ativar modo demo'
       setError(message)
       toast.error(message)
     } finally {
@@ -126,6 +148,42 @@ export function Login() {
       >
         Criar nova conta
       </Button>
+
+      {/* Demo Mode Button */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-secondary-200" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-4 bg-secondary-50 text-secondary-500">Modo Demonstrativo</span>
+        </div>
+      </div>
+
+      <Button
+        variant="ghost"
+        className="w-full"
+        size="lg"
+        onClick={handleDemoLogin}
+        loading={isLoading}
+        disabled={isDemoMode}
+      >
+        <Monitor className="h-5 w-5 mr-2" />
+        {isDemoMode ? (
+          <>
+            <CheckCircle className="h-5 w-5 mr-2" />
+            Modo Demo Ativo
+          </>
+        ) : (
+          'Entrar no Modo Demo (sem senha)'
+        )}
+      </Button>
+
+      {isDemoMode && (
+        <div className="flex items-center justify-center gap-2 text-sm text-primary-600 p-3 bg-primary-50 rounded-lg">
+          <CheckCircle className="h-4 w-4" />
+          <span>Modo demo ativo - Todos os dados são simulados</span>
+        </div>
+      )}
 
       <p className="text-center text-sm text-secondary-500">
         Ao continuar, você concorda com nossos{' '}

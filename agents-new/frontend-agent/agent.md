@@ -4,12 +4,12 @@ description: Dedicated 100% Frontend Agent for AvertaSaaS - React + Vite + TypeS
 tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 ---
 
-# AvertaSaaS Frontend Agent (Dedicated v2.6 - 8/12 Pages Complete)
+# AvertaSaaS Frontend Agent (Dedicated v2.8 - 11/12 Pages Complete)
 
 > **Location:** `frontend/` (moved from `packages/frontend/` on 2026-11-01)
 > **Mission:** Complete the frontend for freight audit SaaS - replace all placeholder pages with full implementations
 > **Standard:** After each card completion, update this agent + move card to `review/`
-> **Last Updated:** 2026-11-03 (Card #23 Carriers Page completed)
+> **Last Updated:** 2026-11-05 (Card #26 Code Splitting completed, Card #38 NF-e Dashboard available)
 
 ---
 
@@ -18,7 +18,7 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 ### ✅ Already Built (DO NOT REBUILD)
 | Area | Status | Files |
 |------|--------|-------|
-| **Routing & Layouts** | ✅ COMPLETE | `App.tsx`, `MainLayout`, `AuthLayout`, Protected/Public routes |
+| **Routing & Layouts** | ✅ COMPLETE | `App.tsx`, `MainLayout`, `AuthLayout`, `DeveloperLayout`, Protected/Public routes (lazy-loaded) |
 | **Auth Pages** | ✅ COMPLETE | `Login.tsx`, `Register.tsx` (with forms, validation) |
 | **Dashboard** | ✅ COMPLETE | `Dashboard.tsx` (KPI cards, charts placeholder) |
 | **Documents Page** | ✅ COMPLETE (Card #08) | `Documents.tsx` + `DocumentsTable`, `UploadZone`, `DocumentDetailModal` |
@@ -28,26 +28,28 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent
 | **Settings Pages** | ✅ COMPLETE (Card #15) | `SettingsLayout.tsx`, `CompanySettingsPage.tsx`, `UsersPage.tsx`, `CarriersPage.tsx`, `ContractsPage.tsx`, `NotificationsPage.tsx` + components: `UserInviteModal.tsx`, `ContractForm.tsx`, `FreightTableEditor.tsx` |
 | **Clients Page** | ✅ COMPLETE (Card #22) | `Clients.tsx` + 5 components (`ClientsTable`, `ClientForm`, `ClientDetailModal`, `BranchForm`, `BranchesTable`) + 4 branch hooks |
 | **Carriers Page** | ✅ COMPLETE (Card #23) | `Carriers.tsx` + 5 components (`CarriersTable`, `CarrierForm`, `CarrierDetailModal`, `BranchForm`, `BranchesTable`) + 4 branch hooks |
-| **Design System Components** | ✅ COMPLETE | `Button`, `Input`, `Card`, `Badge`, `Table`, `Modal`, `DropdownMenu`, `Avatar`, `Tabs`, `Select`, `Switch`, `KPICard` (Tabs, Select, Switch, KPICard added in Card #11) |
+| **Contracts Page** | ✅ COMPLETE (Card #24) | `Contracts.tsx` + 6 components (`ContractsTable`, `ContractForm`, `ContractDetailModal`, `FreightTableEditor`, `FreightTableGrid`, `FreightTableVersionManager`) + 12 hooks in `useContracts.ts` |
+| **Developer Portal** | ✅ COMPLETE (Card #40) | `DeveloperDashboard.tsx`, `DeveloperDocs.tsx`, `DeveloperKeys.tsx`, `DeveloperAnalytics.tsx`, `DeveloperWebhooks.tsx` + `DeveloperLayout.tsx` |
+| **Profile Page** | ✅ COMPLETE (Card #25) | `Profile.tsx` + 5 components (`ProfileHeader`, `ProfileForm`, `ChangePasswordModal`, `NotificationPreferences`, `DangerZone`) + 6 hooks in `useApi.ts` |
+| **Design System Components** | ✅ COMPLETE | `Button`, `Input`, `Card`, `Badge`, `Table`, `Modal`, `DropdownMenu`, `Avatar`, `Tabs`, `Select`, `Switch`, `KPICard`, `Tooltip`, `Toast`, `Pagination`, `EmptyState`, `PageSkeleton` |
 | **Auth System** | ✅ COMPLETE | `auth-context.tsx`, `auth-storage.ts`, `useAuth()` hook |
 | **API Client** | ✅ COMPLETE | `api.ts` (axios + interceptors + token refresh) |
 | **Utilities** | ✅ COMPLETE | `helpers.ts` (formatters, roles, badges, cn) |
-| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper), `useDiscrepancyActions.ts`, `useSettings.ts` |
+| **Hooks** | ✅ PARTIAL | `useApi.ts` (TanStack Query wrapper), `useDiscrepancyActions.ts`, `useSettings.ts`, `useContracts.ts` |
 | **Testing Infrastructure** | ✅ COMPLETE (Card #01) | Vitest + RTL + MSW + jest-axe + @faker-js/faker (72 tests passing) |
+| **Bundle Optimization** | ✅ COMPLETE (Card #26) | `vite.config.ts` (manualChunks), `App.tsx` (lazy routes + Suspense), `PageSkeleton.tsx` |
 
 ### 🔴 NEEDS IMPLEMENTATION (Replace Placeholders)
 | Page | Card | Priority | Current State |
 |------|------|----------|---------------|
-| **Contracts** | #24 | 🟡 HIGH | `ComingSoon` - needs CRUD + FreightTable editor |
-| **Profile** | #25 | 🟢 MEDIUM | `ComingSoon` - needs profile management |
+| **NF-e Dashboard** | #38 | 🔴 HIGH | **NEW** - Rules dashboard, discrepancy views, validation table, admin config |
 
 ### 🟡 NEEDS ENHANCEMENT
 | Area | Card | Current State |
 |------|------|---------------|
 | **Dashboard Charts** | #03 | Placeholder - needs Recharts implementation |
 | **Design System** | #07 | Components exist but need: Tooltip, Toast, Pagination, EmptyState (Tabs, Select, Switch, KPICard ✅ done in Card #11) |
-| **Bundle Optimization** | #26 | 995kB main chunk - needs code splitting / lazy routes |
-| **TypeScript Types** | #27 | Missing barrel exports in `frontend/src/types/index.ts` |
+| **TypeScript Types** | #27 | Missing barrel exports in `frontend/src/types/index.ts` (in review) |
 
 ---
 
@@ -73,14 +75,16 @@ agents-new/frontend-agent/cards/
 | #07 | Build Design System Components | 🔴 Ready | HIGH | L |
 | #10 | Contests Page (create/detail/negotiate/pay) | ✅ **Done** | CRITICAL | XL |
 | #11 | Reports Page (PDF/Excel export, scheduling) | ✅ **Done** | HIGH | L |
-| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | ✅ **Done** | HIGH | XL |
+| #15 | Settings Pages (Company/Users/Carriers/Contracts/Notifications) | ✅ **Done** (in review) | HIGH | XL |
 | #21 | Reports Page (NEW - detailed spec) | ✅ **Done** (merged into #11) | HIGH | L |
-| #22 | Clients Page (CRUD) | ✅ **Done** | HIGH | M |
-| #23 | Carriers Page (CRUD) | ✅ **Done** | HIGH | M |
-| #24 | Contracts Page (CRUD + FreightTable editor) | 🔴 Ready | HIGH | L |
+| #22 | Clients Page (CRUD) | ✅ **Done** (in review) | HIGH | M |
+| #23 | Carriers Page (CRUD) | ✅ **Done** (in review) | HIGH | M |
+| #24 | Contracts Page (CRUD + FreightTable editor) | ✅ **Done** (in review) | HIGH | L |
 | #25 | Profile Page (user profile management) | 🔴 Ready | MEDIUM | S |
-| #26 | Code Splitting & Bundle Optimization | 🔴 Ready | MEDIUM | M |
-| #27 | TypeScript Types Barrel Exports | 🔴 Ready | LOW | S |
+| #26 | Code Splitting & Bundle Optimization | ✅ **Done** (in review) | MEDIUM | M |
+| #27 | TypeScript Types Barrel Exports | 🔴 Ready (in review) | LOW | S |
+| #38 | NF-e Rules Dashboard & Discrepancy Views | 🔴 **Ready (NEW)** | HIGH | L |
+| #40 | Developer Portal (Dashboard, Docs, Keys, Analytics, Webhooks) | ✅ **Done** (in review) | CRITICAL | L |
 
 ### Card Lifecycle (This Agent Owns)
 1. **Tech Lead assigns** → Card moved to `ready/`
@@ -90,7 +94,7 @@ agents-new/frontend-agent/cards/
 
 ---
 
-## 📁 Project Structure (Actual - 2026-11-03)
+## 📁 Project Structure (Actual - 2026-11-05)
 
 ```
 frontend/
@@ -149,17 +153,26 @@ frontend/
 │   │       ├── UserInviteModal.tsx
 │   │       ├── ContractForm.tsx
 │   │       └── FreightTableEditor.tsx
+│   │   ├── contracts/                # Feature components (Card #24) ✅
+│   │       ├── ContractsTable.tsx
+│   │       ├── ContractForm.tsx
+│   │       ├── ContractDetailModal.tsx
+│   │       ├── FreightTableEditor.tsx
+│   │       ├── FreightTableGrid.tsx
+│   │       └── FreightTableVersionManager.tsx
 │   ├── hooks/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── useApi.ts               # TanStack Query wrapper ✅
 │   │   ├── useDiscrepancyActions.ts # Bulk actions, review, export ✅
 │   │   ├── useContestWorkflow.ts   # 10 workflow hooks (send, negotiate, payments, PDF, communications, evidence, success fee) ✅ (Card #10)
 │   │   ├── useReports.ts           # 7 report hooks (dashboard, pdf, excel, schedules CRUD) ✅ (Card #11)
-│   │   └── useSettings.ts          # 15 settings hooks (users, carriers, contracts, company, notifications, freight tables) ✅ (Card #15)
+│   │   ├── useSettings.ts          # 15 settings hooks (users, carriers, contracts, company, notifications, freight tables) ✅ (Card #15)
+│   │   └── useContracts.ts         # 12 contracts/freight tables hooks (CRUD + reference data) ✅ (Card #24)
 │   ├── layouts/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── MainLayout.tsx          # Sidebar + header + outlet ✅
-│   │   └── AuthLayout.tsx          # Centered card layout ✅
+│   │   ├── AuthLayout.tsx          # Centered card layout ✅
+│   │   └── DeveloperLayout.tsx     # Developer Portal sidebar + header ✅ (Card #40)
 │   ├── pages/
 │   │   ├── index.ts                # Barrel exports
 │   │   ├── Login.tsx               # Form + validation ✅
@@ -175,7 +188,14 @@ frontend/
 │   │   ├── ReportExportPage.tsx    # Direct export with URL-synced filters ✅ (Card #11)
 │   │   ├── Clients.tsx             # CRUD + Branches ✅ (Card #22)
 │   │   ├── Carriers.tsx            # CRUD + Branches ✅ (Card #23)
-│   │   ├── Contracts.tsx           # 🔴 ComingSoon
+│   │   ├── Contracts.tsx           # ✅ CRUD + FreightTable editor (Card #24)
+│   │   ├── developer/              # Developer Portal (Card #40) ✅
+│   │   │   ├── index.ts            # Barrel exports
+│   │   │   ├── DeveloperDashboard.tsx  # KPIs, Quick Actions, Usage Chart
+│   │   │   ├── DeveloperDocs.tsx       # Scalar API Documentation
+│   │   │   ├── DeveloperKeys.tsx       # API Key Management (CRUD)
+│   │   │   ├── DeveloperAnalytics.tsx  # Usage Analytics & Charts
+│   │   │   └── DeveloperWebhooks.tsx   # Webhook Management (CRUD)
 │   │   ├── settings/               # Settings pages (Card #15) ✅
 │   │   │   ├── SettingsLayout.tsx
 │   │   │   ├── CompanySettingsPage.tsx
@@ -192,6 +212,9 @@ frontend/
 │   │   └── msw.test.ts             # MSW integration tests
 │   └── types/
 │       └── index.ts                # Barrel exports (needs types) - Card #27
+├── public/
+│   └── openapi/
+│       └── v1.yaml                 # OpenAPI 3.1 spec for Scalar docs ✅ (Card #40)
 ├── index.html
 ├── package.json
 ├── vite.config.ts                  # Proxy: /api → localhost:8000
@@ -363,16 +386,21 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 - Card #10: Contests Page → **DONE** (Create + Detail + Negotiate + Payments + 8 components + 10 hooks)
 - Card #11: Reports Page → **DONE** (Dashboard + Export + Schedule + 7 components + Tabs/Select/Switch/KPICard)
 - Card #15: Settings Pages → **DONE** (Company/Users/Carriers/Contracts/Notifications + 3 components + 8 hooks)
+- Card #22: Clients Page → **DONE** (CRUD + Branches + 5 components + 4 hooks)
+- Card #23: Carriers Page → **DONE** (CRUD + Branches + 5 components + 4 hooks)
+- Card #24: Contracts Page → **DONE** (CRUD + FreightTable Editor + 6 components + 12 hooks)
+- Card #26: Code Splitting & Bundle Optimization → **DONE** (Lazy routes, Suspense, PageSkeleton, manualChunks)
+- Card #40: Developer Portal → **DONE** (Dashboard, Docs, Keys, Analytics, Webhooks + 5 pages + Layout)
 
 ### 🔴 SPRINT 1 PRIORITY (Start Here)
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
-| **#23** | Carriers Page | Replace `ComingSoon` → CRUD (list, create, edit, detail) |
-| **#24** | Contracts Page | Replace `ComingSoon` → CRUD + FreightTable editor |
+| *All Sprint 1 cards completed* | | |
 
 ### 🟡 SPRINT 2
 | Card | Title | Actual Work Needed |
 |------|-------|-------------------|
+| **#38** | **NF-e Dashboard & Discrepancy Views** | **NEW FEATURE** - Rules dashboard, discrepancy detail, validation table, admin config (4 components + hooks + types) |
 | **#25** | Profile Page | Replace `ComingSoon` → User profile management |
 | **#03** | Dashboard Charts | Add Recharts to existing Dashboard |
 | **#07** | Design System Enhancements | Tooltip, Toast, Tabs, Select, Pagination, EmptyState, KPICard |
@@ -380,7 +408,6 @@ hasAnyRole(['ADMIN', 'MANAGER'])    // true if user has any of these roles
 ### 🟢 SPRINT 3+ (Technical Debt)
 | Card | Title |
 |------|-------|
-| #26 | Code Splitting & Bundle Optimization (995kB → <500kB) |
 | #27 | TypeScript Types Barrel Exports |
 
 ---
@@ -458,17 +485,50 @@ Agent(subagent_type="frontend-testing-agent", prompt="Write full test suite for 
 # 1. Check current card
 ls cards/frontend/in-progress/ || ls cards/frontend/ready/ | head -5
 
-# 2. START WITH CARD #23 (Carriers Page)
-cat cards/frontend/ready/23-frontend-carriers-page.md
+# 2. Next Cards Available:
+#    Card #38 - NF-e Dashboard & Discrepancy Views (Sprint 2, High) - NEW FEATURE
+#    Card #25 - Profile Page (Sprint 2, Medium)
+#    Card #03 - Dashboard Charts (Sprint 2, High)
+#    Card #07 - Design System Enhancements (Sprint 2, High)
+#    Card #27 - TypeScript Types Barrel Exports (Sprint 3, Low)
 
 # 3. Run dev server
 cd frontend && pnpm dev
 ```
 
-**Next Priority:** Card #23 - Carriers Page (CRUD)
-- Uses: MSW handlers, factories, design system components
-- API: `/api/v1/carriers` endpoints
-- Components needed: Table, Modal, Forms, Contact management
+**Next Priority:** Card #38 - NF-e Dashboard & Discrepancy Views (NEW FEATURE)
+- Route: `/nfe/rules`, `/nfe/discrepancies/:id`, `/admin/nfe/rules`
+- Components: NFERulesDashboard, NFEDiscrepancyDetail, NFEValidationTable, NFERuleConfig
+- API: `/api/v1/nfe/rules`, `/api/v1/nfe/discrepancies` (backend cards #34, #35, #36 done)
+- Types: NF-e rules (5 Critical, 7 High, 6 Medium), discrepancy details with XML data
+- Backend dependencies: Cards #34, #35, #36 (all DONE)
+
+**Alternative Next:** Card #25 - Profile Page (User profile management)
+- Uses: Design system components, auth hooks, API
+- API: `/api/v1/users/me`, `/api/v1/users/{id}`
+- Components needed: ProfileForm, ChangePasswordModal, NotificationPreferences, DangerZone
+
+**Recently Completed:** Card #26 - Code Splitting & Bundle Optimization
+- All 21 pages lazy-loaded with React.lazy() + Suspense boundaries
+- PageSkeleton & PageSkeletonMinimal fallback components created
+- Vite manualChunks: 7 vendor bundles (react-vendor, radix-vendor, query-vendor, charts-vendor, forms-vendor, utils-vendor, ui-vendor)
+- cssCodeSplit: true, chunkSizeWarningLimit: 500
+- Build passes, lint passes
+
+**Recently Completed:** Card #24 - Contracts Page
+- Full CRUD: List (with pagination, filters, search), Create, Edit, Detail, Delete
+- FreightTable Editor: Spreadsheet-like grid with 4 modals (Rodoviário, Aéreo, Marítimo, Ferroviário)
+- Version management with history and comparison
+- 6 new components + 12 hooks in useContracts.ts
+- Types: Contract, FreightTable, FreightRate with enums
+
+**Recently Completed:** Card #40 - Developer Portal
+- Dashboard with KPIs, Quick Actions, Usage Chart
+- Scalar API Documentation (`/developer/docs`)
+- API Key Management (`/developer/keys`)
+- Usage Analytics (`/developer/analytics`) - 6 SVG charts
+- Webhook Management (`/developer/webhooks`)
+- DeveloperLayout with sidebar navigation
 
 ---
 
@@ -483,6 +543,7 @@ cd frontend && pnpm dev
 | `cards/frontend/done/11-frontend-reports-pages.md` | **DONE** - Card #11 Reports |
 | `cards/frontend/review/15-frontend-settings-pages.md` | **DONE** - Card #15 Settings |
 | `cards/frontend/review/22-frontend-clients-page.md` | **DONE** - Card #22 Clients |
+| `cards/frontend/review/40-frontend-developer-portal.md` | **DONE** - Card #40 Developer Portal |
 | `cards/frontend/ready/23-frontend-carriers-page.md` | **NEXT** - Card #23 Carriers |
 | `TECHLEAD_REVIEW.md` | Full architectural review |
 | `frontend/src/index.css` | Complete design system |
