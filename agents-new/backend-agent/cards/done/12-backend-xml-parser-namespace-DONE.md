@@ -6,7 +6,7 @@ type: tech-debt
 agent: backend
 sprint: 1
 estimate: M
-status: ready
+status: done
 created: 2026-11-01
 reviewed_by: techlead
 ---

@@ -258,32 +258,79 @@ backend/
 
 ## 🔧 Configuração & Execução
 
+> **Arquitetura**: Infraestrutura (PostgreSQL, Redis, MinIO) roda em **Docker**. Aplicação (Backend + Celery) roda **localmente** via Poetry.
+
 ### Variáveis Obrigatórias (`.env`)
 ```bash
+# Database (PostgreSQL Docker em localhost:5432)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
+DATABASE_READ_REPLICA_URL=postgresql://postgres:postgres@localhost:5432/averta
+
+# Redis (Redis Docker em localhost:6379)
 REDIS_URL=redis://localhost:6379/0
-JWT_SECRET_KEY=<32+ chars, openssl rand -base64 32>
+
+# JWT (GERAR COM: openssl rand -base64 32)
+JWT_SECRET_KEY=<32+ chars>
 JWT_REFRESH_SECRET_KEY=<32+ chars>
+
+# Email
 SENDGRID_API_KEY=SG.xxx          # ou SMTP_*
+
+# S3/MinIO (MinIO Docker em localhost:9000)
 S3_ENDPOINT=http://localhost:9000
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
+S3_BUCKET=averta-documents
+S3_REGION=us-east-1
+S3_PUBLIC_URL=http://localhost:9000
+
+# Frontend
 FRONTEND_URL=http://localhost:3000
+
+# Success Fee
 SUCCESS_FEE_PERCENTAGE=20.0
+
+# Celery
+CELERY_BROKER_URL=redis://localhost:6379/1
+CELERY_RESULT_BACKEND=redis://localhost:6379/2
 ```
 
-### Desenvolvimento (Docker Compose)
+### Desenvolvimento (Infra Docker + App Local - Recomendado)
+
 ```bash
-cd backend
-cp .env.example .env   # edite as chaves
-docker-compose up -d --build
-# Serviços: postgres:5432, redis:6379, minio:9000/9001, backend:8000, flower:5555
-docker-compose exec backend poetry run prisma db push
-docker-compose exec backend poetry run prisma generate
+# 1. Suba a infraestrutura (na raiz do projeto)
+cd D:/Averta
+docker compose up -d
+# Serviços: postgres:5432, redis:6379, minio:9000/9001, mailhog:1025/8025
+
+# 2. Configure backend
+cd D:/Averta/backend
+cp .env.example .env   # edite as chaves (use localhost para tudo)
+
+# 3. Instale dependências e configure banco
+poetry install --with dev
+poetry run prisma generate
+poetry run prisma migrate deploy   # banco já populado via seed
+
+# 4. Rode a API (Terminal 1 - porta 8000)
+poetry run start
+
+# 5. Rode Celery Worker (Terminal 2)
+poetry run worker
+
+# 6. Rode Celery Beat (Terminal 3)
+poetry run beat
+
+# 7. Opcional: Flower monitoring (Terminal 4 - porta 5555)
+poetry run flower
 ```
 
-### Local (Poetry)
+### Local Completo (Poetry - Sem Docker)
+
+Se preferir rodar tudo localmente (precisa instalar PostgreSQL, Redis, MinIO localmente):
+
 ```bash
+cd D:/Averta/backend
 poetry install --with dev
 poetry run prisma generate
 poetry run prisma db push

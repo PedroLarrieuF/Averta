@@ -1,12 +1,17 @@
-# Card: Configuração de Alertas de Mudanças Regulatórias
-
-**ID**: XX-TECHLEAD-ALERT-CONFIG  
-**Coluna**: READY  
-**Prioridade**: HIGH  
-**Estimativa**: 5 SP  
-**Sprint**: Próxima  
-
 ---
+id: 37
+title: "Configuração de Alertas de Mudanças Regulatórias"
+priority: high
+type: chore
+agent: techlead
+sprint: 2
+estimate: L
+status: ready
+created: 2026-11-10
+reviewed_by: techlead
+---
+
+# Card #37: Configuração de Alertas de Mudanças Regulatórias
 
 ## 🎯 Objetivo
 Implementar sistema de monitoramento automatizado de mudanças na legislação brasileira de transporte/frete (ICMS, ANTT, CT-e, Pedágio, Seguros) para manter o Rules Engine v2 sempre atualizado.

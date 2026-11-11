@@ -6,7 +6,7 @@ type: bug
 agent: backend
 sprint: 1
 estimate: S
-status: ready
+status: done
 created: 2026-11-03
 reviewed_by: techlead
 ---

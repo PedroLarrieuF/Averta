@@ -1,3 +1,14 @@
+# ⚠️ LEGACY/DEPRECATED - DO NOT USE FOR DEVELOPMENT
+# This file runs the full stack (backend, celery, flower, pgbouncer) in Docker.
+#
+# NEW ARCHITECTURE (2026-11-10): Hybrid Local + Docker
+# - Infrastructure (PostgreSQL, Redis, MinIO, Mailhog) → Docker (root docker-compose.yml)
+# - Application (Backend, Celery, Frontend) → Local via Poetry/pnpm
+# - Use ./scripts/quickstart.sh for automated setup
+#
+# This file is kept for reference and production Docker Compose deployment only.
+# For production, use docker-compose.prod.yml instead.
+#
 version: '3.8'
 
 services:

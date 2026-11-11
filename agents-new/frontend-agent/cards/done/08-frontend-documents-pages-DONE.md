@@ -6,7 +6,7 @@ type: feature
 agent: frontend
 sprint: 2
 estimate: L
-status: ready
+status: done
 created: 2026-11-01
 reviewed_by: techlead
 ---

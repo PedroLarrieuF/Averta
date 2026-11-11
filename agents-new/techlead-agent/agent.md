@@ -117,7 +117,10 @@ AvertaSaaS/
 │       ├── agent.md
 │       └── cards/          # Local Kanban (cross-agent coordination)
 │
-├── docker-compose.yml      # Infra: Postgres, Redis, MinIO, Mailhog
+├── docker-compose.yml      # Infra apenas: Postgres, Redis, MinIO, Mailhog
+├── scripts/
+│   ├── quickstart.sh       # Auto-setup Unix
+│   └── quickstart.ps1      # Auto-setup Windows
 ├── turbo.json              # Monorepo pipeline
 ├── package.json            # pnpm workspaces: ["frontend", "backend"]
 ├── TECHLEAD_REVIEW.md      # Full review (2026-11-01)
@@ -131,6 +134,13 @@ AvertaSaaS/
 - All new development targets `backend/`
 - Frontend at `frontend/` proxies `/api` → `localhost:8000` (Python)
 - ADR documented in `docs/adr/001-primary-backend.md`
+
+### Architecture Update (2026-11-10): **Hybrid Local + Docker**
+- **Infrastructure** (PostgreSQL, Redis, MinIO, Mailhog) → **Docker** (`docker compose up -d` na raiz)
+- **Application** (Backend FastAPI + Celery Worker + Beat, Frontend Vite) → **Local** (Poetry/pnpm)
+- **Ports**: Frontend 3000, Backend 8000, PostgreSQL 5432, Redis 6379, MinIO 9000/9001
+- **Database**: Já populado via volume Docker - persistido entre restarts
+- **Dev Workflow**: 4 terminais (API, Worker, Beat, Frontend) ou `./scripts/quickstart.sh` para setup inicial
 
 ---
 

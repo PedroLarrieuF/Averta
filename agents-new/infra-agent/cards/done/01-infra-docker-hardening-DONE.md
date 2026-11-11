@@ -1,3 +1,15 @@
+---
+id: 1
+title: "Docker Production Hardening"
+priority: high
+type: infra
+sprint: 1
+estimate: M
+status: done
+created: 2026-11-05
+reviewed_by: techlead
+---
+
 # Card #01 - Docker Production Hardening
 
 ## Overview

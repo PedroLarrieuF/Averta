@@ -1,3 +1,15 @@
+---
+id: 2
+title: "Prisma Performance Optimization"
+priority: high
+type: infra
+sprint: 1
+estimate: L
+status: done
+created: 2026-11-05
+reviewed_by: techlead
+---
+
 # Card #02 - Prisma Performance Optimization
 
 ## Overview

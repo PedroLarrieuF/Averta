@@ -14,8 +14,9 @@
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐               │
 │  │   FRONTEND   │────▶│   BACKEND    │────▶│  DATABASE    │               │
 │  │   (React +   │     │  (FastAPI +  │     │  (PostgreSQL │               │
-│  │   Vite +     │     │   Prisma)    │     │   16 +       │               │
-│  │   Tailwind)  │     │              │     │   PgBouncer) │               │
+│  │   Vite +     │     │   Prisma)    │     │   16)        │               │
+│  │   Tailwind)  │     │              │     │              │               │
+│  │   Port 3000  │     │   Port 8000  │     │   Port 5432  │               │
 │  └──────────────┘     └──────┬───────┘     └──────────────┘               │
 │                              │                                            │
 │         ┌────────────────────┼────────────────────┐                       │
@@ -24,48 +25,41 @@
 │  │    REDIS    │     │   MINIO     │     │   CELERY    │                │
 │  │  (Cache +   │     │   (S3/      │     │  (Workers + │                │
 │  │   Broker)   │     │   Storage)  │     │   Beat)     │                │
+│  │   Port 6379 │     │   Port 9000 │     │   Local     │                │
 │  └─────────────┘     └─────────────┘     └─────────────┘                │
-│         │                                       │                        │
-│         └───────────────────────────────────────┘                        │
-│                              │                                            │
-│                              ▼                                            │
-│                     ┌───────────────┐                                    │
-│                     │   FLOWER      │                                    │
-│                     │ (Monitoring)  │                                    │
-│                     └───────────────┘                                    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Stack Tecnológico
 
-| Camada | Tecnologia | Versão |
-|--------|------------|--------|
-| **Frontend** | React 18 + Vite + TypeScript + TailwindCSS | Latest |
-| **Backend** | FastAPI 0.109 (async) + Prisma Client Python | Latest |
-| **Database** | PostgreSQL 16 + PgBouncer (connection pooling) | 16-alpine |
-| **Cache/Queue** | Redis 7 + Celery 5 (workers + beat + flower) | 7-alpine |
-| **Storage** | MinIO (S3-compatible) | Latest |
-| **Email** | SendGrid (templates Jinja2) | - |
-| **Auth** | JWT (access 15min + refresh 7d) + RBAC | - |
-| **Multi-tenancy** | Isolamento por `company_id` em todos os models | - |
+| Camada | Tecnologia | Versão | Porta |
+|--------|------------|--------|-------|
+| **Frontend** | React 18 + Vite + TypeScript + TailwindCSS | Latest | 3000 |
+| **Backend** | FastAPI 0.109 (async) + Prisma Client Python | Latest | 8000 |
+| **Database** | PostgreSQL 16 (Docker) | 16-alpine | 5432 |
+| **Cache/Queue** | Redis 7 (Docker) + Celery 5 (Local) | 7-alpine | 6379 |
+| **Storage** | MinIO (Docker, S3-compatible) | Latest | 9000/9001 |
+| **Email** | SendGrid (templates Jinja2) | - | - |
+| **Auth** | JWT (access 15min + refresh 7d) + RBAC | - | - |
+| **Multi-tenancy** | Isolamento por `company_id` em todos os models | - | - |
+
+> **Arquitetura Híbrida**: Infraestrutura (PostgreSQL, Redis, MinIO) roda em **Docker**. Aplicação (Frontend + Backend + Celery) roda **localmente** (Poetry/Vite) para desenvolvimento mais rápido, hot-reload nativo e debugging simplificado.
 
 ---
 
 ## 📋 Pré-requisitos
 
-- **Docker** ≥ 24.0 e **Docker Compose** ≥ 2.20
-- **Node.js** ≥ 20.0 (para frontend local)
+- **Docker** ≥ 24.0 e **Docker Compose** ≥ 2.20 (apenas para infraestrutura)
+- **Node.js** ≥ 20.0
 - **pnpm** ≥ 9.0 (package manager)
-- **Python** ≥ 3.11 + **Poetry** (para backend local)
+- **Python** ≥ 3.11 + **Poetry**
 - **Git**
 - **OpenSSL** (para gerar chaves JWT)
 
-> **Nota**: Para desenvolvimento local completo, recomenda-se usar **Docker Compose** que sobe toda a stack (PostgreSQL, Redis, MinIO, Backend, Celery, Flower). Frontend pode rodar fora do Docker para hot-reload mais rápido.
-
 ---
 
-## 🚀 Quick Start (Docker Compose - Recomendado)
+## 🚀 Quick Start (Infra Docker + App Local - Recomendado)
 
 ### 1. Clone e configure variáveis de ambiente
 
@@ -77,91 +71,143 @@ git clone <repo-url> .  # se ainda não clonado
 cd backend
 cp .env.example .env
 # Edite .env com suas chaves (JWT_SECRET_KEY, SENDGRID_API_KEY, etc.)
+# IMPORTANTE: Use localhost para serviços Docker:
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
+#   REDIS_URL=redis://localhost:6379/0
+#   S3_ENDPOINT=http://localhost:9000
 # Dica: Gere chaves JWT com: openssl rand -base64 32
 
 # Voltar para raiz
 cd ..
 ```
 
-### 2. Suba toda a stack (Backend + Infra)
+### 2. Suba apenas a infraestrutura (PostgreSQL, Redis, MinIO, Mailhog)
 
 ```bash
-cd backend
-docker compose up -d --build
+# Na raiz do projeto
+docker compose up -d
 ```
 
-**Serviços iniciados:**
+**Serviços de infraestrutura iniciados:**
 | Serviço | Porta | Descrição |
 |---------|-------|-----------|
-| **PostgreSQL** | 5432 | Database principal |
-| **PgBouncer** | 6432 | Connection pooler (transaction mode) |
+| **PostgreSQL** | 5432 | Database principal (dados persistem em volume) |
 | **Redis** | 6379 | Cache + Celery broker |
-| **MinIO** | 9000/9001 | S3 storage + Console |
-| **Backend API** | 8000 | FastAPI (Swagger: http://localhost:8000/docs) |
-| **Celery Worker** | - | Processamento assíncrono (4 concorrentes) |
-| **Celery Beat** | - | Agendador de tarefas periódicas |
-| **Flower** | 5555 | Monitoramento Celery (http://localhost:5555) |
+| **MinIO** | 9000/9001 | S3 storage + Console (minioadmin/minioadmin) |
+| **Mailhog** | 1025/8025 | SMTP testing + Web UI |
 
-### 3. Inicialize o banco de dados
+> **Nota**: O banco de dados **já vem populado** com seed data (empresas, usuários, regras, etc.). Não execute `prisma migrate reset` a menos que queira apagar tudo.
 
-```bash
-# Gere o Prisma Client
-docker compose exec backend poetry run prisma generate
-
-# Aplique migrations (cria tabelas + seed data)
-docker compose exec backend poetry run prisma migrate deploy
-
-# OU para desenvolvimento (push schema sem migrations)
-# docker compose exec backend poetry run prisma db push
-```
-
-### 4. Suba o Frontend (em outro terminal)
-
-```bash
-cd D:/Averta/frontend
-pnpm install
-pnpm dev
-```
-
-**Frontend disponível em:** http://localhost:3000 (Vite dev server)
-
-> **Nota**: O Vite proxy está configurado para encaminhar `/api` → `http://localhost:8000`. Verifique `vite.config.ts` (porta 3000).
-
----
-
-## 🔧 Desenvolvimento Local (Sem Docker para Backend)
-
-### Backend (Poetry)
+### 3. Inicialize o Backend (Terminal 1)
 
 ```bash
 cd D:/Averta/backend
 
-# Instale dependências
+# Instale dependências (apenas primeira vez)
 poetry install --with dev
-
-# Configure .env local (DATABASE_URL para localhost:5432, REDIS_URL para localhost:6379)
-cp .env.example .env
-# Edite DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
-# Edite REDIS_URL=redis://localhost:6379/0
 
 # Gere Prisma Client
 poetry run prisma generate
 
-# Crie banco e aplique migrations
-poetry run prisma migrate dev  # Cria migration + aplica
-# OU para apenas aplicar existentes:
+# Aplique migrations (já existem, apenas aplica)
 poetry run prisma migrate deploy
 
-# Rode a API (com hot-reload)
+# Rode a API com hot-reload (porta 8000)
 poetry run start
 # uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Em terminais separados:
-poetry run worker    # celery -A app.core.celery_app worker --loglevel=info --concurrency=4
-poetry run beat      # celery -A app.core.celery_app beat --loglevel=info
 ```
 
-### Frontend (Vite)
+**Backend API disponível em:** http://localhost:8000  
+**Swagger Docs:** http://localhost:8000/docs
+
+### 4. Inicialize Celery Worker + Beat (Terminal 2 e 3)
+
+```bash
+# Terminal 2 - Worker
+cd D:/Averta/backend
+poetry run worker
+# celery -A app.core.celery_app worker --loglevel=info --concurrency=4
+
+# Terminal 3 - Beat (scheduler)
+cd D:/Averta/backend
+poetry run beat
+# celery -A app.core.celery_app beat --loglevel=info
+```
+
+### 5. Inicialize o Frontend (Terminal 4)
+
+```bash
+cd D:/Averta/frontend
+
+# Instale dependências (apenas primeira vez)
+pnpm install
+
+# Rode o Vite dev server (porta 3000)
+pnpm dev
+```
+
+**Frontend disponível em:** http://localhost:3000  
+> O Vite proxy encaminha `/api` → `http://localhost:8000`. Verifique `vite.config.ts`.
+
+---
+
+## ⚡ Quick Start Automatizado (Script)
+
+```bash
+# Na raiz do projeto - sobe infra + backend + frontend em terminais separados
+./scripts/quickstart.sh
+```
+
+> Veja seção **Quickstarter Script** abaixo para detalhes.
+
+---
+
+## 🔧 Desenvolvimento Local (Arquitetura Padrão)
+
+Esta é a arquitetura recomendada: **Infra em Docker, App Local**.
+
+### Backend (Poetry) - Porta 8000
+
+```bash
+cd D:/Averta/backend
+
+# Instale dependências (apenas primeira vez)
+poetry install --with dev
+
+# Configure .env para localhost (infra roda em Docker nas portas padrão)
+cp .env.example .env
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
+# REDIS_URL=redis://localhost:6379/0
+# S3_ENDPOINT=http://localhost:9000
+# FRONTEND_URL=http://localhost:3000
+
+# Gere Prisma Client
+poetry run prisma generate
+
+# Aplique migrations existentes (banco já populado)
+poetry run prisma migrate deploy
+
+# Rode a API com hot-reload (porta 8000)
+poetry run start
+```
+
+### Celery Worker + Beat (Terminais Separados)
+
+```bash
+# Terminal Worker - processa tasks assíncronas
+cd D:/Averta/backend
+poetry run worker
+
+# Terminal Beat - agendador de tarefas periódicas
+cd D:/Averta/backend
+poetry run beat
+
+# Opcional: Flower monitoring (porta 5555)
+cd D:/Averta/backend
+poetry run flower
+```
+
+### Frontend (Vite) - Porta 3000
 
 ```bash
 cd D:/Averta/frontend
@@ -170,6 +216,44 @@ pnpm dev
 ```
 
 ---
+
+## 🗄️ Banco de Dados - Comandos Úteis
+
+O banco **já vem populado** com seed data via Docker volume. Use estes comandos para gerenciar:
+
+```bash
+# Via Poetry (backend local conectando no PostgreSQL Docker)
+cd D:/Averta/backend
+
+# Prisma Studio (UI visual do banco) - porta 5555
+poetry run prisma studio
+
+# Ver status das migrations
+poetry run prisma migrate status
+
+# Criar nova migration (após editar schema.prisma)
+poetry run prisma migrate dev --name <nome>
+
+# Reset completo (CUIDADO: apaga dados! Use apenas se necessário)
+poetry run prisma migrate reset --force
+
+# Seed data (dados de desenvolvimento)
+poetry run db-seed
+
+# Backup manual (direto no container PostgreSQL)
+docker compose exec postgres pg_dump -U postgres averta > backup_$(date +%Y%m%d).sql
+
+# Restore
+docker compose exec -T postgres psql -U postgres averta < backup_20240115.sql
+
+# Acessar psql direto
+docker compose exec postgres psql -U postgres -d averta
+```
+
+### Prisma Schema Location
+- **Schema**: `backend/prisma/schema.prisma` (25+ models, 100+ fields)
+- **Migrations**: `backend/prisma/migrations/` (15+ arquivos)
+- **Seed**: `backend/prisma/seed.ts` (TypeScript) + `backend/scripts/seed.py` (Python)
 
 ## 🗄️ Banco de Dados - Comandos Úteis
 
@@ -253,7 +337,7 @@ pnpm test:coverage
 
 ## 📦 Build de Produção
 
-### Backend (Docker Multi-stage + Distroless)
+### Backend (Docker Multi-stage + Distroless - Apenas Produção)
 
 ```bash
 cd D:/Averta/backend
@@ -274,6 +358,8 @@ syft averta/backend:latest -o spdx-json=sbom.spdx.json
 cosign sign-blob --yes sbom.spdx.json
 ```
 
+> **Nota**: Em desenvolvimento, **não use Docker para o backend**. Rode localmente com `poetry run start` para hot-reload nativo e debugging simplificado.
+
 ### Frontend
 
 ```bash
@@ -286,31 +372,19 @@ pnpm build
 pnpm preview
 ```
 
-### Stack Produção (Docker Compose)
+### Stack Produção (Kubernetes / Docker Swarm)
 
-```bash
-cd D:/Averta/backend
+Em produção, use Kubernetes (Helm) ou Docker Swarm com as imagens construídas acima. O `docker-compose.prod.yml` foi descontinuado para desenvolvimento local.
 
-# Valida configuração produção
-docker compose -f docker-compose.yml -f docker-compose.prod.yml config
-
-# Sobe stack produção
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# Para stack produção
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down
-```
-
-**Diferenças `docker-compose.prod.yml`:**
+**Diferenças Produção vs Desenvolvimento:**
 - Resource limits (CPU/Memory) por serviço
 - Restart policies `unless-stopped`
-- JSON-file logging com rotação (max-size: 10m, max-file: 3-5)
+- JSON-file logging com rotação
 - Read-only root filesystem
 - Dropped ALL capabilities
 - Security opt: `no-new-privileges`
-- tmpfs para diretórios graváveis
-- Réplicas para celery-worker (2x)
-- Rede dedicada subnet `172.28.0.0/16`
+- Réplicas para celery-worker
+- Rede dedicada com subnet isolada
 
 ---
 
@@ -329,13 +403,13 @@ API_PREFIX="/api/v1"
 HOST=0.0.0.0
 PORT=8000
 
-# Database (Docker Compose usa pgbouncer:6432)
-DATABASE_URL=postgresql://postgres:postgres@pgbouncer:6432/averta
-DATABASE_READ_REPLICA_URL=postgresql://postgres:postgres@postgres:5432/averta
+# Database (Infra Docker roda em localhost:5432)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
+DATABASE_READ_REPLICA_URL=postgresql://postgres:postgres@localhost:5432/averta
 DATABASE_POOL_SIZE=20
 
-# Redis
-REDIS_URL=redis://redis:6379/0
+# Redis (Infra Docker roda em localhost:6379)
+REDIS_URL=redis://localhost:6379/0
 
 # JWT (GERAR COM: openssl rand -base64 32)
 JWT_SECRET_KEY=<32+ chars>
@@ -348,8 +422,8 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 CORS_ORIGINS=["http://localhost:3000"]
 CORS_ALLOW_CREDENTIALS=true
 
-# S3/MinIO
-S3_ENDPOINT=http://minio:9000
+# S3/MinIO (Infra Docker roda em localhost:9000)
+S3_ENDPOINT=http://localhost:9000
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 S3_BUCKET=averta-documents
@@ -357,8 +431,8 @@ S3_REGION=us-east-1
 S3_PUBLIC_URL=http://localhost:9000
 
 # Celery
-CELERY_BROKER_URL=redis://redis:6379/1
-CELERY_RESULT_BACKEND=redis://redis:6379/2
+CELERY_BROKER_URL=redis://localhost:6379/1
+CELERY_RESULT_BACKEND=redis://localhost:6379/2
 
 # Email (SendGrid preferido)
 SENDGRID_API_KEY=SG.xxx
@@ -395,12 +469,13 @@ VITE_WS_URL=ws://localhost:8000
 | **Backend Health** | http://localhost:8000/health | - |
 | **Backend OpenAPI** | http://localhost:8000/api/v1/openapi.json | - |
 | **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
-| **Flower (Celery)** | http://localhost:5555 | - |
-| **Prisma Studio** | http://localhost:5555 | (quando rodando `prisma studio`) |
+| **Flower (Celery)** | http://localhost:5555 | - (rode `poetry run flower`) |
+| **Prisma Studio** | http://localhost:5555 | (rode `poetry run prisma studio`) |
 | **PostgreSQL** | localhost:5432 | postgres / postgres / averta |
-| **PgBouncer** | localhost:6432 | postgres / postgres / averta |
 | **Redis** | localhost:6379 | - |
 | **Mailhog (Email UI)** | http://localhost:8025 | - |
+
+---
 
 ---
 
@@ -467,73 +542,95 @@ git push origin feat/nova-funcionalidade-frontend
 
 ## 🛠 Comandos Úteis Diários
 
-### Docker Compose (Backend Stack)
+### Infraestrutura (Docker Compose - Raiz do Projeto)
 
 ```bash
-cd D:/Averta/backend
+cd D:/Averta
 
-# Subir tudo
+# Subir infra (PostgreSQL, Redis, MinIO, Mailhog)
 docker compose up -d
 
 # Ver logs
-docker compose logs -f backend
-docker compose logs -f celery-worker
 docker compose logs -f postgres
+docker compose logs -f redis
+docker compose logs -f minio
 
-# Reiniciar apenas backend
-docker compose restart backend
-
-# Rebuild backend após mudanças no Dockerfile/pyproject.toml
-docker compose up -d --build backend
-
-# Parar tudo (mantém volumes)
+# Parar infra (mantém volumes - dados persistem)
 docker compose down
 
-# Parar tudo + REMOVER volumes (CUIDADO: apaga dados do banco!)
+# Parar infra + REMOVER volumes (CUIDADO: apaga dados do banco!)
 docker compose down -v
-
-# Entrar no container backend (apenas dev - distroless não tem shell)
-docker compose exec backend bash  # só funciona no dev (não distroless)
 
 # Ver status containers
 docker compose ps
 ```
 
-### Banco de Dados
+### Backend Local (Poetry)
 
 ```bash
-# Prisma Studio (UI)
-docker compose exec backend poetry run prisma studio
+cd D:/Averta/backend
 
-# Migration status
-docker compose exec backend poetry run prisma migrate status
+# Rodar API (já em hot-reload via poetry run start)
+poetry run start
 
-# Nova migration
-docker compose exec backend poetry run prisma migrate dev --name add_campo_x
+# Worker Celery
+poetry run worker
 
-# Aplicar migrations pendentes (prod)
-docker compose exec backend poetry run prisma migrate deploy
+# Beat Celery
+poetry run beat
 
-# Reset DB (DEV ONLY)
-docker compose exec backend poetry run prisma migrate reset --force
+# Flower monitoring
+poetry run flower
 
-# Seed
-docker compose exec backend poetry run db-seed
+# Lint/Type-check
+poetry run lint
+poetry run typecheck
+poetry run format
+
+# Testes
+poetry run test-cov
 ```
 
-### Celery / Tasks
+### Banco de Dados (Via Poetry Local)
 
 ```bash
+cd D:/Averta/backend
+
+# Prisma Studio (UI) - porta 5555
+poetry run prisma studio
+
+# Migration status
+poetry run prisma migrate status
+
+# Nova migration (após editar schema.prisma)
+poetry run prisma migrate dev --name add_campo_x
+
+# Aplicar migrations pendentes
+poetry run prisma migrate deploy
+
+# Reset DB (DEV ONLY - CUIDADO: apaga dados!)
+poetry run prisma migrate reset --force
+
+# Seed data
+poetry run db-seed
+```
+
+### Celery / Tasks (Via Poetry Local)
+
+```bash
+cd D:/Averta/backend
+
 # Ver tasks ativas (Flower)
+# Rode: poetry run flower
 # Acesse: http://localhost:5555
 
 # Ou via CLI
-docker compose exec backend poetry run celery -A app.core.celery_app inspect active
-docker compose exec backend poetry run celery -A app.core.celery_app inspect scheduled
-docker compose exec backend poetry run celery -A app.core.celery_app inspect stats
+poetry run celery -A app.core.celery_app inspect active
+poetry run celery -A app.core.celery_app inspect scheduled
+poetry run celery -A app.core.celery_app inspect stats
 
 # Purge queue (CUIDADO)
-docker compose exec backend poetry run celery -A app.core.celery_app purge
+poetry run celery -A app.core.celery_app purge
 ```
 
 ### MinIO / Storage
@@ -555,46 +652,47 @@ docker run --rm -it --network averta-network minio/mc cp local/averta-documents/
 ### Backend não sobe / Erro de conexão DB
 
 ```bash
-# 1. Verifique se postgres está healthy
+# 1. Verifique se infra Docker está rodando
+cd D:/Averta
 docker compose ps
 docker compose logs postgres
 
-# 2. Verifique se pgbouncer subiu após postgres
-docker compose logs pgbouncer
-
-# 3. Teste conexão manual
+# 2. Teste conexão manual no PostgreSQL Docker
 docker compose exec postgres pg_isready -U postgres
 
-# 4. Se pgbouncer falhar, tente conectar direto no postgres (porta 5432)
-# Edite .env: DATABASE_URL=postgresql://postgres:postgres@postgres:5432/averta
+# 3. Verifique .env do backend - deve apontar para localhost
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/averta
+# REDIS_URL=redis://localhost:6379/0
 ```
 
 ### Prisma Client não gerado / Erro "PrismaClientKnownRequestError"
 
 ```bash
 cd D:/Averta/backend
-docker compose exec backend poetry run prisma generate
+poetry run prisma generate
 # Se persistir:
-docker compose exec backend rm -rf node_modules/.prisma
-docker compose exec backend poetry run prisma generate
+rm -rf node_modules/.prisma
+poetry run prisma generate
 ```
 
 ### Migration falha / Schema drift
 
 ```bash
+cd D:/Averta/backend
+
 # Ver diff
-docker compose exec backend poetry run prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
+poetry run prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
 
 # Reset completo (DEV ONLY - apaga dados!)
-docker compose exec backend poetry run prisma migrate reset --force
-docker compose exec backend poetry run prisma migrate dev
+poetry run prisma migrate reset --force
+poetry run prisma migrate dev
 ```
 
 ### Frontend não conecta na API
 
 ```bash
-# 1. Verifique vite.config.ts - proxy para /api
-# 2. Verifique CORS_ORIGINS no backend .env inclui http://localhost:5173
+# 1. Verifique vite.config.ts - proxy para /api → localhost:8000
+# 2. Verifique CORS_ORIGINS no backend .env inclui http://localhost:3000
 # 3. Verifique se backend está rodando na porta 8000
 curl http://localhost:8000/health
 ```
@@ -602,18 +700,22 @@ curl http://localhost:8000/health
 ### Celery tasks não executam
 
 ```bash
-# 1. Verifique Redis
+# 1. Verifique Redis (Docker)
+cd D:/Averta
 docker compose logs redis
 docker compose exec redis redis-cli ping
 
-# 2. Verifique worker logs
-docker compose logs celery-worker
+# 2. Verifique se worker está rodando (terminal separado)
+cd D:/Averta/backend
+poetry run worker
 
-# 3. Verifique Flower
+# 3. Verifique Flower (opcional)
+poetry run flower
 # http://localhost:5555
 
 # 4. Teste task manual
-docker compose exec backend poetry run python -c "
+cd D:/Averta/backend
+poetry run python -c "
 from app.tasks.documents import process_document
 process_document.delay('doc-id-aqui')
 "
@@ -637,7 +739,7 @@ kill -9 <pid>                 # Linux/Mac
 
 ```
 D:/Averta/
-├── backend/                    # FastAPI + Prisma + Celery
+├── backend/                    # FastAPI + Prisma + Celery (roda LOCAL via Poetry)
 │   ├── app/
 │   │   ├── core/               # Config, DB, Security, Middleware, Celery
 │   │   ├── modules/            # 11 feature modules (auth, users, companies, clients, carriers, branches, contracts, documents, discrepancies, contests, reports, notifications)
@@ -650,12 +752,12 @@ D:/Averta/
 │   │   ├── migrations/         # 15+ migrations
 │   │   └── seed.ts             # Seed TypeScript
 │   ├── tests/                  # pytest + pytest-asyncio (~78% coverage)
-│   ├── Dockerfile              # Multi-stage (builder + distroless runtime)
-│   ├── docker-compose.yml      # Dev stack (8 services)
-│   ├── docker-compose.prod.yml # Production overrides
+│   ├── Dockerfile              # Para produção apenas (multi-stage distroless)
+│   ├── docker-compose.yml      # [LEGACY] Dev stack completo - NÃO USE para dev
+│   ├── docker-compose.prod.yml # [LEGACY] Production - NÃO USE para dev
 │   ├── pyproject.toml          # Poetry deps + scripts
 │   └── .env.example
-├── frontend/                   # React 18 + Vite + Tailwind
+├── frontend/                   # React 18 + Vite + Tailwind (roda LOCAL via pnpm)
 │   ├── src/
 │   │   ├── components/         # 50+ componentes UI (Radix + Tailwind)
 │   │   ├── pages/              # 30+ páginas (Dashboard, Documents, Discrepancies, Contests, Contracts, Reports, Settings)
@@ -665,7 +767,9 @@ D:/Averta/
 │   ├── package.json            # pnpm + Vite + Vitest
 │   ├── tailwind.config.js
 │   └── vite.config.ts          # Proxy /api → localhost:8000
-├── docker-compose.yml          # Root compose (infra only: postgres, redis, minio, mailhog)
+├── docker-compose.yml          # Infra apenas: postgres, redis, minio, mailhog
+├── scripts/
+│   └── quickstart.sh           # Script de inicialização automatizada
 ├── package.json                # Root workspace (turbo + pnpm)
 ├── pnpm-workspace.yaml
 ├── turbo.json                  # Turborepo config
