@@ -18,7 +18,9 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Add request ID to all requests for tracing"""
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
         request.state.request_id = request_id
 
@@ -31,7 +33,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Structured request/response logging"""
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = getattr(request.state, "request_id", "unknown")
         start_time = time.perf_counter()
 
@@ -76,7 +80,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers"""
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -88,7 +94,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 class StructlogMiddleware(BaseHTTPMiddleware):
     """Bind request ID to structlog context"""
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = getattr(request.state, "request_id", "")
         token = request_id_var.set(request_id)
         try:

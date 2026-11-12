@@ -31,7 +31,11 @@ RUN poetry install --only=main --no-interaction --no-ansi
 
 # Generate Prisma client in builder (distroless has no prisma CLI)
 COPY prisma ./prisma
+COPY scripts ./scripts
 RUN prisma generate
+
+# Make init script executable
+RUN chmod +x ./scripts/init-db.sh
 
 # Cache pip for faster rebuilds
 RUN pip cache purge
@@ -55,6 +59,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code and generated Prisma client
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 
 # Expose port
 EXPOSE 8000

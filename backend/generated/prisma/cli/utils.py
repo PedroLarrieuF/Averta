@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import (
     Any,
     NoReturn,
+    cast,
     overload,
-    override,
 )
 
 import click
@@ -26,7 +26,6 @@ class PrismaCLI(click.MultiCommand):
     base_package: str = "prisma.cli.commands"
     folder: Path = Path(__file__).parent / "commands"
 
-    @override
     def list_commands(self, ctx: click.Context) -> list[str]:  # noqa: ARG002
         commands: list[str] = []
 
@@ -43,7 +42,6 @@ class PrismaCLI(click.MultiCommand):
         commands.sort()
         return commands
 
-    @override
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:  # noqa: ARG002
         name = f"{self.base_package}.{cmd_name}"
         if not module_exists(name):
@@ -64,7 +62,6 @@ class PrismaCLI(click.MultiCommand):
 class PathlibPath(click.Path):
     """A Click path argument that returns a pathlib Path, not a string"""
 
-    @override
     def convert(
         self,
         value: str | os.PathLike[str],
@@ -92,14 +89,13 @@ class EnumChoice(click.Choice):
         self.__enum = enum
         super().__init__([item.value for item in enum.__members__.values()])
 
-    @override
     def convert(
         self,
         value: str,
         param: click.Parameter | None,
         ctx: click.Context | None,
     ) -> str:
-        return str(self.__enum(super().convert(value, param, ctx)).value)
+        return str(cast(Any, self.__enum(super().convert(value, param, ctx)).value))
 
 
 def is_module(path: Path) -> bool:

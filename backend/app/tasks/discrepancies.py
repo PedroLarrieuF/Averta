@@ -157,7 +157,9 @@ async def recalculate_progressive_success_fees(
             continue
 
         days_diff = (dt.utcnow() - start_date).days
-        current_month = 1 if days_diff < PROGRESSIVE_MONTH_DAYS else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+        current_month = (
+            1 if days_diff < PROGRESSIVE_MONTH_DAYS else (days_diff // PROGRESSIVE_MONTH_DAYS) + 1
+        )
 
         # Determine expected fee percentage
         expected_pct = (

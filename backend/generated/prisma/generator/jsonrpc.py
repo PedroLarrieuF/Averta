@@ -89,8 +89,6 @@ def readline() -> str | None:
 
 
 def parse(line: str) -> Request:
-    log.debug("Parsing JSONRPC request line %s", line)
-
     data = json.loads(line)
     try:
         method = data["method"]

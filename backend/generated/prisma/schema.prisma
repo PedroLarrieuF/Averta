@@ -120,20 +120,20 @@ enum NotificationType {
 // ============================================
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  fullName     String
-  role         UserRole   @default(CLIENT)
-  status       UserStatus @default(PENDING)
-  avatarUrl    String?
-  lastLoginAt  DateTime?
-  companyId    String
-  company      Company    @relation("CompanyUsers", fields: [companyId], references: [id])
-  clientId     String?    @unique
-  client       Client?    @relation("ClientUser", fields: [clientId], references: [id])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id            String       @id @default(cuid())
+  email         String       @unique
+  passwordHash  String
+  fullName      String
+  role          UserRole     @default(CLIENT)
+  status        UserStatus   @default(PENDING)
+  avatarUrl     String?
+  lastLoginAt   DateTime?
+  companyId     String
+  company       Company      @relation("CompanyUsers", fields: [companyId], references: [id])
+  clientId      String?      @unique
+  client        Client?      @relation("ClientUser", fields: [clientId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   refreshTokens RefreshToken[]
   notifications Notification[]
@@ -146,12 +146,12 @@ model User {
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
-  token     String    @unique
+  id        String   @id @default(cuid())
+  token     String   @unique
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
   revokedAt DateTime?
 
   @@index([userId])
@@ -159,30 +159,30 @@ model RefreshToken {
 }
 
 model Company {
-  id           String   @id @default(cuid())
-  name         String
-  tradeName    String?
-  cnpj         String   @unique
-  stateReg     String?
-  municipalReg String?
-  address      Json?
-  phone        String?
-  email        String?
-  website      String?
-  logoUrl      String?
-  settings     Json?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  tradeName     String?
+  cnpj          String   @unique
+  stateReg      String?
+  municipalReg  String?
+  address       Json?
+  phone         String?
+  email         String?
+  website       String?
+  logoUrl       String?
+  settings      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  users         User[]        @relation("CompanyUsers")
-  clients       Client[]      @relation("CompanyClients")
-  contracts     Contract[]    @relation("CompanyContracts")
-  carriers      Carrier[]     @relation("CompanyCarriers")
-  branches      Branch[]      @relation("CompanyBranches")
-  documents     Document[]    @relation("CompanyDocuments")
-  discrepancies Discrepancy[] @relation("CompanyDiscrepancies")
-  contests      Contest[]     @relation("CompanyContests")
+  users         User[]           @relation("CompanyUsers")
+  clients       Client[]         @relation("CompanyClients")
+  contracts     Contract[]       @relation("CompanyContracts")
+  carriers      Carrier[]        @relation("CompanyCarriers")
+  branches      Branch[]         @relation("CompanyBranches")
+  documents     Document[]       @relation("CompanyDocuments")
+  discrepancies Discrepancy[]    @relation("CompanyDiscrepancies")
+  contests      Contest[]        @relation("CompanyContests")
   auditLogs     AuditLog[]
 
   @@index([cnpj])
@@ -190,32 +190,32 @@ model Company {
 }
 
 model Client {
-  id            String   @id @default(cuid())
-  companyId     String
-  company       Company  @relation("CompanyClients", fields: [companyId], references: [id])
-  userId        String?  @unique
-  user          User?    @relation("ClientUser")
-  name          String
-  tradeName     String?
-  cnpj          String   @unique
-  stateReg      String?
-  email         String
-  phone         String?
-  address       Json?
-  contactPerson String?
-  contactEmail  String?
-  contactPhone  String?
-  settings      Json?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation("CompanyClients", fields: [companyId], references: [id])
+  userId          String?  @unique
+  user            User?    @relation("ClientUser")
+  name            String
+  tradeName       String?
+  cnpj            String   @unique
+  stateReg        String?
+  email           String
+  phone           String?
+  address         Json?
+  contactPerson   String?
+  contactEmail    String?
+  contactPhone    String?
+  settings        Json?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  branches      Branch[]
-  documents     Document[]
-  contracts     Contract[]
-  discrepancies Discrepancy[]
-  contests      Contest[]
-  notifications Notification[]
+  branches        Branch[]
+  documents       Document[]
+  contracts       Contract[]
+  discrepancies   Discrepancy[]
+  contests        Contest[]
+  notifications   Notification[]
 
   @@index([companyId])
   @@index([cnpj])
@@ -223,18 +223,18 @@ model Client {
 }
 
 model Branch {
-  id        String   @id @default(cuid())
-  companyId String
-  company   Company  @relation("CompanyBranches", fields: [companyId], references: [id])
-  clientId  String?
-  client    Client?  @relation(fields: [clientId], references: [id])
-  name      String
-  code      String
-  cnpj      String?
-  address   Json?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation("CompanyBranches", fields: [companyId], references: [id])
+  clientId      String?
+  client        Client?  @relation(fields: [clientId], references: [id])
+  name          String
+  code          String
+  cnpj          String?
+  address       Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   documents     Document[]
   discrepancies Discrepancy[]
@@ -277,35 +277,35 @@ model Carrier {
 // ============================================
 
 model Contract {
-  id                   String         @id @default(cuid())
-  companyId            String
-  company              Company        @relation("CompanyContracts", fields: [companyId], references: [id])
-  clientId             String?
-  client               Client?        @relation(fields: [clientId], references: [id])
-  carrierId            String
-  carrier              Carrier        @relation(fields: [carrierId], references: [id])
-  number               String
-  description          String?
-  status               ContractStatus @default(PENDING)
-  startDate            DateTime
-  endDate              DateTime?
-  successFeePct        Float          @default(25)
-  minRecovery          Float?
-  currency             String         @default("BRL")
-  terms                Json?
-  metadata             Json?
+  id                    String         @id @default(cuid())
+  companyId             String
+  company               Company        @relation("CompanyContracts", fields: [companyId], references: [id])
+  clientId              String?
+  client                Client?        @relation(fields: [clientId], references: [id])
+  carrierId             String
+  carrier               Carrier        @relation(fields: [carrierId], references: [id])
+  number                String
+  description           String?
+  status                ContractStatus @default(PENDING)
+  startDate             DateTime
+  endDate               DateTime?
+  successFeePct         Float          @default(25)
+  minRecovery           Float?
+  currency              String         @default("BRL")
+  terms                 Json?
+  metadata              Json?
   // Progressive pricing fields
-  pricingModel         PricingModel   @default(FIXED)
-  progressiveStartDate DateTime? // When progressive pricing starts (defaults to startDate)
-  progressiveMonth1Pct Float?         @default(5) // First month percentage
-  progressiveMonth2Pct Float?         @default(10) // Second month onwards percentage
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  pricingModel          PricingModel   @default(FIXED)
+  progressiveStartDate  DateTime?      // When progressive pricing starts (defaults to startDate)
+  progressiveMonth1Pct  Float?         @default(5)  // First month percentage
+  progressiveMonth2Pct  Float?         @default(10) // Second month onwards percentage
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
-  tables        FreightTable[]
-  documents     Document[]
-  discrepancies Discrepancy[]
-  contests      Contest[]
+  tables                FreightTable[]
+  documents             Document[]
+  discrepancies         Discrepancy[]
+  contests              Contest[]
 
   @@unique([companyId, number])
   @@index([companyId])
@@ -316,18 +316,18 @@ model Contract {
 }
 
 model FreightTable {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   contractId    String
-  contract      Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contract      Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
   name          String
   version       String
   effectiveFrom DateTime
   effectiveTo   DateTime?
   description   String?
   rules         Json
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([contractId])
   @@index([isActive])
@@ -339,41 +339,41 @@ model FreightTable {
 // ============================================
 
 model Document {
-  id             String         @id @default(cuid())
-  companyId      String
-  company        Company        @relation("CompanyDocuments", fields: [companyId], references: [id])
-  clientId       String?
-  client         Client?        @relation(fields: [clientId], references: [id])
-  branchId       String?
-  branch         Branch?        @relation(fields: [branchId], references: [id])
-  carrierId      String?
-  carrier        Carrier?       @relation(fields: [carrierId], references: [id])
-  contractId     String?
-  contract       Contract?      @relation(fields: [contractId], references: [id])
-  type           DocumentType
-  status         DocumentStatus @default(UPLOADED)
-  originalName   String
-  storedName     String
-  s3Key          String         @unique
-  s3Bucket       String
-  mimeType       String
-  fileSize       Int
-  parsedData     Json?
-  rawXml         String?
-  accessKey      String?        @unique
-  issueDate      DateTime?
-  totalValue     Float?
-  freightValue   Float?
-  icmsValue      Float?
-  weight         Float?
-  volume         Float?
-  errorMessage   String?
-  processingTime Int?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  processedAt    DateTime?
+  id              String         @id @default(cuid())
+  companyId       String
+  company         Company        @relation("CompanyDocuments", fields: [companyId], references: [id])
+  clientId        String?
+  client          Client?        @relation(fields: [clientId], references: [id])
+  branchId        String?
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  carrierId       String?
+  carrier         Carrier?       @relation(fields: [carrierId], references: [id])
+  contractId      String?
+  contract        Contract?      @relation(fields: [contractId], references: [id])
+  type            DocumentType
+  status          DocumentStatus @default(UPLOADED)
+  originalName    String
+  storedName      String
+  s3Key           String         @unique
+  s3Bucket        String
+  mimeType        String
+  fileSize        Int
+  parsedData      Json?
+  rawXml          String?
+  accessKey       String?        @unique
+  issueDate       DateTime?
+  totalValue      Float?
+  freightValue    Float?
+  icmsValue       Float?
+  weight          Float?
+  volume          Float?
+  errorMessage    String?
+  processingTime  Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  processedAt     DateTime?
 
-  discrepancies Discrepancy[]
+  discrepancies   Discrepancy[]
 
   @@index([companyId])
   @@index([clientId])
@@ -384,40 +384,46 @@ model Document {
   @@index([accessKey])
   @@index([issueDate])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([companyId, status, createdAt])
+  @@index([companyId, type, status])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
 }
 
 model Discrepancy {
-  id              String            @id @default(cuid())
-  companyId       String
-  company         Company           @relation("CompanyDiscrepancies", fields: [companyId], references: [id])
-  clientId        String
-  client          Client            @relation(fields: [clientId], references: [id])
-  branchId        String?
-  branch          Branch?           @relation(fields: [branchId], references: [id])
-  carrierId       String?
-  carrier         Carrier?          @relation(fields: [carrierId], references: [id])
-  contractId      String?
-  contract        Contract?         @relation(fields: [contractId], references: [id])
-  documentId      String
-  document        Document          @relation(fields: [documentId], references: [id])
-  type            DiscrepancyType
-  status          DiscrepancyStatus @default(DETECTED)
-  ruleCode        String
-  ruleDescription String
-  expectedValue   Float
-  actualValue     Float
-  difference      Float
-  differencePct   Float
-  currency        String            @default("BRL")
-  details         Json?
-  evidence        Json?
-  notes           String?
-  reviewedById    String?
-  reviewedAt      DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id               String             @id @default(cuid())
+  companyId        String
+  company          Company            @relation("CompanyDiscrepancies", fields: [companyId], references: [id])
+  clientId         String
+  client           Client             @relation(fields: [clientId], references: [id])
+  branchId         String?
+  branch           Branch?            @relation(fields: [branchId], references: [id])
+  carrierId        String?
+  carrier          Carrier?           @relation(fields: [carrierId], references: [id])
+  contractId       String?
+  contract         Contract?          @relation(fields: [contractId], references: [id])
+  documentId       String
+  document         Document           @relation(fields: [documentId], references: [id])
+  type             DiscrepancyType
+  status           DiscrepancyStatus  @default(DETECTED)
+  ruleCode         String
+  ruleVersion      Int                @default(1)
+  ruleDescription  String
+  expectedValue    Float
+  actualValue      Float
+  difference       Float
+  differencePct    Float
+  currency         String             @default("BRL")
+  details          Json?
+  evidence         Json?
+  notes            String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  contestItems ContestItem[]
+  contestItems     ContestItem[]
 
   @@index([companyId])
   @@index([clientId])
@@ -428,6 +434,12 @@ model Discrepancy {
   @@index([status])
   @@index([ruleCode])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([documentId, ruleCode, status])
+  @@index([companyId, status, createdAt])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
+  @@index([contractId, status, createdAt])
 }
 
 // ============================================
@@ -435,22 +447,22 @@ model Discrepancy {
 // ============================================
 
 model Contest {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   companyId       String
-  company         Company       @relation("CompanyContests", fields: [companyId], references: [id])
+  company         Company        @relation("CompanyContests", fields: [companyId], references: [id])
   clientId        String
-  client          Client        @relation(fields: [clientId], references: [id])
+  client          Client         @relation(fields: [clientId], references: [id])
   carrierId       String
-  carrier         Carrier       @relation(fields: [carrierId], references: [id])
+  carrier         Carrier        @relation(fields: [carrierId], references: [id])
   contractId      String?
-  contract        Contract?     @relation(fields: [contractId], references: [id])
+  contract        Contract?      @relation(fields: [contractId], references: [id])
   number          String
-  status          ContestStatus @default(DRAFT)
-  totalExpected   Float         @default(0)
-  totalRecovered  Float         @default(0)
+  status          ContestStatus  @default(DRAFT)
+  totalExpected   Float          @default(0)
+  totalRecovered  Float          @default(0)
   successFeePct   Float
-  successFeeValue Float         @default(0)
-  netRecovery     Float         @default(0)
+  successFeeValue Float          @default(0)
+  netRecovery     Float          @default(0)
   sentAt          DateTime?
   acknowledgedAt  DateTime?
   respondedAt     DateTime?
@@ -458,12 +470,12 @@ model Contest {
   expiredAt       DateTime?
   notes           String?
   metadata        Json?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  items          ContestItem[]
-  communications Communication[]
-  payments       Payment[]
+  items           ContestItem[]
+  communications  Communication[]
+  payments        Payment[]
 
   @@unique([companyId, number])
   @@index([companyId])
@@ -472,23 +484,28 @@ model Contest {
   @@index([contractId])
   @@index([status])
   @@index([createdAt])
+  // Composite indexes for common query patterns
+  @@index([companyId, status, createdAt])
+  @@index([clientId, status, createdAt])
+  @@index([carrierId, status, createdAt])
+  @@index([contractId, status, createdAt])
 }
 
 model ContestItem {
-  id             String        @id @default(cuid())
-  contestId      String
-  contest        Contest       @relation(fields: [contestId], references: [id], onDelete: Cascade)
-  discrepancyId  String
-  discrepancy    Discrepancy   @relation(fields: [discrepancyId], references: [id])
-  expectedValue  Float
-  contestedValue Float
-  recoveredValue Float         @default(0)
-  status         ContestStatus @default(DRAFT)
-  notes          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  contestId       String
+  contest         Contest       @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  discrepancyId   String
+  discrepancy     Discrepancy   @relation(fields: [discrepancyId], references: [id])
+  expectedValue   Float
+  contestedValue  Float
+  recoveredValue  Float         @default(0)
+  status          ContestStatus @default(DRAFT)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  payments Payment[] @relation("ContestItemPayments")
+  payments        Payment[]     @relation("ContestItemPayments")
 
   @@index([contestId])
   @@index([discrepancyId])
@@ -496,16 +513,16 @@ model ContestItem {
 }
 
 model Communication {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   contestId   String
-  contest     Contest   @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  contest     Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   type        String
   direction   String
   subject     String?
   content     String
   attachments Json?
   sentById    String?
-  sentAt      DateTime  @default(now())
+  sentAt      DateTime @default(now())
   readAt      DateTime?
 
   @@index([contestId])
@@ -513,20 +530,20 @@ model Communication {
 }
 
 model Payment {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   contestId   String
-  contest     Contest      @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  contest     Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   itemId      String?
   item        ContestItem? @relation("ContestItemPayments", fields: [itemId], references: [id])
   type        String
   amount      Float
-  currency    String       @default("BRL")
+  currency    String   @default("BRL")
   status      String
   reference   String?
   paidAt      DateTime?
   confirmedAt DateTime?
   metadata    Json?
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([contestId])
   @@index([status])
@@ -538,19 +555,19 @@ model Payment {
 // ============================================
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  companyId  String
-  company    Company  @relation(fields: [companyId], references: [id])
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  action     String
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
   entityType String
-  entityId   String
-  oldData    Json?
-  newData    Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+  entityId  String
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
   @@index([companyId])
   @@index([userId])
@@ -559,18 +576,18 @@ model AuditLog {
 }
 
 model Notification {
-  id       String           @id @default(cuid())
-  clientId String
-  client   Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  userId   String?
-  user     User?            @relation(fields: [userId], references: [id])
-  type     NotificationType
-  title    String
-  message  String
-  data     Json?
-  readAt   DateTime?
-  sentAt   DateTime         @default(now())
-  channels String[]
+  id        String           @id @default(cuid())
+  clientId  String
+  client    Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  readAt    DateTime?
+  sentAt    DateTime         @default(now())
+  channels  String[]
 
   @@index([clientId])
   @@index([userId])
@@ -591,4 +608,30 @@ model SystemConfig {
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// RULES ENGINE
+// ============================================
+
+model Rule {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  name          String
+  type          DiscrepancyType
+  severity      String
+  configJson    Json             @default("{}")
+  version       Int              @default(1)
+  isActive      Boolean          @default(true)
+  description   String?
+  tags          String[]         @default([])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([code])
+  @@index([type])
+  @@index([isActive])
+  @@index([severity])
+  // GIN index for tags array (PostgreSQL specific)
+  @@index([tags], map: "rule_tags_gin", type: Gin)
 }

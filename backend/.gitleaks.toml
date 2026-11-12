@@ -1,0 +1,60 @@
+# Gitleaks Configuration for AvertaSaaS
+# https://github.com/gitleaks/gitleaks
+
+title = "AvertaSaaS Gitleaks Config"
+
+[allowlist]
+description = "Allowlisted secrets for AvertaSaaS"
+# Allow example/test values in .env.example and documentation
+paths = [
+  "^.env.example$",
+  "^.env.local$",
+  "^docker-compose.*\\.yml$",
+  "^README\\.md$",
+  "^docs/",
+  "^\\.github/",
+]
+
+# Allow specific patterns that are clearly placeholders
+regexes = [
+  '''your-super-secret.*''',
+  '''minioadmin''',
+  '''postgres:postgres@localhost''',
+  '''redis://localhost''',
+  '''SG\.your-sendgrid-api-key''',
+  '''arn:aws:secretsmanager:.*:secret:averta/.*''',
+]
+
+# Allow test files
+files = [
+  "test_.*\\.py$",
+  ".*_test\\.py$",
+  "^tests/",
+]
+
+[rule]
+# Custom rules for AvertaSaaS specific patterns
+[[rules]]
+id = "averta-jwt-secret"
+description = "Averta JWT Secret Key"
+regex = '''JWT_SECRET_KEY\s*=\s*["']?[a-zA-Z0-9+/=]{32,}["']?'''
+tags = ["key", "jwt"]
+entropy = 4.5
+
+[[rules]]
+id = "averta-database-url"
+description = "Averta Database URL with credentials"
+regex = '''postgresql://[^:]+:[^@]+@[^/]+/\w+'''
+tags = ["database", "password"]
+
+[[rules]]
+id = "averta-sendgrid-key"
+description = "SendGrid API Key"
+regex = '''SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}'''
+tags = ["api-key", "sendgrid"]
+
+[[rules]]
+id = "averta-aws-secret-arn"
+description = "AWS Secrets Manager ARN for Averta"
+regex = '''arn:aws:secretsmanager:[^:]+:\d+:secret:averta/'''
+tags = ["aws", "secrets-manager"]

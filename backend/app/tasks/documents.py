@@ -105,7 +105,7 @@ async def check_stale_documents(
         where={
             "status": "PROCESSING",
             "updatedAt": {"lt": stale_threshold},
-        }
+        },  # type: ignore[arg-type]
     )
 
     for doc in stale_docs:
@@ -122,7 +122,7 @@ async def reprocess_document(
     db = await get_prisma()
     await db.document.update(
         where={"id": document_id},
-        data={"status": "UPLOADED"},
+        data={"status": "UPLOADED"},  # type: ignore[typeddict-item]
     )
     process_document.delay(document_id)
 

@@ -5,7 +5,12 @@ from unittest.mock import AsyncMock, Mock, patch
 import httpx
 import pytest
 
-from app.services.ml.inference import DOCUMENT_TYPE_ENCODING, FEATURE_ORDER, SEVERITY_ENCODING, UF_ENCODING
+from app.services.ml.inference import (
+    DOCUMENT_TYPE_ENCODING,
+    FEATURE_ORDER,
+    SEVERITY_ENCODING,
+    UF_ENCODING,
+)
 from app.services.rules_critical import MLAnomalyRule
 from app.services.rules_engine_v2 import RuleContext
 

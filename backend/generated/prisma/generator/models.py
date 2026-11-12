@@ -21,7 +21,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    override,
 )
 
 import click
@@ -39,8 +38,6 @@ from .._compat import (
     PlainSerializer,
     cached_property,
     field_validator,
-    model_dict,
-    model_parse,
     model_rebuild,
     root_validator,
 )
@@ -50,7 +47,6 @@ from .._compat import (
 from .._constants import QUERY_BUILDER_ALIASES
 from ..errors import UnsupportedListTypeError
 from ..utils import DEBUG_GENERATOR, assert_never
-from ._dsl_parser import parse_schema_dsl
 from .utils import Faker, Sampler, clean_multiline
 
 __all__ = (
@@ -244,7 +240,6 @@ class EngineType(enum.StrEnum):
     library = "library"
     dataproxy = "dataproxy"
 
-    @override
     def __str__(self) -> str:
         return self.value
 
@@ -344,7 +339,6 @@ class GenericData[ConfigT: pydantic.BaseModel](GenericModel):
     else:
 
         @classmethod
-        @override
         def parse_obj(cls, obj: Any) -> "GenericData[ConfigT]":
             data = super().parse_obj(obj)  # pyright: ignore[reportDeprecated]
             data_ctx.set(data)
@@ -354,7 +348,6 @@ class GenericData[ConfigT: pydantic.BaseModel](GenericModel):
         """Get the parameters that should be sent to Jinja templates"""
         params = vars(self)
         params["type_schema"] = Schema.from_data(self)
-        params["client_types"] = ClientTypes.from_data(self)
 
         # add utility functions
         for func in [
@@ -364,7 +357,6 @@ class GenericData[ConfigT: pydantic.BaseModel](GenericModel):
             get_list_types,
             clean_multiline,
             format_documentation,
-            model_dict,
         ]:
             params[func.__name__] = func
 
@@ -440,8 +432,6 @@ class Datasource(BaseModel):
     provider: str
     active_provider: str = FieldInfo(alias="activeProvider")
     url: "OptionalValueFromEnvVar"
-
-    source_file_path: Path | None = FieldInfo(alias="sourceFilePath")
 
 
 class Generator[ConfigT: pydantic.BaseModel](GenericModel):
@@ -595,7 +585,7 @@ class Config(BaseSettings):
 
             try:
                 values["partial_type_generator"] = Module(
-                    spec=value  # pyright: ignore[reportArgumentType]
+                    spec=value  # pyright: ignore[reportGeneralTypeIssues]
                 )
             except ValueError:
                 if value is None:
@@ -612,7 +602,7 @@ class Config(BaseSettings):
         def _partial_type_generator_converter(cls, value: str | None) -> Module | None:
             try:
                 return Module(
-                    spec=value  # pyright: ignore[reportArgumentType]
+                    spec=value  # pyright: ignore[reportGeneralTypeIssues]
                 )
             except ValueError:
                 if value is None:
@@ -640,22 +630,11 @@ class Config(BaseSettings):
             assert_never(value)
 
 
-class DMMFEnumType(BaseModel):
-    name: str
-    values: list[object]
-
-
-class DMMFEnumTypes(BaseModel):
-    prisma: list[DMMFEnumType]
-
-
-class PrismaSchema(BaseModel):
-    enum_types: DMMFEnumTypes = FieldInfo(alias="enumTypes")
-
-
 class DMMF(BaseModel):
     datamodel: "Datamodel"
-    prisma_schema: PrismaSchema = FieldInfo(alias="schema")
+
+    # TODO
+    prisma_schema: Any = FieldInfo(alias="schema")
 
 
 class Datamodel(BaseModel):
@@ -687,23 +666,6 @@ class EnumValue(BaseModel):
     db_name: str | None = FieldInfo(alias="dbName")
 
 
-class ModelExtension(BaseModel):
-    instance_name: str | None = None
-
-    @field_validator("instance_name")
-    @classmethod
-    def instance_name_validator(cls, name: str | None) -> str | None:
-        if not name:
-            return name
-
-        if not name.isidentifier():
-            raise ValueError(
-                f'Custom Model instance_name "{name}" is not a valid Python identifier'
-            )
-
-        return name
-
-
 class Model(BaseModel):
     name: str
     documentation: str | None = None
@@ -713,30 +675,11 @@ class Model(BaseModel):
     unique_indexes: list["UniqueIndex"] = FieldInfo(alias="uniqueIndexes")
     all_fields: list["Field"] = FieldInfo(alias="fields")
 
-    # stores the parsed DSL, not an actual field defined by prisma
-    extension: ModelExtension | None = None
-
     _sampler: Sampler = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         self._sampler = Sampler(self)
-
-    @root_validator(pre=True, allow_reuse=True)
-    @classmethod
-    def validate_dsl_extension(cls, values: dict[Any, Any]) -> dict[Any, Any]:
-        documentation = values.get("documentation")
-        if not documentation:
-            return values
-
-        parsed = parse_schema_dsl(documentation)
-        if parsed["type"] == "invalid":
-            raise ValueError(parsed["error"])
-
-        if parsed["type"] == "ok":
-            values["extension"] = model_parse(ModelExtension, parsed["value"]["arguments"])
-
-        return values
 
     @field_validator("name")
     @classmethod
@@ -806,19 +749,8 @@ class Model(BaseModel):
             return True
 
     @property
-    def instance_name(self) -> str:
-        """The name of this model in the generated client class, e.g.
-
-        `User` -> `Prisma().user`
-        """
-        if self.extension and self.extension.instance_name:
-            return self.extension.instance_name
-
-        return self.name.lower()
-
-    @property
     def plural_name(self) -> str:
-        name = self.instance_name
+        name = self.name
         if name.endswith("s"):
             return name
         return f"{name}s"
@@ -1165,11 +1097,6 @@ class _ModelAllowAll(BaseModel):
             extra: pydantic.Extra = pydantic.Extra.allow
 
 
-class PythonNames(BaseModel):
-    def client_class(self, _for_async: bool) -> str:
-        return "Prisma"
-
-
 class PythonData(GenericData[Config]):
     """Data class including the default Prisma Client Python config"""
 
@@ -1182,8 +1109,6 @@ class PythonData(GenericData[Config]):
                 machinery.ModuleSpec: _module_spec_serializer,
             }
             keep_untouched: tuple[type[Any], ...] = (cached_property,)
-
-    names: PythonNames = PythonNames()
 
 
 class DefaultData(GenericData[_EmptyModel]):
@@ -1208,4 +1133,4 @@ from .errors import (
     PartialTypeGeneratorError,
     TemplateError,
 )
-from .schema import ClientTypes, Schema
+from .schema import Schema

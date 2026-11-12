@@ -31,7 +31,14 @@ class TestContractsList:
 class TestContractsCreate:
     """Tests for POST /api/v1/contracts"""
 
-    async def test_create_contract(self, async_client: AsyncClient, auth_headers: dict, mock_company: dict, mock_client: dict, mock_carrier: dict):
+    async def test_create_contract(
+        self,
+        async_client: AsyncClient,
+        auth_headers: dict,
+        mock_company: dict,
+        mock_client: dict,
+        mock_carrier: dict,
+    ):
         """Test creating a contract"""
         from datetime import UTC, datetime, timedelta
 
@@ -51,7 +58,9 @@ class TestContractsCreate:
         )
         assert response.status_code in [201, 400, 401, 500]
 
-    async def test_create_contract_invalid_data(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_create_contract_invalid_data(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test creating contract with invalid data"""
         response = await async_client.post(
             "/api/v1/contracts",
@@ -65,7 +74,9 @@ class TestContractsCreate:
 class TestContractsDetail:
     """Tests for GET /api/v1/contracts/{id}"""
 
-    async def test_get_contract(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_get_contract(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test getting contract detail"""
         response = await async_client.get(
             f"/api/v1/contracts/{mock_contract['id']}",
@@ -73,7 +84,9 @@ class TestContractsDetail:
         )
         assert response.status_code in [200, 401, 404, 500]
 
-    async def test_get_contract_with_freight_tables(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_get_contract_with_freight_tables(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test getting contract with freight tables"""
         response = await async_client.get(
             f"/api/v1/contracts/{mock_contract['id']}?include_freight_tables=true",
@@ -86,7 +99,9 @@ class TestContractsDetail:
 class TestContractsUpdate:
     """Tests for PATCH /api/v1/contracts/{id}"""
 
-    async def test_update_contract(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_update_contract(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test updating contract"""
         response = await async_client.patch(
             f"/api/v1/contracts/{mock_contract['id']}",
@@ -95,7 +110,9 @@ class TestContractsUpdate:
         )
         assert response.status_code in [200, 401, 404, 500]
 
-    async def test_update_contract_status(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_update_contract_status(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test updating contract status"""
         response = await async_client.patch(
             f"/api/v1/contracts/{mock_contract['id']}",
@@ -109,7 +126,9 @@ class TestContractsUpdate:
 class TestContractsFreightTables:
     """Tests for freight table endpoints"""
 
-    async def test_add_freight_table(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_add_freight_table(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test adding freight table to contract"""
         response = await async_client.post(
             f"/api/v1/contracts/{mock_contract['id']}/freight-tables",
@@ -124,7 +143,9 @@ class TestContractsFreightTables:
         )
         assert response.status_code in [201, 400, 401, 404, 500]
 
-    async def test_list_freight_tables(self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict):
+    async def test_list_freight_tables(
+        self, async_client: AsyncClient, auth_headers: dict, mock_contract: dict
+    ):
         """Test listing freight tables for contract"""
         response = await async_client.get(
             f"/api/v1/contracts/{mock_contract['id']}/freight-tables",

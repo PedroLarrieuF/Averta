@@ -107,7 +107,9 @@ class TestReportsSchedule:
         )
         assert response.status_code in [201, 400, 401, 500]
 
-    async def test_schedule_report_invalid_frequency(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_schedule_report_invalid_frequency(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test scheduling with invalid frequency"""
         response = await async_client.post(
             "/api/v1/reports/schedule",
@@ -122,7 +124,9 @@ class TestReportsSchedule:
         )
         assert response.status_code in [400, 422, 500]
 
-    async def test_schedule_report_missing_fields(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_schedule_report_missing_fields(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test scheduling with missing required fields"""
         response = await async_client.post(
             "/api/v1/reports/schedule",
@@ -135,6 +139,12 @@ class TestReportsSchedule:
         """Test scheduling without auth"""
         response = await async_client.post(
             "/api/v1/reports/schedule",
-            json={"name": "Test", "frequency": "WEEKLY", "day_of_week": 1, "time": "09:00", "recipients": ["t@t.com"]},
+            json={
+                "name": "Test",
+                "frequency": "WEEKLY",
+                "day_of_week": 1,
+                "time": "09:00",
+                "recipients": ["t@t.com"],
+            },
         )
         assert response.status_code in [401, 500]

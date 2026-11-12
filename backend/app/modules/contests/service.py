@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from prisma.models import Contest as ContestModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import BadRequestError, NotFoundError
@@ -27,6 +26,7 @@ from app.modules.contracts.service import ContractsService
 from app.services.pdf_generator import generate_contest_letter
 from app.services.storage import upload_file
 from prisma import Prisma
+from prisma.models import Contest as ContestModel
 
 logger = structlog.get_logger()
 
@@ -79,7 +79,9 @@ class ContestsService(BaseService[ContestModel, ContestCreate, ContestUpdate, Co
             progressive_month=progressive_month,
         )
 
-    async def _to_response_with_relations(self, contest: ContestModel, include_relations: bool = False) -> ContestResponse:
+    async def _to_response_with_relations(
+        self, contest: ContestModel, include_relations: bool = False
+    ) -> ContestResponse:
         items = []
         communications = []
         payments = []

@@ -5,6 +5,15 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
 
 env:
   REGISTRY: ghcr.io
@@ -12,6 +21,8 @@ env:
   # Trivy severity thresholds
   TRIVY_SEVERITY: HIGH,CRITICAL
   TRIVY_EXIT_CODE: 1
+  AWS_REGION: us-east-1
+  SECRETS_PREFIX: averta
 
 jobs:
   lint-and-test:
@@ -46,6 +57,19 @@ jobs:
       - name: Run tests with coverage
         run: |
           poetry run pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Secret Scanning (TruffleHog)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --fail --no-verification
+
+      - name: Secret Scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -239,31 +263,206 @@ jobs:
             --certificate-github-workflow-repository "${{ github.repository }}" \
             ${{ steps.meta.outputs.tags }}
 
+  fetch-secrets:
+    name: Fetch Secrets from AWS Secrets Manager
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      database_url: ${{ steps.set-secrets.outputs.database_url }}
+      redis_url: ${{ steps.set-secrets.outputs.redis_url }}
+      s3_endpoint: ${{ steps.set-secrets.outputs.s3_endpoint }}
+      s3_access_key: ${{ steps.set-secrets.outputs.s3_access_key }}
+      s3_secret_key: ${{ steps.set-secrets.outputs.s3_secret_key }}
+      s3_bucket: ${{ steps.set-secrets.outputs.s3_bucket }}
+      s3_region: ${{ steps.set-secrets.outputs.s3_region }}
+      jwt_secret_key: ${{ steps.set-secrets.outputs.jwt_secret_key }}
+      jwt_refresh_secret_key: ${{ steps.set-secrets.outputs.jwt_refresh_secret_key }}
+      jwt_algorithm: ${{ steps.set-secrets.outputs.jwt_algorithm }}
+      sendgrid_api_key: ${{ steps.set-secrets.outputs.sendgrid_api_key }}
+      sendgrid_from_email: ${{ steps.set-secrets.outputs.sendgrid_from_email }}
+      sendgrid_from_name: ${{ steps.set-secrets.outputs.sendgrid_from_name }}
+      environment: ${{ steps.set-secrets.outputs.environment }}
+      log_level: ${{ steps.set-secrets.outputs.log_level }}
+      cors_origins: ${{ steps.set-secrets.outputs.cors_origins }}
+    steps:
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine Environment
+        id: env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" != "" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch All Secrets
+        id: fetch-secrets
+        env:
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}
+          PREFIX: ${{ env.SECRETS_PREFIX }}
+        run: |
+          SECRET_KEYS=("database" "redis" "minio" "jwt" "sendgrid" "app")
+          ALL_SECRETS="{}"
+
+          for KEY in "${SECRET_KEYS[@]}"; do
+            SECRET_NAME="${PREFIX}/${ENVIRONMENT}/${KEY}"
+            echo "Fetching ${SECRET_NAME}..."
+
+            SECRET_VALUE=$(aws secretsmanager get-secret-value \
+              --secret-id "$SECRET_NAME" \
+              --region "${AWS_REGION}" \
+              --query 'SecretString' \
+              --output text 2>/dev/null || echo "null")
+
+            if [[ "$SECRET_VALUE" != "null" && -n "$SECRET_VALUE" ]]; then
+              ALL_SECRETS=$(echo "$ALL_SECRETS" | jq --arg key "$KEY" --argjson val "$SECRET_VALUE" '. + {($key): $val}')
+              echo "  ✓ Fetched ${KEY}"
+            else
+              echo "  ✗ ${KEY} not found"
+            fi
+          done
+
+          echo "all_secrets<<EOF" >> $GITHUB_OUTPUT
+          echo "$ALL_SECRETS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Parse and Set Secret Outputs
+        id: set-secrets
+        run: |
+          SECRETS="${{ steps.fetch-secrets.outputs.all_secrets }}"
+
+          # Database
+          DB_HOST=$(echo "$SECRETS" | jq -r '.database.host // ""')
+          DB_PORT=$(echo "$SECRETS" | jq -r '.database.port // 5432')
+          DB_USER=$(echo "$SECRETS" | jq -r '.database.username // ""')
+          DB_PASS=$(echo "$SECRETS" | jq -r '.database.password // ""')
+          DB_NAME=$(echo "$SECRETS" | jq -r '.database.dbname // "averta"')
+
+          if [[ -n "$DB_HOST" && -n "$DB_USER" && -n "$DB_PASS" ]]; then
+            echo "database_url=postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+          # Redis
+          REDIS_HOST=$(echo "$SECRETS" | jq -r '.redis.host // ""')
+          REDIS_PORT=$(echo "$SECRETS" | jq -r '.redis.port // 6379')
+          REDIS_PASS=$(echo "$SECRETS" | jq -r '.redis.password // ""')
+
+          if [[ -n "$REDIS_HOST" ]]; then
+            if [[ -n "$REDIS_PASS" ]]; then
+              echo "redis_url=redis://:${REDIS_PASS}@${REDIS_HOST}:${REDIS_PORT}/0" >> $GITHUB_OUTPUT
+            else
+              echo "redis_url=redis://${REDIS_HOST}:${REDIS_PORT}/0" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          # MinIO/S3
+          echo "s3_endpoint=$(echo "$SECRETS" | jq -r '.minio.endpoint // ""')" >> $GITHUB_OUTPUT
+          echo "s3_access_key=$(echo "$SECRETS" | jq -r '.minio.access_key // ""')" >> $GITHUB_OUTPUT
+          echo "s3_secret_key=$(echo "$SECRETS" | jq -r '.minio.secret_key // ""')" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(echo "$SECRETS" | jq -r '.minio.bucket // "averta-documents"')" >> $GITHUB_OUTPUT
+          echo "s3_region=$(echo "$SECRETS" | jq -r '.minio.region // "us-east-1"')" >> $GITHUB_OUTPUT
+
+          # JWT
+          echo "jwt_secret_key=$(echo "$SECRETS" | jq -r '.jwt.secret_key // ""')" >> $GITHUB_OUTPUT
+          echo "jwt_refresh_secret_key=$(echo "$SECRETS" | jq -r '.jwt.refresh_secret_key // ""')" >> $GITHUB_OUTPUT
+          echo "jwt_algorithm=$(echo "$SECRETS" | jq -r '.jwt.algorithm // "HS256"')" >> $GITHUB_OUTPUT
+
+          # SendGrid
+          echo "sendgrid_api_key=$(echo "$SECRETS" | jq -r '.sendgrid.api_key // ""')" >> $GITHUB_OUTPUT
+          echo "sendgrid_from_email=$(echo "$SECRETS" | jq -r '.sendgrid.from_email // ""')" >> $GITHUB_OUTPUT
+          echo "sendgrid_from_name=$(echo "$SECRETS" | jq -r '.sendgrid.from_name // ""')" >> $GITHUB_OUTPUT
+
+          # App Config
+          echo "environment=$(echo "$SECRETS" | jq -r '.app.environment // "production"')" >> $GITHUB_OUTPUT
+          echo "log_level=$(echo "$SECRETS" | jq -r '.app.log_level // "info"')" >> $GITHUB_OUTPUT
+          echo "cors_origins=$(echo "$SECRETS" | jq -r '.app.cors_origins // [] | @json')" >> $GITHUB_OUTPUT
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, fetch-secrets]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: staging
     steps:
-      - name: Deploy to staging
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Staging (ECS)
+        env:
+          DATABASE_URL: ${{ needs.fetch-secrets.outputs.database_url }}
+          REDIS_URL: ${{ needs.fetch-secrets.outputs.redis_url }}
+          S3_ENDPOINT: ${{ needs.fetch-secrets.outputs.s3_endpoint }}
+          S3_ACCESS_KEY: ${{ needs.fetch-secrets.outputs.s3_access_key }}
+          S3_SECRET_KEY: ${{ needs.fetch-secrets.outputs.s3_secret_key }}
+          S3_BUCKET: ${{ needs.fetch-secrets.outputs.s3_bucket }}
+          S3_REGION: ${{ needs.fetch-secrets.outputs.s3_region }}
+          JWT_SECRET_KEY: ${{ needs.fetch-secrets.outputs.jwt_secret_key }}
+          JWT_REFRESH_SECRET_KEY: ${{ needs.fetch-secrets.outputs.jwt_refresh_secret_key }}
+          JWT_ALGORITHM: ${{ needs.fetch-secrets.outputs.jwt_algorithm }}
+          SENDGRID_API_KEY: ${{ needs.fetch-secrets.outputs.sendgrid_api_key }}
+          SENDGRID_FROM_EMAIL: ${{ needs.fetch-secrets.outputs.sendgrid_from_email }}
+          SENDGRID_FROM_NAME: ${{ needs.fetch-secrets.outputs.sendgrid_from_name }}
+          ENVIRONMENT: ${{ needs.fetch-secrets.outputs.environment }}
+          LOG_LEVEL: ${{ needs.fetch-secrets.outputs.log_level }}
+          CORS_ORIGINS: ${{ needs.fetch-secrets.outputs.cors_origins }}
         run: |
-          echo "Deploy to staging environment"
-          # Add your staging deployment commands here
-          # Example: kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop
+          echo "Deploying to staging with secrets from AWS Secrets Manager"
+          # Example ECS deployment:
+          # aws ecs update-service --cluster averta-staging --service backend --force-new-deployment
+          # Or Terraform:
+          # cd infra/environments/staging && terraform apply -auto-approve
 
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, fetch-secrets]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     steps:
-      - name: Deploy to production
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Production (ECS)
+        env:
+          DATABASE_URL: ${{ needs.fetch-secrets.outputs.database_url }}
+          REDIS_URL: ${{ needs.fetch-secrets.outputs.redis_url }}
+          S3_ENDPOINT: ${{ needs.fetch-secrets.outputs.s3_endpoint }}
+          S3_ACCESS_KEY: ${{ needs.fetch-secrets.outputs.s3_access_key }}
+          S3_SECRET_KEY: ${{ needs.fetch-secrets.outputs.s3_secret_key }}
+          S3_BUCKET: ${{ needs.fetch-secrets.outputs.s3_bucket }}
+          S3_REGION: ${{ needs.fetch-secrets.outputs.s3_region }}
+          JWT_SECRET_KEY: ${{ needs.fetch-secrets.outputs.jwt_secret_key }}
+          JWT_REFRESH_SECRET_KEY: ${{ needs.fetch-secrets.outputs.jwt_refresh_secret_key }}
+          JWT_ALGORITHM: ${{ needs.fetch-secrets.outputs.jwt_algorithm }}
+          SENDGRID_API_KEY: ${{ needs.fetch-secrets.outputs.sendgrid_api_key }}
+          SENDGRID_FROM_EMAIL: ${{ needs.fetch-secrets.outputs.sendgrid_from_email }}
+          SENDGRID_FROM_NAME: ${{ needs.fetch-secrets.outputs.sendgrid_from_name }}
+          ENVIRONMENT: ${{ needs.fetch-secrets.outputs.environment }}
+          LOG_LEVEL: ${{ needs.fetch-secrets.outputs.log_level }}
+          CORS_ORIGINS: ${{ needs.fetch-secrets.outputs.cors_origins }}
         run: |
-          echo "Deploy to production environment"
-          # Add your production deployment commands here
-          # Example: kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          echo "Deploying to production with secrets from AWS Secrets Manager"
+          # Example ECS deployment:
+          # aws ecs update-service --cluster averta-prod --service backend --force-new-deployment
+          # Or Terraform:
+          # cd infra/environments/production && terraform apply -auto-approve
 
   notify:
     name: Pipeline Notification

@@ -49,6 +49,8 @@ class DocumentFactory:
     ) -> list[dict[str, Any]]:
         """Build multiple document data dicts"""
         return [
-            cls.build(company_id=company_id, client_id=client_id, contract_id=contract_id, **overrides)
+            cls.build(
+                company_id=company_id, client_id=client_id, contract_id=contract_id, **overrides
+            )
             for _ in range(count)
         ]

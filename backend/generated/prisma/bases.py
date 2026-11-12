@@ -17,9 +17,9 @@ LiteralString = str
 from pydantic import BaseModel
 
 from . import actions, fields
-from ._builder import serialize_base64
 from ._compat import PYDANTIC_V2, ConfigDict
 from ._types import FuncType
+from .builder import serialize_base64
 
 if TYPE_CHECKING:
     from .client import Prisma
@@ -218,3 +218,13 @@ class BaseSystemConfig(_PrismaModel):
         from .client import get_client
 
         return actions.SystemConfigActions[_PrismaModelT](client or get_client(), cls)
+
+
+class BaseRule(_PrismaModel):
+    __prisma_model__: ClassVar[Literal['Rule']] = 'Rule'  # pyright: ignore[reportIncompatibleVariableOverride]
+
+    @classmethod
+    def prisma(cls: type[_PrismaModelT], client: Optional['Prisma'] = None) -> 'actions.RuleActions[_PrismaModelT]':
+        from .client import get_client
+
+        return actions.RuleActions[_PrismaModelT](client or get_client(), cls)

@@ -158,9 +158,7 @@ class Base64:
             return core_schema.no_info_before_validator_function(
                 cls._validate,
                 schema=core_schema.any_schema(),
-                serialization=core_schema.plain_serializer_function_ser_schema(
-                    str
-                ),
+                serialization=core_schema.plain_serializer_function_ser_schema(str),
             )
     else:
 

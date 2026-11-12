@@ -4,12 +4,12 @@ from abc import ABC, abstractmethod
 from typing import TypeVar
 
 import structlog
-from prisma.types import OrderByInput, WhereInput
 from pydantic import BaseModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import NotFoundError
 from prisma import Prisma
+from prisma.types import OrderByInput, WhereInput
 
 logger = structlog.get_logger()
 

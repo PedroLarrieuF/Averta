@@ -229,7 +229,9 @@ class UnexpectedCharacters(LexError, UnexpectedInput):
         if self.allowed:
             message += self._format_expected(self.allowed)
         if self.token_history:
-            message += "\nPrevious tokens: {}\n".format(", ".join(repr(t) for t in self.token_history))
+            message += "\nPrevious tokens: {}\n".format(
+                ", ".join(repr(t) for t in self.token_history)
+            )
         return message
 
 
@@ -1537,8 +1539,7 @@ class Scanner:
         mres = []
         while terminals:
             pattern = "|".join(
-                f"(?P<{t.name}>{t.pattern.to_regexp() + postfix})"
-                for t in terminals[:max_size]
+                f"(?P<{t.name}>{t.pattern.to_regexp() + postfix})" for t in terminals[:max_size]
             )
             if self.use_bytes:
                 pattern = pattern.encode("latin-1")

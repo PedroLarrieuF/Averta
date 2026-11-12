@@ -33,9 +33,9 @@ tools: Read, Write, Edit, Glob, Grep, PowerShell, ListAgents, Agent, Bash
 | **Docker Production Hardening** | #01 | HIGH | 🟢 **REVIEW** - Distroless Dockerfile, docker-compose.prod.yml, Trivy/Syft/cosign CI complete |
 | **Prisma Performance Optimization** | #02 | HIGH | 🟢 **REVIEW** - PgBouncer, read replica, composite indexes, query middleware complete |
 | **Database Backup & Restore** | #03 | HIGH | No automated backup strategy, point-in-time recovery not configured |
-| **AWS Infrastructure (Terraform)** | #04 | MEDIUM | **NEW** - ECS Fargate, RDS, ElastiCache, S3, ALB, Route53, ACM |
-| **Monitoring & Observability** | #05 | MEDIUM | **NEW** - CloudWatch, DataDog, or Grafana stack (logs, metrics, traces) |
-| **Secrets Management** | #06 | HIGH | **NEW** - AWS Secrets Manager / Parameter Store integration |
+| **AWS Infrastructure (Terraform)** | #04 | MEDIUM | 🟢 **IN PROGRESS** - VPC, RDS, ElastiCache, S3, ALB, ECS, IAM, Route53, Monitoring modules complete |
+| **Monitoring & Observability** | #05 | MEDIUM | 🟢 **COMPLETE (as Terraform module)** - CloudWatch dashboards, alarms, X-Ray, log groups |
+| **Secrets Management** | #06 | HIGH | 🟢 **REVIEW** - Terraform module, config.py integration, CI/CD, runbook complete |
 | **Disaster Recovery Plan** | #07 | MEDIUM | **NEW** - RPO/RTO definitions, cross-region replication, runbooks |
 
 ---
@@ -60,9 +60,9 @@ agents-new/infra-agent/cards/
 | #01 | Docker Production Hardening | 🟢 **Review** | HIGH | M |
 | #02 | Prisma Performance Optimization | 🟢 **Review** | HIGH | L |
 | #03 | Database Backup & Restore Strategy | 🔴 Ready | HIGH | M |
-| #04 | AWS Infrastructure (Terraform) | 🔴 Ready | MEDIUM | XL |
-| #05 | Monitoring & Observability Stack | 🔴 Ready | MEDIUM | L |
-| #06 | Secrets Management (AWS Secrets Manager) | 🔴 Ready | HIGH | M |
+| #04 | AWS Infrastructure (Terraform) | 🟡 **In Progress** | MEDIUM | XL |
+| #05 | Monitoring & Observability Stack | 🟢 **Complete (Module)** | MEDIUM | L |
+| #06 | Secrets Management (AWS Secrets Manager) | 🟢 **Review** | HIGH | M |
 | #07 | Disaster Recovery Plan | 🔴 Ready | MEDIUM | L |
 
 ### Card Lifecycle (This Agent Owns)
@@ -99,19 +99,34 @@ backend/
     ├── build.yml                   # Docker build + push
     └── deploy.yml                  # Deploy to AWS (TODO)
 
-infra/                              # NEW - Terraform modules (TODO)
-├── main.tf
+infra/                              # Terraform modules
+├── main.tf                         # ✅ Root module wiring all together
+├── variables.tf                    # ✅ Root variables
+├── outputs.tf                      # ✅ Root outputs
+├── versions.tf                     # ✅ Root provider config
+├── terraform.tfvars.example        # ✅ Example configuration
 ├── modules/
-│   ├── vpc/
-│   ├── ecs/
-│   ├── rds/
-│   ├── elasticache/
-│   ├── s3/
-│   ├── alb/
-│   └── route53/
+│   ├── vpc/                        # ✅ VPC, subnets, NAT, IGW, VPC endpoints
+│   ├── ecs/                        # ✅ Cluster, services, task defs (backend, celery, pgbouncer)
+│   ├── rds/                        # ✅ PostgreSQL Multi-AZ, read replica, PgBouncer, Secrets Manager
+│   ├── elasticache/                # ✅ Redis cluster mode, Multi-AZ, encryption, Secrets Manager
+│   ├── s3/                         # ✅ 3 buckets, CloudFront, lifecycle, MinIO-compatible creds
+│   ├── alb/                        # ✅ ALB, HTTPS redirect, target groups, WAF
+│   ├── route53/                    # ✅ Hosted zone, DNS records, ACM certificate
+│   ├── iam/                        # ✅ Task roles, GitHub Actions OIDC, developer roles
+│   ├── monitoring/                 # ✅ CloudWatch dashboards, alarms, log groups, X-Ray
+│   └── secrets/                    # ✅ Secrets Manager, rotation, KMS, CloudTrail
+│       ├── main.tf
+│       ├── variables.tf
+│       ├── outputs.tf
+│       └── versions.tf
 └── environments/
     ├── staging/
+    │   ├── main.tf                 # ✅ Staging secrets config
+    │   └── terraform.tfvars        # TODO: Staging-specific values
     └── production/
+        ├── main.tf                 # ✅ Production secrets config
+        └── terraform.tfvars        # TODO: Production-specific values
 ```
 
 ---
@@ -342,16 +357,18 @@ infra/
 ├── variables.tf
 ├── outputs.tf
 ├── versions.tf
+├── terraform.tfvars.example
 ├── modules/
-│   ├── vpc/              # VPC, subnets, NAT, IGW
-│   ├── ecs/              # Cluster, services, task definitions
-│   ├── rds/              # PostgreSQL, parameter groups, PgBouncer
-│   ├── elasticache/      # Redis cluster, subnet groups
-│   ├── s3/               # Buckets, policies, CloudFront
-│   ├── alb/              # ALB, target groups, listeners, WAF
+│   ├── vpc/              # VPC, subnets, NAT, IGW, VPC endpoints
+│   ├── ecs/              # Cluster, services, task definitions (backend, celery, pgbouncer)
+│   ├── rds/              # PostgreSQL Multi-AZ, read replica, PgBouncer, Secrets Manager
+│   ├── elasticache/      # Redis cluster mode, Multi-AZ, encryption, Secrets Manager
+│   ├── s3/               # 3 buckets, CloudFront, lifecycle, MinIO-compatible creds
+│   ├── alb/              # ALB, HTTPS redirect, target groups, WAF
 │   ├── route53/          # Hosted zone, records, ACM cert
-│   ├── iam/              # Roles, policies, OIDC for GitHub Actions
-│   └── monitoring/       # CloudWatch, X-Ray, log groups
+│   ├── iam/              # Task roles, GitHub Actions OIDC, developer roles
+│   ├── monitoring/       # CloudWatch dashboards, alarms, log groups, X-Ray
+│   └── secrets/          # Secrets Manager, rotation, KMS, CloudTrail
 └── environments/
     ├── staging/
     │   ├── main.tf
@@ -448,37 +465,44 @@ gh workflow run deploy.yml        # Manual deploy
 
 ### Card #04: AWS Infrastructure (Terraform)
 **Priority:** MEDIUM | **Estimate:** XL
-- [ ] Design VPC (public/private subnets, 3 AZs)
-- [ ] Create ECS Fargate cluster + services
-- [ ] Provision RDS PostgreSQL (Multi-AZ, encrypted)
-- [ ] Provision ElastiCache Redis (Cluster mode, Multi-AZ)
-- [ ] Provision S3 buckets + CloudFront for MinIO compat
-- [ ] Create ALB + target groups + WAF rules
-- [ ] Configure Route53 + ACM certificates
-- [ ] Set up IAM roles + GitHub Actions OIDC
-- [ ] Create staging + production environments
+- [x] Design VPC (public/private subnets, 3 AZs, NAT, VPC endpoints) - `infra/modules/vpc/`
+- [x] Create ECS Fargate cluster + services (backend, celery-worker, celery-beat, pgbouncer) - `infra/modules/ecs/`
+- [x] Provision RDS PostgreSQL (Multi-AZ, encrypted, read replica, PgBouncer) - `infra/modules/rds/`
+- [x] Provision ElastiCache Redis (Cluster mode, Multi-AZ, encryption) - `infra/modules/elasticache/`
+- [x] Provision S3 buckets + CloudFront for MinIO compat - `infra/modules/s3/`
+- [x] Create ALB + target groups + WAF rules - `infra/modules/alb/`
+- [x] Configure Route53 + ACM certificates - `infra/modules/route53/`
+- [x] Set up IAM roles + GitHub Actions OIDC - `infra/modules/iam/`
+- [x] Create monitoring stack (CloudWatch dashboards, alarms, X-Ray) - `infra/modules/monitoring/`
+- [x] Create root module wiring all together - `infra/main.tf`
+- [ ] Create staging + production environments with terraform.tfvars
 - [ ] Add Terraform state backend (S3 + DynamoDB locking)
 
 ### Card #05: Monitoring & Observability Stack
 **Priority:** MEDIUM | **Estimate:** L
-- [ ] Choose stack: CloudWatch + X-Ray OR Grafana + Loki + Tempo
-- [ ] Centralized logging (all containers → CloudWatch/Loki)
-- [ ] Metrics: RED (Rate, Errors, Duration) + USE (Utilization, Saturation, Errors)
-- [ ] Distributed tracing (X-Ray or Tempo)
-- [ ] Dashboards: API latency, error rates, queue depth, DB connections
-- [ ] Alerts: PagerDuty/Slack for critical (5xx > 1%, latency > 2s, queue > 1000)
-- [ ] Synthetic monitoring (canary endpoints)
-- [ ] Log retention policies (30d hot, 1yr cold)
+- [x] Stack chosen: CloudWatch + X-Ray (AWS-native) - `infra/modules/monitoring/`
+- [x] Centralized logging (all containers → CloudWatch Logs) - `infra/modules/monitoring/` + ECS log config
+- [x] Metrics: RED + USE dashboards - `infra/modules/monitoring/main.tf` (CloudWatch Dashboard)
+- [x] Distributed tracing (X-Ray) - `infra/modules/monitoring/main.tf` (X-Ray sampling rule)
+- [x] Dashboards: API latency, error rates, queue depth, DB connections, cache metrics
+- [x] Alerts: SNS topics for critical (5xx > 1%, latency > 2s, queue > 1000, low task count)
+- [ ] Synthetic monitoring (canary endpoints) - Future enhancement
+- [x] Log retention policies (configurable: 30d staging, 90d prod)
 
 ### Card #06: Secrets Management (AWS Secrets Manager)
 **Priority:** HIGH | **Estimate:** M
-- [ ] Migrate all secrets from .env to Secrets Manager
-- [ ] Create secret rotation for DB password (30 days)
-- [ ] Implement secrets injection at container startup
-- [ ] Add IAM policies for least-privilege secret access
-- [ ] Configure automatic secret sync to parameter store (for legacy)
-- [ ] Add secret scanning in CI (truffleHog/gitleaks)
-- [ ] Document secret access patterns for developers
+- [x] Migrate all secrets from .env to Secrets Manager (Terraform module created)
+- [x] Create secret rotation for DB password (30 days) - RDS auto-rotation configured
+- [x] Implement secrets injection at container startup - ECS Secrets (Option A) + App-level (Option B) in config.py
+- [x] Add IAM policies for least-privilege secret access - ECS Task, GitHub Actions, Developer roles
+- [ ] Configure automatic secret sync to parameter store (for legacy) - Future enhancement
+- [x] Add secret scanning in CI (truffleHog/gitleaks) - Added to CI/CD pipeline and pre-commit
+- [x] Document secret access patterns for developers - Runbook created at docs/runbooks/secret-rotation.md
+- [x] Terraform module created: infra/modules/secrets/
+- [x] Backend config updated: backend/app/core/config.py (AWS Secrets Manager client)
+- [x] Local dev helper: backend/scripts/fetch_secrets.sh
+- [x] CI/CD integration: .github/workflows/ci-cd.yml (fetch-secrets job)
+- [x] Pre-commit hooks: .pre-commit-config.yaml, .gitleaks.toml
 
 ### Card #07: Disaster Recovery Plan
 **Priority:** MEDIUM | **Estimate:** L
@@ -607,7 +631,7 @@ ls cards/infra/in-progress/ || ls cards/infra/ready/ | head-5
 
 # 2. Next Cards Available (Priority Order):
 #    Card #01 - Docker Production Hardening (High) - **IN REVIEW** ✅
-#    Card #06 - Secrets Management (High) - Blocks production
+#    Card #06 - Secrets Management (High) - 🟡 **IN PROGRESS** - Terraform module, config.py, CI/CD, runbook done
 #    Card #03 - Database Backup & Restore (High) - Data protection
 #    Card #02 - Prisma Performance Optimization (High) - Scale prep
 #    Card #04 - AWS Infrastructure (Medium) - Major initiative
@@ -634,8 +658,11 @@ cd backend && npx prisma generate && npx prisma migrate status
 | `backend/docker-compose.yml` | Local development stack |
 | `backend/prisma/schema.prisma` | Complete database schema |
 | `backend/.env.example` | All required environment variables |
-| `.github/workflows/ci.yml` | Current CI pipeline |
-| `infra/` | Terraform modules (to be created) |
+| `.github/workflows/ci-cd.yml` | Current CI/CD pipeline |
+| `infra/modules/secrets/` | ✅ Terraform Secrets Manager module |
+| `backend/app/core/config.py` | ✅ AWS Secrets Manager integration |
+| `backend/scripts/fetch_secrets.sh` | ✅ Local dev secret fetching |
+| `docs/runbooks/secret-rotation.md` | ✅ Secret rotation procedures |
 | `TECHLEAD_REVIEW.md` | Architectural review with infra section |
 
 ---

@@ -281,7 +281,6 @@ def render_template(template_name, context):
 
 def main():
 
-
     base_context = {
         "client_name": "Empresa Demo Ltda",
         "to_name": "João Silva",
@@ -399,7 +398,6 @@ def main():
 
     summary_file = OUTPUT_DIR / "audit_summary_demo.json"
     summary_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-
 
 
 if __name__ == "__main__":

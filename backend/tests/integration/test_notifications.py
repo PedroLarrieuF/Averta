@@ -44,7 +44,9 @@ class TestNotificationsMarkRead:
         )
         assert response.status_code in [200, 401, 404, 500]
 
-    async def test_mark_notification_read_not_found(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_mark_notification_read_not_found(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test marking non-existent notification as read"""
         response = await async_client.patch(
             "/api/v1/notifications/non-existent/read",

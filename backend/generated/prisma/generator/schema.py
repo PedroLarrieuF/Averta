@@ -10,16 +10,14 @@ from .._compat import (
     model_rebuild,
     root_validator,
 )
-from .models import AnyData, DMMFEnumType, PrimaryKey, data_ctx
+from .models import AnyData, PrimaryKey
 from .models import Model as ModelInfo
-from .utils import to_constant_case
 
 
 class Kind(StrEnum):
     alias = "alias"
     union = "union"
     typeddict = "typeddict"
-    enum = "enum"
 
 
 class PrismaType(BaseModel):
@@ -28,14 +26,14 @@ class PrismaType(BaseModel):
     subtypes: list["PrismaType"] = []
 
     @classmethod
-    def from_variants(
-        cls, variants: list["PrismaType"], **kwargs: Any
+    def from_subtypes(
+        cls, subtypes: list["PrismaType"], **kwargs: Any
     ) -> Union["PrismaUnion", "PrismaAlias"]:
-        """Return either a `PrismaUnion` or a `PrismaAlias` depending on the number of variants"""
-        if len(variants) > 1:
-            return PrismaUnion(variants=variants, **kwargs)
+        """Return either a `PrismaUnion` or a `PrismaAlias` depending on the number of subtypes"""
+        if len(subtypes) > 1:
+            return PrismaUnion(subtypes=subtypes, **kwargs)
 
-        return PrismaAlias(subtypes=variants, **kwargs)
+        return PrismaAlias(subtypes=subtypes, **kwargs)
 
 
 class PrismaDict(PrismaType):
@@ -46,23 +44,7 @@ class PrismaDict(PrismaType):
 
 class PrismaUnion(PrismaType):
     kind: Kind = Kind.union
-    variants: list[PrismaType]
-
-    @root_validator(pre=True)
-    @classmethod
-    def add_subtypes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # add all variants as subtypes so that we don't have to special
-        # case rendering subtypes for unions
-        if "variants" in values:
-            subtypes = values.get("subtypes", [])
-            subtypes.extend(values["variants"])
-            values["subtypes"] = subtypes
-        return values
-
-
-class PrismaEnum(PrismaType):
-    kind: Kind = Kind.enum
-    members: list[tuple[str, str]]
+    subtypes: list[PrismaType]
 
 
 class PrismaAlias(PrismaType):
@@ -107,7 +89,7 @@ class Model(BaseModel):
     def where_unique(self) -> PrismaType:
         info = self.info
         model = info.name
-        variants: list[PrismaType] = [
+        subtypes: list[PrismaType] = [
             PrismaDict(
                 total=True,
                 name=f"_{model}WhereUnique_{field.name}_Input",
@@ -128,7 +110,7 @@ class Model(BaseModel):
             else:
                 name = f"_{model}Compound{key.name}Key"
 
-            variants.append(
+            subtypes.append(
                 PrismaDict(
                     name=name,
                     total=True,
@@ -148,12 +130,12 @@ class Model(BaseModel):
                 )
             )
 
-        return PrismaType.from_variants(variants, name=f"{model}WhereUniqueInput")
+        return PrismaType.from_subtypes(subtypes, name=f"{model}WhereUniqueInput")
 
     @cached_property
     def order_by(self) -> PrismaType:
         model = self.info.name
-        variants: list[PrismaType] = [
+        subtypes: list[PrismaType] = [
             PrismaDict(
                 name=f"_{model}_{field.name}_OrderByInput",
                 total=True,
@@ -163,53 +145,7 @@ class Model(BaseModel):
             )
             for field in self.info.scalar_fields
         ]
-        # Full-text search relevance sorting
-        if data_ctx.get().datasources[0].active_provider in {"postgresql", "mysql"}:
-            relevance_type = PrismaDict(
-                name=f"_{model}_RelevanceOrderByInput",
-                total=True,
-                fields={
-                    "_relevance": f"_{model}_RelevanceInner",
-                },
-                subtypes=[
-                    PrismaDict(
-                        name=f"_{model}_RelevanceInner",
-                        total=True,
-                        fields={
-                            "fields": f"List[{model}ScalarFieldKeys]",
-                            "search": "str",
-                            "sort": "SortOrder",
-                        },
-                    )
-                ],
-            )
-            variants.append(relevance_type)
-        return PrismaType.from_variants(variants, name=f"{model}OrderByInput")
-
-
-class ClientTypes(BaseModel):
-    transaction_isolation_level: PrismaEnum | None
-
-    @classmethod
-    def from_data(cls, data: AnyData) -> "ClientTypes":
-        enum_types = data.dmmf.prisma_schema.enum_types.prisma
-
-        return cls(
-            transaction_isolation_level=construct_enum_type(
-                enum_types, name="TransactionIsolationLevel"
-            ),
-        )
-
-
-def construct_enum_type(dmmf_enum_types: list[DMMFEnumType], *, name: str) -> PrismaEnum | None:
-    enum_type = next((t for t in dmmf_enum_types if t.name == name), None)
-    if not enum_type:
-        return None
-
-    return PrismaEnum(
-        name=name,
-        members=[(to_constant_case(str(value)), str(value)) for value in enum_type.values],
-    )
+        return PrismaType.from_subtypes(subtypes, name=f"{model}OrderByInput")
 
 
 model_rebuild(Schema)

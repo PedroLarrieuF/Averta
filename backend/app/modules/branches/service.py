@@ -3,7 +3,6 @@
 from typing import Any
 
 import structlog
-from prisma.models import Branch as BranchModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
@@ -15,6 +14,7 @@ from app.modules.branches.schemas import (
     BranchUpdate,
 )
 from prisma import Prisma
+from prisma.models import Branch as BranchModel
 
 logger = structlog.get_logger()
 

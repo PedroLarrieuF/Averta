@@ -1,61 +1,302 @@
+# =============================================================================
+# AvertaSaaS - Complete Development Docker Compose
+# Includes: PostgreSQL, Redis, MinIO, PgBouncer, Backend, Celery Worker, Celery Beat, Flower, Mailhog
+#
+# Usage:
+#   docker compose --env-file .env.docker up -d   # Start all services with env file
+#   docker compose down -v                        # Stop and remove volumes (clean slate)
+#   docker compose logs -f backend                # Follow backend logs
+#   docker compose exec backend bash              # Shell into backend
+# =============================================================================
+
 version: '3.8'
 
 services:
+  # ===========================================================================
+  # INFRASTRUCTURE SERVICES
+  # ===========================================================================
+
   postgres:
     image: postgres:16-alpine
     container_name: averta-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: averta
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-averta}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - averta-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: averta-pgbouncer
+    environment:
+      DATABASES_HOST: postgres
+      DATABASES_PORT: "5432"
+      DATABASES_DBNAME: ${POSTGRES_DB:-averta}
+      DATABASES_USER: ${POSTGRES_USER:-postgres}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "25"
+      RESERVE_POOL_SIZE: "5"
+      RESERVE_POOL_TIMEOUT: "5"
+      SERVER_RESET_QUERY: "DISCARD ALL"
+      ADMIN_USERS: ${POSTGRES_USER:-postgres}
+      STATS_USERS: ${POSTGRES_USER:-postgres}
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-p", "6432", "-U", "${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - averta-network
 
   redis:
     image: redis:7-alpine
     container_name: averta-redis
-    ports:
-      - "6379:6379"
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - averta-network
 
   minio:
     image: minio/minio:latest
     container_name: averta-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
-    volumes:
-      - minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
+    restart: unless-stopped
+    networks:
+      - averta-network
 
-  # Optional: Mailhog for email testing
   mailhog:
     image: mailhog/mailhog:latest
+    platform: linux/amd64
     container_name: averta-mailhog
     ports:
       - "1025:1025"  # SMTP
       - "8025:8025"  # Web UI
+    restart: unless-stopped
+    networks:
+      - averta-network
+
+  # ===========================================================================
+  # APPLICATION SERVICES
+  # ===========================================================================
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for development (has shell, tools)
+    container_name: averta-backend
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:6432/${POSTGRES_DB:-averta}
+      - DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-averta}
+      - REDIS_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/0
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - S3_BUCKET=${MINIO_BUCKET:-averta-documents}
+      - S3_REGION=us-east-1
+      - S3_PUBLIC_URL=http://localhost:9000
+      - CELERY_BROKER_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/2
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-min-32-chars-long-here}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY:-your-super-secret-refresh-key-min-32-chars-long}
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+      - CORS_ORIGINS=["http://localhost:3000", "http://localhost:5173"]
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USER=
+      - SMTP_PASSWORD=
+      - SMTP_FROM=noreply@averta.com
+      - SMTP_TLS=false
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@averta.com}
+      - SENDGRID_FROM_NAME="Averta Auditoria"
+      - SUPPORT_EMAIL=suporte@averta.com
+      - SUCCESS_FEE_PERCENTAGE=20.0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/prisma:/app/prisma
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/poetry.lock:/app/poetry.lock
+    command: >
+      sh -c "
+        echo 'Waiting for services...' &&
+        sleep 5 &&
+        echo 'Running database initialization...' &&
+        /app/scripts/init-db.sh &&
+        echo 'Starting backend server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    restart: unless-stopped
+    networks:
+      - averta-network
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: averta-celery-worker
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:6432/${POSTGRES_DB:-averta}
+      - DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-averta}
+      - REDIS_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/0
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - S3_BUCKET=${MINIO_BUCKET:-averta-documents}
+      - S3_REGION=us-east-1
+      - S3_PUBLIC_URL=http://localhost:9000
+      - CELERY_BROKER_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/2
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-min-32-chars-long-here}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY:-your-super-secret-refresh-key-min-32-chars-long}
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/prisma:/app/prisma
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/poetry.lock:/app/poetry.lock
+    command: >
+      sh -c "
+        echo 'Waiting for backend to initialize database...' &&
+        sleep 10 &&
+        celery -A app.core.celery_app worker --loglevel=info --concurrency=4
+      "
+    restart: unless-stopped
+    networks:
+      - averta-network
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: averta-celery-beat
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:6432/${POSTGRES_DB:-averta}
+      - DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-averta}
+      - REDIS_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/0
+      - CELERY_BROKER_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/2
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-min-32-chars-long-here}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY:-your-super-secret-refresh-key-min-32-chars-long}
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/prisma:/app/prisma
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/poetry.lock:/app/poetry.lock
+    command: >
+      sh -c "
+        echo 'Waiting for backend to initialize database...' &&
+        sleep 10 &&
+        celery -A app.core.celery_app beat --loglevel=info
+      "
+    restart: unless-stopped
+    networks:
+      - averta-network
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: averta-flower
+    environment:
+      - CELERY_BROKER_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/2
+      - FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A app.core.celery_app flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    restart: unless-stopped
+    networks:
+      - averta-network
 
 volumes:
   postgres_data:
@@ -63,5 +304,6 @@ volumes:
   minio_data:
 
 networks:
-  default:
+  averta-network:
     name: averta-network
+    driver: bridge

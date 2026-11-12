@@ -5,7 +5,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    override,
 )
 
 from httpx import Headers, Limits, Timeout
@@ -83,11 +82,9 @@ class AbstractHTTP[Session, Response](ABC):
     def should_close(self) -> bool:
         return self._session is not _NoneType and not self.closed
 
-    @override
     def __repr__(self) -> str:
         return str(self)
 
-    @override
     def __str__(self) -> str:
         return f"<HTTP closed={self.closed}>"
 
@@ -114,10 +111,8 @@ class AbstractResponse[Response](ABC):
     @abstractmethod
     def text(self) -> MaybeCoroutine[str]: ...
 
-    @override
     def __repr__(self) -> str:
         return str(self)
 
-    @override
     def __str__(self) -> str:
         return f"<Response wrapped={self.original} >"

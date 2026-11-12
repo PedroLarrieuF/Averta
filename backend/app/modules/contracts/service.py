@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from prisma.models import Contract as ContractModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError, NotFoundError
@@ -20,6 +19,7 @@ from app.modules.contracts.schemas import (
 )
 from app.services.rules_engine_v2 import get_engine_instance
 from prisma import Prisma
+from prisma.models import Contract as ContractModel
 
 logger = structlog.get_logger()
 
@@ -27,7 +27,9 @@ logger = structlog.get_logger()
 PROGRESSIVE_MONTH_DAYS = 30
 
 
-class ContractsService(BaseService[ContractModel, ContractCreate, ContractUpdate, ContractResponse]):
+class ContractsService(
+    BaseService[ContractModel, ContractCreate, ContractUpdate, ContractResponse]
+):
     def __init__(self, db: Prisma):
         super().__init__(db, "Contract")
 

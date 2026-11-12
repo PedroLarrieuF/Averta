@@ -262,7 +262,9 @@ class ICMSDifferentialRule(BaseRule):
             evidence={"table_rule": difal_rule},
         )
 
-    def _lookup_difal(self, rules: dict[str, Any], uf_origem: str, uf_destino: str) -> dict[str, Any] | None:
+    def _lookup_difal(
+        self, rules: dict[str, Any], uf_origem: str, uf_destino: str
+    ) -> dict[str, Any] | None:
         difal_rules = rules.get("difal", [])
         for rule in difal_rules:
             if isinstance(rule, dict):
@@ -655,7 +657,9 @@ def create_default_engine() -> RulesEngine:
 default_engine = create_default_engine()
 
 
-async def run_rules(document_id: str, parsed_data: dict[str, Any], company_id: str, client_id: str) -> list[DiscrepancyResult]:
+async def run_rules(
+    document_id: str, parsed_data: dict[str, Any], company_id: str, client_id: str
+) -> list[DiscrepancyResult]:
     """Main entry point for running rules (called from Celery task)"""
     db = await get_prisma()
 

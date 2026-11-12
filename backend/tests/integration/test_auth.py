@@ -46,6 +46,7 @@ class TestAuthRegister:
     async def test_register_success(self, async_client: AsyncClient):
         """Test successful registration"""
         import uuid
+
         unique_email = f"newuser-{uuid.uuid4().hex[:8]}@test.com"
         unique_cnpj = f"{uuid.uuid4().int % 10**14:014d}"
 

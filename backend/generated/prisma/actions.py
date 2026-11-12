@@ -18,11 +18,10 @@ LiteralString = str
 
 from . import errors, types
 from ._compat import model_parse
-from ._constants import CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED
 
 if TYPE_CHECKING:
     from .bases import _PrismaModel
-    from .client import Prisma
+    from .client import Client
 
 
 _PrismaModelT = TypeVar('_PrismaModelT', bound='_PrismaModel')
@@ -34,7 +33,7 @@ class UserActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -224,8 +223,8 @@ class UserActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -1072,7 +1071,7 @@ class RefreshTokenActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -1259,8 +1258,8 @@ class RefreshTokenActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -2105,7 +2104,7 @@ class CompanyActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -2289,8 +2288,8 @@ class CompanyActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -3133,7 +3132,7 @@ class ClientActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -3323,8 +3322,8 @@ class ClientActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -4171,7 +4170,7 @@ class BranchActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -4358,8 +4357,8 @@ class BranchActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -5204,7 +5203,7 @@ class CarrierActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -5391,8 +5390,8 @@ class CarrierActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -6237,7 +6236,7 @@ class ContractActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -6427,8 +6426,8 @@ class ContractActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -7275,7 +7274,7 @@ class FreightTableActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -7468,8 +7467,8 @@ class FreightTableActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -8318,7 +8317,7 @@ class DocumentActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -8520,8 +8519,8 @@ class DocumentActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -9376,7 +9375,7 @@ class DiscrepancyActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -9584,8 +9583,8 @@ class DiscrepancyActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -10444,7 +10443,7 @@ class ContestActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -10637,8 +10636,8 @@ class ContestActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -11487,7 +11486,7 @@ class ContestItemActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -11677,8 +11676,8 @@ class ContestItemActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -12525,7 +12524,7 @@ class CommunicationActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -12715,8 +12714,8 @@ class CommunicationActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -13563,7 +13562,7 @@ class PaymentActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -13753,8 +13752,8 @@ class PaymentActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -14601,7 +14600,7 @@ class AuditLogActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -14791,8 +14790,8 @@ class AuditLogActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -15639,7 +15638,7 @@ class NotificationActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -15829,8 +15828,8 @@ class NotificationActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -16677,7 +16676,7 @@ class SystemConfigActions[PrismaModelT: '_PrismaModel']:
         '_model',
     )
 
-    def __init__(self, client: Prisma, model: type[_PrismaModelT]) -> None:
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
         self._client = client
         self._model = model
 
@@ -16861,8 +16860,8 @@ class SystemConfigActions[PrismaModelT: '_PrismaModel']:
         )
         ```
         """
-        if skip_duplicates and self._client._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._client._active_provider, 'create_many_skip_duplicates')
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         resp = await self._client._execute(
             method='create_many',
@@ -17653,6 +17652,1044 @@ class SystemConfigActions[PrismaModelT: '_PrismaModel']:
         # and count how many records are in each group
         results = await SystemConfig.prisma().group_by(
             ['key'],
+            count=True,
+        )
+        ```
+        """
+        if order is None:
+            if take is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'take\' is present')
+
+            if skip is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'skip\' is present')
+
+        root_selection: list[str] = [*by]
+        if avg is not None:
+            root_selection.append(_select_fields('_avg', avg))
+
+        if min is not None:
+            root_selection.append(_select_fields('_min', min))
+
+        if sum is not None:
+            root_selection.append(_select_fields('_sum', sum))
+
+        if max is not None:
+            root_selection.append(_select_fields('_max', max))
+
+        if count is not None:
+            if count is True:
+                root_selection.append('_count { _all }')
+            elif isinstance(count, dict):
+                root_selection.append(_select_fields('_count', count))
+
+        resp = await self._client._execute(
+            method='group_by',
+            model=self._model,
+            arguments={
+                'by': by,
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'having': having,
+                'orderBy': order,
+            },
+            root_selection=root_selection,
+        )
+        return resp['data']['result']  # type: ignore[no-any-return]
+
+
+class RuleActions[PrismaModelT: '_PrismaModel']:
+    __slots__ = (
+        '_client',
+        '_model',
+    )
+
+    def __init__(self, client: Client, model: type[_PrismaModelT]) -> None:
+        self._client = client
+        self._model = model
+
+    async def query_raw(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> list[_PrismaModelT]:
+        """Execute a raw SQL query
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        List[prisma.models.Rule]
+            The records returned by the SQL query
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        users = await Rule.prisma().query_raw(
+            'SELECT * FROM Rule WHERE id = $1',
+            'beeaihbefg',
+        )
+        ```
+        """
+        return await self._client.query_raw(query, *args, model=self._model)
+
+    async def query_first(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> _PrismaModelT | None:
+        """Execute a raw SQL query, returning the first result
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        prisma.models.Rule
+            The first record returned by the SQL query
+        None
+            The raw SQL query did not return any records
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        user = await Rule.prisma().query_first(
+            'SELECT * FROM Rule WHERE code = $1',
+            'bfbfgeddfd',
+        )
+        ```
+        """
+        return await self._client.query_first(query, *args, model=self._model)
+
+    async def create(
+        self,
+        data: types.RuleCreateInput,
+        include: types.RuleInclude | None = None
+    ) -> _PrismaModelT:
+        """Create a new Rule record.
+
+        Parameters
+        ----------
+        data
+            Rule record data
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The created Rule record
+
+        Raises
+        ------
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # create a Rule record from just the required fields
+        rule = await Rule.prisma().create(
+            data={
+                # data to create a Rule record
+                'code': 'jbgheibja',
+                'name': 'eejajbid',
+                'type': enums.DiscrepancyType.ICMS_DIFFERENTIAL,
+                'severity': 'efhdcdaie',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='create',
+            model=self._model,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def create_many(
+        self,
+        data: list[types.RuleCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: bool | None = None,
+    ) -> int:
+        """Create multiple Rule records at once.
+
+        This function is *not* available when using SQLite.
+
+        Parameters
+        ----------
+        data
+            List of Rule record data
+        skip_duplicates
+            Boolean flag for ignoring unique constraint errors
+
+        Returns
+        -------
+        int
+            The total number of records created
+
+        Raises
+        ------
+        prisma.errors.UnsupportedDatabaseError
+            Attempting to query when using SQLite
+        prisma.errors.UniqueViolationError
+            A unique constraint check has failed, these can be ignored with the `skip_duplicates` argument
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        total = await Rule.prisma().create_many(
+            data=[
+                {
+                    # data to create a Rule record
+                    'code': 'cadejecgbd',
+                    'name': 'bahjhjjhcc',
+                    'type': enums.DiscrepancyType.ICMS_DIFFERENTIAL,
+                    'severity': 'ebhbhbdff',
+                },
+                {
+                    # data to create a Rule record
+                    'code': 'bdiefcdfhg',
+                    'name': 'cheifeghd',
+                    'type': enums.DiscrepancyType.ICMS_DIFFERENTIAL,
+                    'severity': 'fgijheefe',
+                },
+            ],
+            skip_duplicates=True,
+        )
+        ```
+        """
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        resp = await self._client._execute(
+            method='create_many',
+            model=self._model,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    async def delete(
+        self,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None
+    ) -> _PrismaModelT | None:
+        """Delete a single Rule record.
+
+        Parameters
+        ----------
+        where
+            Rule filter to select the record to be deleted, must be unique
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The deleted Rule record
+        None
+            Could not find a record to delete
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rule = await Rule.prisma().delete(
+            where={
+                'id': 'hcbgbhfch',
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='delete',
+                model=self._model,
+                arguments={
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_unique(
+        self,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None
+    ) -> _PrismaModelT | None:
+        """Find a unique Rule record.
+
+        Parameters
+        ----------
+        where
+            Rule filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The found Rule record
+        None
+            No record matching the given input could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rule = await Rule.prisma().find_unique(
+            where={
+                'id': 'bfbbbgbfhc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+        return model_parse(self._model, result)
+
+    async def find_unique_or_raise(
+        self,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None
+    ) -> _PrismaModelT:
+        """Find a unique Rule record. Raises `RecordNotFoundError` if no record is found.
+
+        Parameters
+        ----------
+        where
+            Rule filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The found Rule record
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rule = await Rule.prisma().find_unique_or_raise(
+            where={
+                'id': 'ibijjdeb',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique_or_raise',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_many(
+        self,
+        take: int | None = None,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+        include: types.RuleInclude | None = None,
+        order: types.RuleOrderByInput | list[types.RuleOrderByInput] | None = None,
+        distinct: list[types.RuleScalarFieldKeys] | None = None,
+    ) -> list[_PrismaModelT]:
+        """Find multiple Rule records.
+
+        An empty list is returned if no records could be found.
+
+        Parameters
+        ----------
+        take
+            Limit the maximum number of Rule records returned
+        skip
+            Ignore the first N results
+        where
+            Rule filter to select records
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned Rule model
+        order
+            Order the returned Rule records by any field
+        distinct
+            Filter Rule records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        List[prisma.models.Rule]
+            The list of all Rule records that could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the first 10 Rule records
+        rules = await Rule.prisma().find_many(take=10)
+
+        # find the first 5 Rule records ordered by the name field
+        rules = await Rule.prisma().find_many(
+            take=5,
+            order={
+                'name': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_many',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return [model_parse(self._model, r) for r in resp['data']['result']]
+
+    async def find_first(
+        self,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+        include: types.RuleInclude | None = None,
+        order: types.RuleOrderByInput | list[types.RuleOrderByInput] | None = None,
+        distinct: list[types.RuleScalarFieldKeys] | None = None,
+    ) -> _PrismaModelT | None:
+        """Find a single Rule record.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            Rule filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned Rule model
+        order
+            Order the returned Rule records by any field
+        distinct
+            Filter Rule records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.Rule
+            The first Rule record found, matching the given arguments
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second Rule record ordered by the type field
+        rule = await Rule.prisma().find_first(
+            skip=1,
+            order={
+                'type': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+
+        return model_parse(self._model, result)
+
+    async def find_first_or_raise(
+        self,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+        include: types.RuleInclude | None = None,
+        order: types.RuleOrderByInput | list[types.RuleOrderByInput] | None = None,
+        distinct: list[types.RuleScalarFieldKeys] | None = None,
+    ) -> _PrismaModelT:
+        """Find a single Rule record. Raises `RecordNotFoundError` if no record was found.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            Rule filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned Rule model
+        order
+            Order the returned Rule records by any field
+        distinct
+            Filter Rule records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.Rule
+            The first Rule record found, matching the given arguments
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second Rule record ordered by the severity field
+        rule = await Rule.prisma().find_first_or_raise(
+            skip=1,
+            order={
+                'severity': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first_or_raise',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update(
+        self,
+        data: types.RuleUpdateInput,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None
+    ) -> _PrismaModelT | None:
+        """Update a single Rule record.
+
+        Parameters
+        ----------
+        data
+            Rule record data specifying what to update
+        where
+            Rule filter to select the unique record to create / update
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The updated Rule record
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        rule = await Rule.prisma().update(
+            where={
+                'id': 'caehiccddi',
+            },
+            data={
+                # data to update the Rule record to
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='update',
+                model=self._model,
+                arguments={
+                    'data': data,
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def upsert(
+        self,
+        where: types.RuleWhereUniqueInput,
+        data: types.RuleUpsertInput,
+        include: types.RuleInclude | None = None,
+    ) -> _PrismaModelT:
+        """Updates an existing record or create a new one
+
+        Parameters
+        ----------
+        where
+            Rule filter to select the unique record to create / update
+        data
+            Data specifying what fields to set on create and update
+        include
+            Specifies which relations should be loaded on the returned Rule model
+
+        Returns
+        -------
+        prisma.models.Rule
+            The created or updated Rule record
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rule = await Rule.prisma().upsert(
+            where={
+                'id': 'bgcahjbafj',
+            },
+            data={
+                'create': {
+                    'id': 'bgcahjbafj',
+                    'code': 'bdiefcdfhg',
+                    'name': 'cheifeghd',
+                    'type': enums.DiscrepancyType.ICMS_DIFFERENTIAL,
+                    'severity': 'fgijheefe',
+                },
+                'update': {
+                    'code': 'bdiefcdfhg',
+                    'name': 'cheifeghd',
+                    'type': enums.DiscrepancyType.ICMS_DIFFERENTIAL,
+                    'severity': 'fgijheefe',
+                },
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='upsert',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update_many(
+        self,
+        data: types.RuleUpdateManyMutationInput,
+        where: types.RuleWhereInput,
+    ) -> int:
+        """Update multiple Rule records
+
+        Parameters
+        ----------
+        data
+            Rule data to update the selected Rule records to
+        where
+            Filter to select the Rule records to update
+
+        Returns
+        -------
+        int
+            The total number of Rule records that were updated
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # update all Rule records
+        total = await Rule.prisma().update_many(
+            data={
+                'configJson': Json({'bihhgeihca': True})
+            },
+            where={}
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='update_many',
+            model=self._model,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    @overload
+    async def count(
+        self,
+        select: None = None,
+        take: int | None = None,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+    ) -> int:
+        """Count the number of Rule records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the Rule fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            Rule filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.RuleCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await Rule.prisma().count()
+
+        # results: prisma.types.RuleCountAggregateOutput
+        results = await Rule.prisma().count(
+            select={
+                '_all': True,
+                'version': True,
+            },
+        )
+        ```
+        """
+
+
+    @overload
+    async def count(
+        self,
+        select: types.RuleCountAggregateInput,
+        take: int | None = None,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+    ) -> types.RuleCountAggregateOutput:
+        ...
+
+    async def count(
+        self,
+        select: types.RuleCountAggregateInput | None = None,
+        take: int | None = None,
+        skip: int | None = None,
+        where: types.RuleWhereInput | None = None,
+        cursor: types.RuleWhereUniqueInput | None = None,
+    ) -> int | types.RuleCountAggregateOutput:
+        """Count the number of Rule records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the Rule fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            Rule filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.RuleCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await Rule.prisma().count()
+
+        # results: prisma.types.RuleCountAggregateOutput
+        results = await Rule.prisma().count(
+            select={
+                '_all': True,
+                'isActive': True,
+            },
+        )
+        ```
+        """
+
+        # TODO: this selection building should be moved to the QueryBuilder
+        #
+        # note the distinction between checking for `not select` here and `select is None`
+        # later is to handle the case that the given select dictionary is empty, this
+        # is a limitation of our types.
+        if not select:
+            root_selection = ['_count { _all }']
+        else:
+
+            root_selection = [
+                '_count {{ {} }}'.format(' '.join(k for k, v in select.items() if v is True))
+            ]
+
+        resp = await self._client._execute(
+            method='count',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'cursor': cursor,
+            },
+            root_selection=root_selection,
+        )
+
+        if select is None:
+            return cast(int, resp['data']['result']['_count']['_all'])
+        else:
+            return cast(types.RuleCountAggregateOutput, resp['data']['result']['_count'])
+
+    async def delete_many(
+        self,
+        where: types.RuleWhereInput | None = None
+    ) -> int:
+        """Delete multiple Rule records.
+
+        Parameters
+        ----------
+        where
+            Optional Rule filter to find the records to be deleted
+
+        Returns
+        -------
+        int
+            The total number of Rule records that were deleted
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # delete all Rule records
+        total = await Rule.prisma().delete_many()
+        ```
+        """
+        resp = await self._client._execute(
+            method='delete_many',
+            model=self._model,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    # TODO: make this easier to work with safely, currently output fields are typed as
+    #       not required, we should refactor the return type
+    # TODO: consider returning a Dict where the keys are a Tuple of the `by` selection
+    # TODO: statically type that the order argument is required when take or skip are present
+    async def group_by(
+        self,
+        by: list[types.RuleScalarFieldKeys],
+        *,
+        where: types.RuleWhereInput | None = None,
+        take: int | None = None,
+        skip: int | None = None,
+        avg: types.RuleAvgAggregateInput | None = None,
+        sum: types.RuleSumAggregateInput | None = None,
+        min: types.RuleMinAggregateInput | None = None,
+        max: types.RuleMaxAggregateInput | None = None,
+        having: types.RuleScalarWhereWithAggregatesInput | None = None,
+        count: bool | types.RuleCountAggregateInput | None = None,
+        order: Mapping[types.RuleScalarFieldKeys, types.SortOrder] | list[Mapping[types.RuleScalarFieldKeys, types.SortOrder]] | None = None,
+    ) -> list[types.RuleGroupByOutput]:
+        """Group Rule records by one or more field values and perform aggregations
+        each group such as finding the average.
+
+        Parameters
+        ----------
+        by
+            List of scalar Rule fields to group records by
+        where
+            Rule filter to select records
+        take
+            Limit the maximum number of Rule records returned
+        skip
+            Ignore the first N records
+        avg
+            Adds the average of all values of the specified fields to the `_avg` field
+            in the returned data.
+        sum
+            Adds the sum of all values of the specified fields to the `_sum` field
+            in the returned data.
+        min
+            Adds the smallest available value for the specified fields to the `_min` field
+            in the returned data.
+        max
+            Adds the largest available value for the specified fields to the `_max` field
+            in the returned data.
+        count
+            Adds a count of non-fields to the `_count` field in the returned data.
+        having
+            Allows you to filter groups by an aggregate value - for example only return
+            groups having an average age less than 50.
+        order
+            Lets you order the returned list by any property that is also present in `by`.
+            Only **one** field is allowed at a time.
+
+        Returns
+        -------
+        List[prisma.types.RuleGroupByOutput]
+            A list of dictionaries representing the Rule record,
+            this will also have additional fields present if aggregation arguments
+            are used (see the above parameters)
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # group Rule records by description values
+        # and count how many records are in each group
+        results = await Rule.prisma().group_by(
+            ['description'],
             count=True,
         )
         ```

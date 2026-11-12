@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 import os
-import re
 import shutil
 from collections.abc import Iterator
 from pathlib import Path
@@ -18,7 +15,7 @@ T = TypeVar("T")
 
 # we have to use a mapping outside of the `Sampler` class
 # to avoid https://github.com/RobertCraigie/prisma-client-py/issues/402
-SAMPLER_ITER_MAPPING: dict[str, Iterator[Field]] = {}
+SAMPLER_ITER_MAPPING: "dict[str, Iterator[Field]]" = {}
 
 
 class Faker:
@@ -31,7 +28,7 @@ class Faker:
     def __init__(self, seed: int = 1) -> None:
         self._state = seed
 
-    def __iter__(self) -> Faker:
+    def __iter__(self) -> "Faker":
         return self
 
     def __next__(self) -> int:
@@ -55,13 +52,13 @@ class Faker:
 
 
 class Sampler:
-    model: Model
+    model: "Model"
 
-    def __init__(self, model: Model) -> None:
+    def __init__(self, model: "Model") -> None:
         self.model = model
         SAMPLER_ITER_MAPPING[model.name] = model.scalar_fields
 
-    def get_field(self) -> Field:
+    def get_field(self) -> "Field":
         mapping = SAMPLER_ITER_MAPPING
 
         try:
@@ -126,48 +123,3 @@ def clean_multiline(string: str) -> str:
     assert string, "Expected non-empty string"
     lines = string.splitlines()
     return "\n".join([dedent(lines[0]), *lines[1:]])
-
-
-# https://github.com/nficano/humps/blob/master/humps/main.py
-
-ACRONYM_RE = re.compile(r"([A-Z\d]+)(?=[A-Z\d]|$)")
-PASCAL_RE = re.compile(r"([^\-_]+)")
-SPLIT_RE = re.compile(r"([\-_]*[A-Z][^A-Z]*[\-_]*)")
-UNDERSCORE_RE = re.compile(r"(?<=[^\-_])[\-_]+[^\-_]")
-
-
-def to_snake_case(input_str: str) -> str:
-    if (
-        to_camel_case(input_str) == input_str or to_pascal_case(input_str) == input_str
-    ):  # if camel case or pascal case
-        input_str = ACRONYM_RE.sub(lambda m: m.group(0).title(), input_str)
-        input_str = "_".join(s for s in SPLIT_RE.split(input_str) if s)
-        return input_str.lower()
-    else:
-        input_str = re.sub(r"[^a-zA-Z0-9]", "_", input_str)
-        input_str = input_str.lower().strip("_")
-
-        return input_str
-
-
-def to_camel_case(input_str: str) -> str:
-    if len(input_str) != 0 and not input_str[:2].isupper():
-        input_str = input_str[0].lower() + input_str[1:]
-    return UNDERSCORE_RE.sub(lambda m: m.group(0)[-1].upper(), input_str)
-
-
-def to_pascal_case(input_str: str) -> str:
-    def _replace_fn(match: re.Match[str]) -> str:
-        return match.group(1)[0].upper() + match.group(1)[1:]
-
-    input_str = to_camel_case(PASCAL_RE.sub(_replace_fn, input_str))
-    return input_str[0].upper() + input_str[1:] if len(input_str) != 0 else input_str
-
-
-def to_constant_case(input_str: str) -> str:
-    """Converts to snake case + uppercase, examples:
-
-    foo_bar -> FOO_BAR
-    fooBar -> FOO_BAR
-    """
-    return to_snake_case(input_str).upper()

@@ -9,12 +9,9 @@ import time
 import warnings
 from collections.abc import Coroutine, Iterator
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar
+from typing import Any, NoReturn, TypeVar
 
 from ._types import CoroType, FuncType, TypeGuard
-
-if TYPE_CHECKING:
-    from typing import TypeGuard
 
 _T = TypeVar("_T")
 
@@ -136,7 +133,3 @@ def make_optional[T](value: _T) -> _T | None:
     but want to mark it as potentially None.
     """
     return value
-
-
-def is_dict(obj: object) -> TypeGuard[dict[object, object]]:
-    return isinstance(obj, dict)

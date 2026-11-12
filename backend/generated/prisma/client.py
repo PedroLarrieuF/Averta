@@ -4,42 +4,34 @@
 from __future__ import annotations
 
 # global imports for type checking
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import (
     Any,
+    Literal,
+    Union,
     overload,
 )
 
 LiteralString = str
 # -- template client.py.jinja --
 import logging
+import warnings
 from datetime import timedelta
 from pathlib import Path
 from types import TracebackType
-from typing import override
+
+from pydantic import BaseModel
 
 from . import actions, errors, models, types
-
-# re-exports
-from ._base_client import AsyncBasePrisma, load_env
-from ._builder import QueryBuilder, dumps
-from ._compat import model_parse
-from ._constants import (
-    CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED,
-    DEFAULT_CONNECT_TIMEOUT,
-    DEFAULT_TX_MAX_WAIT,
-    DEFAULT_TX_TIMEOUT,
-)
+from ._compat import model_parse, removeprefix
+from ._constants import DEFAULT_CONNECT_TIMEOUT, DEFAULT_TX_MAX_WAIT, DEFAULT_TX_TIMEOUT
+from ._metrics import Metrics
 from ._raw_query import deserialize_raw_results
-from ._registry import (
-    get_client,
-    register,
-)
-from ._transactions import AsyncTransactionManager
-from ._types import BaseModelT, Datasource
+from ._types import BaseModelT, PrismaMethod
+from .builder import QueryBuilder, dumps
+from .engine import AbstractEngine, QueryEngine, TransactionId
 from .generator.models import BinaryPaths, EngineType, OptionalValueFromEnvVar
-from .metadata import PRISMA_MODELS, RELATIONAL_FIELD_MAPPINGS
-from .types import DatasourceOverride, HttpConfig
+from .types import DatasourceOverride, HttpConfig, MetricsFormat
 
 __all__ = (
     'ENGINE_TYPE',
@@ -55,15 +47,93 @@ __all__ = (
 
 log: logging.Logger = logging.getLogger(__name__)
 
-SCHEMA_PATH = Path('C:/Users/Pedro/Desktop/AvertaSaaS/backend/prisma/schema.prisma')
+SCHEMA_PATH = Path('D:/Averta/backend/prisma/schema.prisma')
 PACKAGED_SCHEMA_PATH = Path(__file__).parent.joinpath('schema.prisma')
 ENGINE_TYPE: EngineType = EngineType.binary
-BINARY_PATHS = model_parse(BinaryPaths, {'queryEngine': {'windows': 'C:\\Users\\Pedro\\.cache\\prisma-python\\binaries\\5.17.0\\393aa359c9ad4a4bb28630fb5613f9c281cde053\\node_modules\\prisma\\query-engine-windows.exe'}, 'introspectionEngine': {}, 'migrationEngine': {}, 'libqueryEngine': {}, 'prismaFmt': {}})
+BINARY_PATHS = model_parse(BinaryPaths, {'queryEngine': {'windows': 'C:\\Users\\Pedro\\.cache\\prisma-python\\binaries\\5.8.0\\0a83d8541752d7582de2ebc1ece46519ce72a848\\node_modules\\prisma\\query-engine-windows.exe'}, 'introspectionEngine': {}, 'migrationEngine': {}, 'libqueryEngine': {}, 'prismaFmt': {}})
+
+RegisteredClient = Union['Prisma', Callable[[], 'Prisma']]
+_registered_client: RegisteredClient | None = None
 
 
-class Prisma(AsyncBasePrisma):
-    # Note: these property names can be customised using `/// @Python(instance_name: '...')`
-    # https://prisma-client-py.readthedocs.io/en/stable/reference/schema-extensions/#instance_name
+class UseClientDefault:
+    """For certain parameters such as `timeout=...` we can make our intent more clear
+    by typing the parameter with this class rather than using None, for example:
+
+    ```py
+    def connect(timeout: Union[int, timedelta, UseClientDefault] = UseClientDefault()) -> None: ...
+    ```
+
+    relays the intention more clearly than:
+
+    ```py
+    def connect(timeout: Union[int, timedelta, None] = None) -> None: ...
+    ```
+
+    This solution also allows us to indicate an "unset" state that is uniquely distinct
+    from `None` which may be useful in the future.
+    """
+
+
+_USE_CLIENT_DEFAULT = UseClientDefault()
+
+
+def load_env(*, override: bool = False, **kwargs: Any) -> None:
+    """Load environemntal variables from dotenv files
+
+    Loads from the following files relative to the current
+    working directory:
+
+    - .env
+    - prisma/.env
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv('.env', override=override, **kwargs)
+    load_dotenv('prisma/.env', override=override, **kwargs)
+
+
+def register(client: RegisteredClient) -> None:
+    """Register a client instance to be retrieved by `get_client()`
+
+    This function _must_ only be called once, preferrably as soon as possible
+    to avoid any potentially confusing errors with threads or processes.
+    """
+    global _registered_client
+
+    if _registered_client is not None:
+        raise errors.ClientAlreadyRegisteredError()
+
+    if not isinstance(client, Prisma) and not callable(client):
+        raise TypeError(
+            f'Expected either a {Prisma} instance or a function that returns a {Prisma} but got {client} instead.'
+        )
+
+    _registered_client = client
+
+
+def get_client() -> Prisma:
+    """Get the registered client instance
+
+    Raises errors.ClientNotRegisteredError() if no client instance has been registered.
+    """
+    registered = _registered_client
+    if registered is None:
+        raise errors.ClientNotRegisteredError() from None
+
+    if isinstance(registered, Prisma):
+        return registered
+
+    client = registered()
+    if not isinstance(client, Prisma):  # pyright: ignore[reportUnnecessaryIsInstance]
+        raise TypeError(
+            f'Registered function returned {client} instead of a {Prisma} instance.'
+        )
+
+    return client
+
+
+class Prisma:
     user: actions.UserActions[models.User]
     refreshtoken: actions.RefreshTokenActions[models.RefreshToken]
     company: actions.CompanyActions[models.Company]
@@ -81,6 +151,7 @@ class Prisma(AsyncBasePrisma):
     auditlog: actions.AuditLogActions[models.AuditLog]
     notification: actions.NotificationActions[models.Notification]
     systemconfig: actions.SystemConfigActions[models.SystemConfig]
+    rule: actions.RuleActions[models.Rule]
 
     __slots__ = (
         'user',
@@ -100,6 +171,15 @@ class Prisma(AsyncBasePrisma):
         'auditlog',
         'notification',
         'systemconfig',
+        'rule',
+        '__engine',
+        '__copied',
+        '_tx_id',
+        '_datasource',
+        '_log_queries',
+        '_http_config',
+        '_connect_timeout',
+        '_active_provider',
     )
 
     def __init__(
@@ -112,24 +192,6 @@ class Prisma(AsyncBasePrisma):
         connect_timeout: int | timedelta = DEFAULT_CONNECT_TIMEOUT,
         http: HttpConfig | None = None,
     ) -> None:
-        super().__init__(
-            http=http,
-            use_dotenv=use_dotenv,
-            log_queries=log_queries,
-            datasource=datasource,
-            connect_timeout=connect_timeout,
-        )
-        self._set_generated_properties(
-            schema_path=SCHEMA_PATH,
-            engine_type=ENGINE_TYPE,
-            prisma_models=PRISMA_MODELS,
-            packaged_schema_path=PACKAGED_SCHEMA_PATH,
-            relational_field_mappings=RELATIONAL_FIELD_MAPPINGS,
-            preview_features=set(),
-            active_provider='postgresql',
-            default_datasource_name='db',
-        )
-
         self.user = actions.UserActions[models.User](self, models.User)
         self.refreshtoken = actions.RefreshTokenActions[models.RefreshToken](self, models.RefreshToken)
         self.company = actions.CompanyActions[models.Company](self, models.Company)
@@ -147,18 +209,119 @@ class Prisma(AsyncBasePrisma):
         self.auditlog = actions.AuditLogActions[models.AuditLog](self, models.AuditLog)
         self.notification = actions.NotificationActions[models.Notification](self, models.Notification)
         self.systemconfig = actions.SystemConfigActions[models.SystemConfig](self, models.SystemConfig)
+        self.rule = actions.RuleActions[models.Rule](self, models.Rule)
+
+        # NOTE: if you add any more properties here then you may also need to forward
+        # them in the `_copy()` method.
+        self.__engine: AbstractEngine | None = None
+        self._active_provider = 'postgresql'
+        self._log_queries = log_queries
+        self._datasource = datasource
+
+        if isinstance(connect_timeout, int):
+            message = (
+                'Passing an int as `connect_timeout` argument is deprecated '
+                'and will be removed in the next major release. '
+                'Use a `datetime.timedelta` instance instead.'
+            )
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            connect_timeout = timedelta(seconds=connect_timeout)
+
+        self._connect_timeout = connect_timeout
+        self._http_config: HttpConfig = http or {}
+        self._tx_id: TransactionId | None = None
+        self.__copied: bool = False
+
+        if use_dotenv:
+            load_env()
 
         if auto_register:
             register(self)
 
-    @property
-    @override
-    def _default_datasource(self) -> Datasource:
-        return {
-            'name': 'db',
-            'url': OptionalValueFromEnvVar(**{'value': None, 'fromEnvVar': 'DATABASE_URL'}).resolve(),
-            'source_file_path': 'C:/Users/Pedro/Desktop/AvertaSaaS/backend/prisma/schema.prisma',
-        }
+    def __del__(self) -> None:
+        # Note: as the transaction manager holds a reference to the original
+        # client as well as the transaction client the original client cannot
+        # be `free`d before the transaction is finished. So stopping the engine
+        # here should be safe.
+        if self.__engine is not None and not self.__copied:
+            log.debug('unclosed client - stopping engine')
+            engine = self.__engine
+            self.__engine = None
+            engine.stop()
+
+    async def __aenter__(self) -> Prisma:
+        await self.connect()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        if self.is_connected():
+            await self.disconnect()
+
+    def is_registered(self) -> bool:
+        """Returns True if this client instance is registered"""
+        try:
+            return get_client() is self
+        except errors.ClientNotRegisteredError:
+            return False
+
+    def is_connected(self) -> bool:
+        """Returns True if the client is connected to the query engine, False otherwise."""
+        return self.__engine is not None
+
+    async def connect(
+        self,
+        timeout: int | timedelta | UseClientDefault = _USE_CLIENT_DEFAULT,
+    ) -> None:
+        """Connect to the Prisma query engine.
+
+        It is required to call this before accessing data.
+        """
+        if isinstance(timeout, UseClientDefault):
+            timeout = self._connect_timeout
+
+        if isinstance(timeout, int):
+            message = (
+                'Passing an int as `timeout` argument is deprecated '
+                'and will be removed in the next major release. '
+                'Use a `datetime.timedelta` instance instead.'
+            )
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            timeout = timedelta(seconds=timeout)
+
+        if self.__engine is None:
+            self.__engine = self._create_engine(dml_path=PACKAGED_SCHEMA_PATH)
+
+        datasources: list[types.DatasourceOverride] | None = None
+        if self._datasource is not None:
+            ds = self._datasource.copy()
+            ds.setdefault('name', 'db')
+            datasources = [ds]
+
+        await self.__engine.connect(
+            timeout=timeout,
+            datasources=datasources,
+        )
+
+    async def disconnect(self, timeout: float | timedelta | None = None) -> None:
+        """Disconnect the Prisma query engine."""
+        if self.__engine is not None:
+            engine = self.__engine
+            self.__engine = None
+            if isinstance(timeout, (int, float)):
+                message = (
+                    'Passing a number as `timeout` argument is deprecated '
+                    'and will be removed in the next major release. '
+                    'Use a `datetime.timedelta` instead.'
+                )
+                warnings.warn(message, DeprecationWarning, stacklevel=2)
+                timeout = timedelta(seconds=timeout)
+            await engine.aclose(timeout=timeout)
+            engine.stop(timeout=timeout)
 
     async def execute_raw(self, query: LiteralString, *args: Any) -> int:
         resp = await self._execute(
@@ -284,14 +447,228 @@ class Prisma(AsyncBasePrisma):
 
         In the above example, if the first database call succeeds but the second does not then neither of the records will be created.
         """
-        return TransactionManager(
-            client=self,
-            max_wait=max_wait,
-            timeout=timeout,
+        return TransactionManager(client=self, max_wait=max_wait, timeout=timeout)
+
+    def is_transaction(self) -> bool:
+        """Returns True if the client is wrapped within a transaction"""
+        return self._tx_id is not None
+
+    @overload
+    async def get_metrics(
+        self,
+        format: Literal['json'] = 'json',
+        *,
+        global_labels: dict[str, str] | None = None,
+    ) -> Metrics:
+        ...
+
+    @overload
+    async def get_metrics(
+        self,
+        format: Literal['prometheus'],
+        *,
+        global_labels: dict[str, str] | None = None,
+    ) -> str:
+        ...
+
+    async def get_metrics(
+        self,
+        format: MetricsFormat = 'json',
+        *,
+        global_labels: dict[str, str] | None = None,
+    ) -> str | Metrics:
+        """Metrics give you a detailed insight into how the Prisma Client interacts with your database.
+
+        You can retrieve metrics in either JSON or Prometheus formats.
+
+        For more details see https://www.prisma.io/docs/concepts/components/prisma-client/metrics.
+        """
+        response = await self._engine.metrics(format=format, global_labels=global_labels)
+        if format == 'prometheus':
+            # For the prometheus format we return the response as-is
+            assert isinstance(response, str)
+            return response
+
+        return model_parse(Metrics, response)
+
+    # TODO: don't return Any
+    async def _execute(
+        self,
+        method: PrismaMethod,
+        arguments: dict[str, Any],
+        model: type[BaseModel] | None = None,
+        root_selection: list[str] | None = None
+    ) -> Any:
+        builder = QueryBuilder(
+            method=method,
+            model=model,
+            arguments=arguments,
+            root_selection=root_selection,
         )
+        return await self._engine.query(builder.build(), tx_id=self._tx_id)
+
+    def _copy(self) -> Prisma:
+        """Return a new Prisma instance using the same engine process (if connected).
+
+        This is only intended for private usage, there are no guarantees around this API.
+        """
+        new = Prisma(
+            use_dotenv=False,
+            http=self._http_config,
+            datasource=self._datasource,
+            log_queries=self._log_queries,
+            connect_timeout=self._connect_timeout,
+        )
+        new.__copied = True
+
+        if self.__engine is not None:
+            new._engine = self.__engine
+
+        return new
+
+    def _create_engine(self, dml_path: Path = PACKAGED_SCHEMA_PATH) -> AbstractEngine:
+        if ENGINE_TYPE == EngineType.binary:
+            return QueryEngine(dml_path=dml_path, log_queries=self._log_queries, **self._http_config)
+
+        raise NotImplementedError(f'Unsupported engine type: {ENGINE_TYPE}')
+
+    @property
+    def _engine_class(self) -> type[AbstractEngine]:
+        if ENGINE_TYPE == EngineType.binary:
+            return QueryEngine
+        else:  # pragma: no cover
+            raise RuntimeError(f'Unhandled engine type: {ENGINE_TYPE}')
+
+    @property
+    def _engine(self) -> AbstractEngine:
+        engine = self.__engine
+        if engine is None:
+            raise errors.ClientNotConnectedError()
+        return engine
+
+    @_engine.setter
+    def _engine(self, engine: AbstractEngine) -> None:
+        self.__engine = engine
+
+    def _make_sqlite_datasource(self) -> DatasourceOverride:
+        return {
+            'name': 'db',
+            'url': self._make_sqlite_url(self._default_datasource['url']),
+        }
+
+    def _make_sqlite_url(self, url: str, *, relative_to: Path = SCHEMA_PATH.parent) -> str:
+        url_path = removeprefix(removeprefix(url, 'file:'), 'sqlite:')
+        if url_path == url:
+            return url
+
+        if Path(url_path).is_absolute():
+            return url
+
+        return f'file:{relative_to.joinpath(url_path).resolve()}'
+
+    @property
+    def _default_datasource(self) -> DatasourceOverride:
+        return {
+            'name': 'db',
+            'url': OptionalValueFromEnvVar(**{'value': None, 'fromEnvVar': 'DATABASE_URL'}).resolve(),
+        }
 
 
-TransactionManager = AsyncTransactionManager[Prisma]
+class TransactionManager:
+    """Context manager for wrapping a Prisma instance within a transaction.
+
+    This should never be created manually, instead it should be used
+    through the Prisma.tx() method.
+    """
+
+    def __init__(self, *, client: Prisma, max_wait: int | timedelta, timeout: int | timedelta) -> None:
+        self.__client = client
+
+        if isinstance(max_wait, int):
+            message = (
+                'Passing an int as `max_wait` argument is deprecated '
+                'and will be removed in the next major release. '
+                'Use a `datetime.timedelta` instance instead.'
+            )
+            warnings.warn(message, DeprecationWarning, stacklevel=3)
+            max_wait = timedelta(milliseconds=max_wait)
+
+        self._max_wait = max_wait
+
+        if isinstance(timeout, int):
+            message = (
+                'Passing an int as `timeout` argument is deprecated '
+                'and will be removed in the next major release. '
+                'Use a `datetime.timedelta` instance instead.'
+            )
+            warnings.warn(message, DeprecationWarning, stacklevel=3)
+            timeout = timedelta(milliseconds=timeout)
+
+        self._timeout = timeout
+
+        self._tx_id: TransactionId | None = None
+
+    async def start(self, *, _from_context: bool = False) -> Prisma:
+        """Start the transaction and return the wrapped Prisma instance"""
+        if self.__client.is_transaction():
+            # if we were called from the context manager then the stacklevel
+            # needs to be one higher to warn on the actual offending code
+            warnings.warn(
+                'The current client is already in a transaction. This can lead to surprising behaviour.',
+                UserWarning,
+                stacklevel=3 if _from_context else 2
+            )
+
+        tx_id = await self.__client._engine.start_transaction(
+            content=dumps(
+                {
+                    'timeout': int(self._timeout.total_seconds() * 1000),
+                    'max_wait': int(self._max_wait.total_seconds() * 1000),
+                }
+            ),
+        )
+        self._tx_id = tx_id
+        client = self.__client._copy()
+        client._tx_id = tx_id
+        return client
+
+    async def commit(self) -> None:
+        """Commit the transaction to the database, this transaction will no longer be usable"""
+        if self._tx_id is None:
+            raise errors.TransactionNotStartedError()
+
+        await self.__client._engine.commit_transaction(self._tx_id)
+
+    async def rollback(self) -> None:
+        """Do not commit the changes to the database, this transaction will no longer be usable"""
+        if self._tx_id is None:
+            raise errors.TransactionNotStartedError()
+
+        await self.__client._engine.rollback_transaction(self._tx_id)
+
+    async def __aenter__(self) -> Prisma:
+        return await self.start(_from_context=True)
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        if exc is None:
+            log.debug('Transaction exited with no exception - commiting')
+            await self.commit()
+            return
+
+        log.debug('Transaction exited with exc type: %s - rolling back', exc_type)
+
+        try:
+            await self.rollback()
+        except Exception as exc:
+            log.warning(
+                'Encountered exc `%s` while rolling back a transaction. Ignoring and raising original exception',
+                exc
+            )
 
 
 # TODO: this should return the results as well
@@ -314,6 +691,7 @@ class Batch:
     auditlog: AuditLogBatchActions
     notification: NotificationBatchActions
     systemconfig: SystemConfigBatchActions
+    rule: RuleBatchActions
 
     def __init__(self, client: Prisma) -> None:
         self.__client = client
@@ -336,13 +714,10 @@ class Batch:
         self.auditlog = AuditLogBatchActions(self)
         self.notification = NotificationBatchActions(self)
         self.systemconfig = SystemConfigBatchActions(self)
+        self.rule = RuleBatchActions(self)
 
     def _add(self, **kwargs: Any) -> None:
-        builder = QueryBuilder(
-            **kwargs,
-            prisma_models=PRISMA_MODELS,
-            relational_field_mappings=RELATIONAL_FIELD_MAPPINGS,
-        )
+        builder = QueryBuilder(**kwargs)
         self.__queries.append(builder.build_query())
 
     async def commit(self) -> None:
@@ -414,8 +789,8 @@ class UserBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -525,8 +900,8 @@ class RefreshTokenBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -636,8 +1011,8 @@ class CompanyBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -747,8 +1122,8 @@ class ClientBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -858,8 +1233,8 @@ class BranchBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -969,8 +1344,8 @@ class CarrierBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1080,8 +1455,8 @@ class ContractBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1191,8 +1566,8 @@ class FreightTableBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1302,8 +1677,8 @@ class DocumentBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1413,8 +1788,8 @@ class DiscrepancyBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1524,8 +1899,8 @@ class ContestBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1635,8 +2010,8 @@ class ContestItemBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1746,8 +2121,8 @@ class CommunicationBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1857,8 +2232,8 @@ class PaymentBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -1968,8 +2343,8 @@ class AuditLogBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -2079,8 +2454,8 @@ class NotificationBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -2190,8 +2565,8 @@ class SystemConfigBatchActions:
         *,
         skip_duplicates: bool | None = None,
     ) -> None:
-        if skip_duplicates and self._batcher._active_provider in CREATE_MANY_SKIP_DUPLICATES_UNSUPPORTED:
-            raise errors.UnsupportedDatabaseError(self._batcher._active_provider, 'create_many_skip_duplicates')
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
 
         self._batcher._add(
             method='create_many',
@@ -2269,6 +2644,117 @@ class SystemConfigBatchActions:
         self._batcher._add(
             method='delete_many',
             model=models.SystemConfig,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+
+
+
+# NOTE: some arguments are meaningless in this context but are included
+# for completeness sake
+class RuleBatchActions:
+    def __init__(self, batcher: Batch) -> None:
+        self._batcher = batcher
+
+    def create(
+        self,
+        data: types.RuleCreateInput,
+        include: types.RuleInclude | None = None
+    ) -> None:
+        self._batcher._add(
+            method='create',
+            model=models.Rule,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+
+    def create_many(
+        self,
+        data: list[types.RuleCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: bool | None = None,
+    ) -> None:
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        self._batcher._add(
+            method='create_many',
+            model=models.Rule,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+
+    def delete(
+        self,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete',
+            model=models.Rule,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def update(
+        self,
+        data: types.RuleUpdateInput,
+        where: types.RuleWhereUniqueInput,
+        include: types.RuleInclude | None = None
+    ) -> None:
+        self._batcher._add(
+            method='update',
+            model=models.Rule,
+            arguments={
+                'data': data,
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def upsert(
+        self,
+        where: types.RuleWhereUniqueInput,
+        data: types.RuleUpsertInput,
+        include: types.RuleInclude | None = None,
+    ) -> None:
+        self._batcher._add(
+            method='upsert',
+            model=models.Rule,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+
+    def update_many(
+        self,
+        data: types.RuleUpdateManyMutationInput,
+        where: types.RuleWhereInput,
+    ) -> None:
+        self._batcher._add(
+            method='update_many',
+            model=models.Rule,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+
+    def delete_many(
+        self,
+        where: types.RuleWhereInput | None = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete_many',
+            model=models.Rule,
             arguments={'where': where},
             root_selection=['count'],
         )

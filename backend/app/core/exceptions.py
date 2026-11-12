@@ -7,6 +7,7 @@ from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from jose import JWTError
+
 from prisma.errors import PrismaError
 
 logger = structlog.get_logger()

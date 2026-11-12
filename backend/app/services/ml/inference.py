@@ -140,7 +140,9 @@ class ModelManager:
         metadata_path = models_dir / "metadata_latest.json"
 
         if not model_path.exists():
-            raise RuntimeError(f"Model not found at {model_path}. Run train_anomaly_model.py first.")
+            raise RuntimeError(
+                f"Model not found at {model_path}. Run train_anomaly_model.py first."
+            )
 
         self._model = joblib.load(model_path)
         self._scaler = joblib.load(scaler_path)
@@ -241,7 +243,9 @@ async def anomaly_score(request: AnomalyRequest) -> AnomalyResponse:
 
 
 @app.post("/ml/anomaly-score/batch")
-async def anomaly_score_batch(requests: list[AnomalyRequest]) -> list[AnomalyResponse | dict[str, str]]:
+async def anomaly_score_batch(
+    requests: list[AnomalyRequest],
+) -> list[AnomalyResponse | dict[str, str]]:
     """Batch anomaly scoring for multiple records."""
     if model_manager.model is None or model_manager.scaler is None:
         raise HTTPException(status_code=503, detail="Model not loaded.")

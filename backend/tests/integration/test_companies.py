@@ -38,6 +38,7 @@ class TestCompaniesCreate:
     async def test_create_company(self, async_client: AsyncClient, admin_auth_headers: dict):
         """Test creating a company (admin only)"""
         import uuid
+
         unique_cnpj = f"{uuid.uuid4().int % 10**14:014d}"
 
         response = await async_client.post(
@@ -51,7 +52,9 @@ class TestCompaniesCreate:
         )
         assert response.status_code in [201, 400, 401, 403, 409, 500]
 
-    async def test_create_company_duplicate_cnpj(self, async_client: AsyncClient, admin_auth_headers: dict):
+    async def test_create_company_duplicate_cnpj(
+        self, async_client: AsyncClient, admin_auth_headers: dict
+    ):
         """Test creating company with duplicate CNPJ"""
         response = await async_client.post(
             "/api/v1/companies",
@@ -64,7 +67,9 @@ class TestCompaniesCreate:
         )
         assert response.status_code in [409, 500]
 
-    async def test_create_company_invalid_data(self, async_client: AsyncClient, admin_auth_headers: dict):
+    async def test_create_company_invalid_data(
+        self, async_client: AsyncClient, admin_auth_headers: dict
+    ):
         """Test creating company with invalid data"""
         response = await async_client.post(
             "/api/v1/companies",
@@ -78,7 +83,9 @@ class TestCompaniesCreate:
 class TestCompaniesDetail:
     """Tests for GET /api/v1/companies/{id}"""
 
-    async def test_get_company(self, async_client: AsyncClient, auth_headers: dict, mock_company: dict):
+    async def test_get_company(
+        self, async_client: AsyncClient, auth_headers: dict, mock_company: dict
+    ):
         """Test getting company detail"""
         response = await async_client.get(
             f"/api/v1/companies/{mock_company['id']}",
@@ -99,7 +106,9 @@ class TestCompaniesDetail:
 class TestCompaniesUpdate:
     """Tests for PATCH /api/v1/companies/{id}"""
 
-    async def test_update_company(self, async_client: AsyncClient, admin_auth_headers: dict, mock_company: dict):
+    async def test_update_company(
+        self, async_client: AsyncClient, admin_auth_headers: dict, mock_company: dict
+    ):
         """Test updating company"""
         response = await async_client.patch(
             f"/api/v1/companies/{mock_company['id']}",
@@ -121,7 +130,9 @@ class TestCompaniesUpdate:
 class TestCompaniesSettings:
     """Tests for company settings endpoints"""
 
-    async def test_get_company_settings(self, async_client: AsyncClient, auth_headers: dict, mock_company: dict):
+    async def test_get_company_settings(
+        self, async_client: AsyncClient, auth_headers: dict, mock_company: dict
+    ):
         """Test getting company settings"""
         response = await async_client.get(
             f"/api/v1/companies/{mock_company['id']}/settings",
@@ -129,7 +140,9 @@ class TestCompaniesSettings:
         )
         assert response.status_code in [200, 401, 404, 500]
 
-    async def test_update_company_settings(self, async_client: AsyncClient, admin_auth_headers: dict, mock_company: dict):
+    async def test_update_company_settings(
+        self, async_client: AsyncClient, admin_auth_headers: dict, mock_company: dict
+    ):
         """Test updating company settings"""
         response = await async_client.patch(
             f"/api/v1/companies/{mock_company['id']}/settings",

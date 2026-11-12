@@ -26,12 +26,14 @@ class DefinitionTransformer(LarkTransformer[Token, TransformResult]):
         if not items:
             return {}
 
-        return dict([
+        return dict(
+            [
                 # item can be None if there were no args passed
                 item
                 for item in items
                 if item is not None
-            ])
+            ]
+        )
 
     def argument(self, items: tuple[str, str]) -> tuple[str, str]:
         return items

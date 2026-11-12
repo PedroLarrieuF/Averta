@@ -34,7 +34,9 @@ class UserFactory:
         return data
 
     @classmethod
-    def build_with_relations(cls, company: dict | None = None, client: dict | None = None, **overrides: Any) -> dict[str, Any]:
+    def build_with_relations(
+        cls, company: dict | None = None, client: dict | None = None, **overrides: Any
+    ) -> dict[str, Any]:
         """Build user data with company and client relations"""
         user = cls.build(
             company_id=company["id"] if company else None,
@@ -46,6 +48,8 @@ class UserFactory:
         return user
 
     @classmethod
-    def build_batch(cls, count: int, company_id: str | None = None, **overrides: Any) -> list[dict[str, Any]]:
+    def build_batch(
+        cls, count: int, company_id: str | None = None, **overrides: Any
+    ) -> list[dict[str, Any]]:
         """Build multiple user data dicts"""
         return [cls.build(company_id=company_id, **overrides) for _ in range(count)]

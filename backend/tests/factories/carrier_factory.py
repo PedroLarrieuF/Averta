@@ -29,6 +29,8 @@ class CarrierFactory:
         return data
 
     @classmethod
-    def build_batch(cls, count: int, company_id: str | None = None, **overrides: Any) -> list[dict[str, Any]]:
+    def build_batch(
+        cls, count: int, company_id: str | None = None, **overrides: Any
+    ) -> list[dict[str, Any]]:
         """Build multiple carrier data dicts"""
         return [cls.build(company_id=company_id, **overrides) for _ in range(count)]

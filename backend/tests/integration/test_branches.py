@@ -17,7 +17,9 @@ class TestBranchesList:
         )
         assert response.status_code in [200, 401, 500]
 
-    async def test_list_branches_by_client(self, async_client: AsyncClient, auth_headers: dict, mock_client: dict):
+    async def test_list_branches_by_client(
+        self, async_client: AsyncClient, auth_headers: dict, mock_client: dict
+    ):
         """Test listing branches filtered by client"""
         response = await async_client.get(
             "/api/v1/branches",
@@ -31,9 +33,12 @@ class TestBranchesList:
 class TestBranchesCreate:
     """Tests for POST /api/v1/branches"""
 
-    async def test_create_branch(self, async_client: AsyncClient, auth_headers: dict, mock_client: dict):
+    async def test_create_branch(
+        self, async_client: AsyncClient, auth_headers: dict, mock_client: dict
+    ):
         """Test creating a branch"""
         import uuid
+
         unique_cnpj = f"{uuid.uuid4().int % 10**14:014d}"
 
         response = await async_client.post(

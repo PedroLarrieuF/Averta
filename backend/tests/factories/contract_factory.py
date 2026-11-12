@@ -51,6 +51,8 @@ class ContractFactory:
     ) -> list[dict[str, Any]]:
         """Build multiple contract data dicts"""
         return [
-            cls.build(company_id=company_id, client_id=client_id, carrier_id=carrier_id, **overrides)
+            cls.build(
+                company_id=company_id, client_id=client_id, carrier_id=carrier_id, **overrides
+            )
             for _ in range(count)
         ]

@@ -8,7 +8,6 @@ from configparser import ConfigParser
 from typing import (
     Any,
     cast,
-    override,
 )
 
 from mypy.errorcodes import ErrorCode
@@ -88,7 +87,6 @@ class PrismaPlugin(Plugin):
         self.config = PrismaPluginConfig(options)
         super().__init__(options)
 
-    @override
     def get_method_hook(self, fullname: str) -> Callable[[MethodContext], Type] | None:
         match = CLIENT_ACTION_CHILD.match(fullname)
         if not match:

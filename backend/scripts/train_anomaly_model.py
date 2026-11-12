@@ -58,7 +58,6 @@ def prepare_features(df: pd.DataFrame) -> tuple:
     # Handle any NaN/Inf values
     X = np.nan_to_num(X, nan=0.0, posinf=1e6, neginf=-1e6)
 
-
     return X, y
 
 
@@ -113,7 +112,6 @@ def evaluate_model(y_true: np.ndarray, y_pred: np.ndarray, scores: np.ndarray) -
         "classification_report": report,
     }
 
-
     return metrics
 
 
@@ -142,7 +140,6 @@ def temporal_cross_validation(X: np.ndarray, y: np.ndarray, n_splits: int = 5) -
     np.mean([r["precision"] for r in cv_results])
     np.mean([r["recall"] for r in cv_results])
     np.mean([r["f1_score"] for r in cv_results])
-
 
     return cv_results
 
@@ -187,7 +184,6 @@ def save_model(model: IsolationForest, scaler: StandardScaler, metrics: dict, ve
     joblib.dump(scaler, latest_scaler)
     with open(latest_metadata, "w") as f:
         json.dump(metadata, f, indent=2, default=str)
-
 
     return version
 

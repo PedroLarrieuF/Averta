@@ -36,9 +36,12 @@ class TestCarriersList:
 class TestCarriersCreate:
     """Tests for POST /api/v1/carriers"""
 
-    async def test_create_carrier(self, async_client: AsyncClient, auth_headers: dict, mock_company: dict):
+    async def test_create_carrier(
+        self, async_client: AsyncClient, auth_headers: dict, mock_company: dict
+    ):
         """Test creating a carrier"""
         import uuid
+
         unique_cnpj = f"{uuid.uuid4().int % 10**14:014d}"
 
         response = await async_client.post(
@@ -53,7 +56,9 @@ class TestCarriersCreate:
         )
         assert response.status_code in [201, 400, 401, 409, 500]
 
-    async def test_create_carrier_duplicate_cnpj(self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict):
+    async def test_create_carrier_duplicate_cnpj(
+        self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict
+    ):
         """Test creating carrier with duplicate CNPJ"""
         response = await async_client.post(
             "/api/v1/carriers",
@@ -71,7 +76,9 @@ class TestCarriersCreate:
 class TestCarriersDetail:
     """Tests for GET /api/v1/carriers/{id}"""
 
-    async def test_get_carrier(self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict):
+    async def test_get_carrier(
+        self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict
+    ):
         """Test getting carrier detail"""
         response = await async_client.get(
             f"/api/v1/carriers/{mock_carrier['id']}",
@@ -92,7 +99,9 @@ class TestCarriersDetail:
 class TestCarriersUpdate:
     """Tests for PATCH /api/v1/carriers/{id}"""
 
-    async def test_update_carrier(self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict):
+    async def test_update_carrier(
+        self, async_client: AsyncClient, auth_headers: dict, mock_carrier: dict
+    ):
         """Test updating carrier"""
         response = await async_client.patch(
             f"/api/v1/carriers/{mock_carrier['id']}",

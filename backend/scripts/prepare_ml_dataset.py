@@ -242,7 +242,6 @@ async def prepare_dataset(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(output_path, index=False)
 
-
         return df
 
     finally:

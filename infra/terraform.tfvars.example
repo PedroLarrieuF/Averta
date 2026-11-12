@@ -1,0 +1,41 @@
+# =============================================================================
+# AvertaSaaS - Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+# =============================================================================
+
+# AWS Configuration
+aws_region   = "us-east-1"
+project_name = "AvertaSaaS"
+environment  = "staging"  # or "production"
+
+# Domain & SSL (optional - leave empty to skip Route53/ACM)
+domain_name = "averta.com"
+
+# GitHub Actions OIDC (for CI/CD deployments)
+github_org  = "your-github-org"
+github_repo = "your-repo-name"
+
+# Alerting
+notification_email = "alerts@yourcompany.com"
+
+# =============================================================================
+# Module-specific overrides (optional - defaults are sensible)
+# =============================================================================
+
+# VPC
+# vpc_cidr = "10.0.0.0/16"
+
+# RDS
+# db_instance_class = "db.t3.medium"
+# allocated_storage = 50
+
+# ElastiCache
+# elasticache_node_type = "cache.t3.medium"
+
+# ECS
+# backend_cpu = 512
+# backend_memory = 1024
+# backend_desired_count = 2
+
+# Monitoring
+# log_group_retention_days = 30

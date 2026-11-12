@@ -9,6 +9,7 @@ from builtins import bool as _bool
 from builtins import float as _float
 from builtins import int as _int
 from builtins import str as _str
+from collections.abc import Callable, Mapping
 from typing import (
     Any,
     Literal,
@@ -22,7 +23,8 @@ from typing_extensions import TypedDict
 LiteralString = str
 # -- template types.py.jinja --
 
-from . import _types
+import httpx
+
 from .utils import _NoneType
 
 # TODO: filters with aggregates should have their own recursive fields
@@ -30,13 +32,31 @@ from .utils import _NoneType
 # TODO: add an argument to signify that the last iteration should be skipped
 
 
-SortMode = _types.SortMode
-SortOrder = _types.SortOrder
+SortMode = Literal['default', 'insensitive']
+SortOrder = Literal['asc', 'desc']
 
-MetricsFormat = _types.MetricsFormat
+MetricsFormat = Literal['json', 'prometheus']
 
-DatasourceOverride = _types.DatasourceOverride
-HttpConfig = _types.HttpConfig
+
+class _DatasourceOverrideOptional(TypedDict, total=False):
+    env: str
+    name: str
+
+
+class DatasourceOverride(_DatasourceOverrideOptional):
+    url: str
+
+
+# NOTE: we don't support some options as their type hints are not publicly exposed
+# https://github.com/encode/httpx/discussions/1977
+class HttpConfig(TypedDict, total=False):
+    app: Callable[[Mapping[str, Any], Any], Any]
+    http1: bool
+    http2: bool
+    limits: httpx.Limits
+    timeout: None | float | httpx.Timeout
+    trust_env: bool
+    max_redirects: int
 
 
 # types that can be serialized to json by our query builder
@@ -73,7 +93,6 @@ StringFilter = TypedDict(
         'in': list[str],
         'not': Union[str, 'StringFilterRecursive1'],
         'mode': SortMode,
-        'search': str,
     },
     total=False,
 )
@@ -94,7 +113,6 @@ StringFilterRecursive1 = TypedDict(
         'in': list[str],
         'not': Union[str, 'StringFilterRecursive2'],
         'mode': SortMode,
-        'search': str,
     },
     total=False,
 )
@@ -115,7 +133,6 @@ StringFilterRecursive2 = TypedDict(
         'in': list[str],
         'not': Union[str, 'StringFilterRecursive3'],
         'mode': SortMode,
-        'search': str,
     },
     total=False,
 )
@@ -136,7 +153,6 @@ StringFilterRecursive3 = TypedDict(
         'in': list[str],
         'not': Union[str, 'StringFilterRecursive4'],
         'mode': SortMode,
-        'search': str,
     },
     total=False,
 )
@@ -156,7 +172,6 @@ StringFilterRecursive4 = TypedDict(
         'endswith': str,
         'in': list[str],
                 'mode': SortMode,
-        'search': str,
     },
     total=False,
 )
@@ -1593,20 +1608,16 @@ class UserCreateWithoutRelationsInput(UserOptionalCreateWithoutRelationsInput):
     passwordHash: _str
     fullName: _str
 
-class UserConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'UserCreateWithoutRelationsInput'
-    where: 'UserWhereUniqueInput'
 
 class UserCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'UserCreateWithoutRelationsInput'
     connect: 'UserWhereUniqueInput'
-    connect_or_create: 'UserConnectOrCreateWithoutRelationsInput'
 
 
 class UserCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['UserCreateWithoutRelationsInput', list['UserCreateWithoutRelationsInput']]
     connect: Union['UserWhereUniqueInput', list['UserWhereUniqueInput']]
-    connect_or_create: Union['UserConnectOrCreateWithoutRelationsInput', list['UserConnectOrCreateWithoutRelationsInput']]
+
 
 class _UserWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -1660,7 +1671,6 @@ class UserUpdateManyMutationInput(TypedDict, total=False):
 class UserUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['UserCreateWithoutRelationsInput']
     connect: list['UserWhereUniqueInput']
-    connect_or_create: list['UserConnectOrCreateWithoutRelationsInput']
     set: list['UserWhereUniqueInput']
     disconnect: list['UserWhereUniqueInput']
     delete: list['UserWhereUniqueInput']
@@ -1670,18 +1680,19 @@ class UserUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['UserUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['UserScalarWhereInput']
     # upsert: List['UserUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['UserCreateOrConnectWithoutRelationsInput']
 
 
 class UserUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'UserCreateWithoutRelationsInput'
     connect: 'UserWhereUniqueInput'
-    connect_or_create: 'UserConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'UserUpdateInput'
     # upsert: 'UserUpsertWithoutRelationsInput'
+    # connectOrCreate: 'UserCreateOrConnectWithoutRelationsInput'
 
 
 class UserUpsertInput(TypedDict):
@@ -1725,14 +1736,6 @@ class _User_createdAt_OrderByInput(TypedDict, total=True):
 class _User_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _User_RelevanceInner(TypedDict, total=True):
-    fields: 'list[UserScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _User_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_User_RelevanceInner'
-
 UserOrderByInput = Union[
     '_User_id_OrderByInput',
     '_User_email_OrderByInput',
@@ -1746,7 +1749,6 @@ UserOrderByInput = Union[
     '_User_clientId_OrderByInput',
     '_User_createdAt_OrderByInput',
     '_User_updatedAt_OrderByInput',
-    '_User_RelevanceOrderByInput',
 ]
 
 
@@ -3783,6 +3785,107 @@ class FindManySystemConfigArgsFromUserRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromUser(TypedDict, total=False):
+    """Relational arguments for User"""
+
+
+class RuleIncludeFromUserRecursive1(TypedDict, total=False):
+    """Relational arguments for User"""
+
+
+class RuleIncludeFromUserRecursive2(TypedDict, total=False):
+    """Relational arguments for User"""
+
+
+class RuleIncludeFromUserRecursive3(TypedDict, total=False):
+    """Relational arguments for User"""
+
+
+class RuleIncludeFromUserRecursive4(TypedDict, total=False):
+    """Relational arguments for User"""
+
+
+
+class RuleArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromUserRecursive1(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromUserRecursive2(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromUserRecursive3(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromUserRecursive4(TypedDict, total=False):
+    """Arguments for User"""
+
+
+
+class FindManyRuleArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromUserRecursive1(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromUserRecursive2(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromUserRecursive3(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromUserRecursive4(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyUserArgs = FindManyUserArgsFromUser
 FindFirstUserArgs = FindManyUserArgsFromUser
 
@@ -4216,20 +4319,16 @@ class RefreshTokenCreateWithoutRelationsInput(RefreshTokenOptionalCreateWithoutR
     token: _str
     expiresAt: datetime.datetime
 
-class RefreshTokenConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'RefreshTokenCreateWithoutRelationsInput'
-    where: 'RefreshTokenWhereUniqueInput'
 
 class RefreshTokenCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'RefreshTokenCreateWithoutRelationsInput'
     connect: 'RefreshTokenWhereUniqueInput'
-    connect_or_create: 'RefreshTokenConnectOrCreateWithoutRelationsInput'
 
 
 class RefreshTokenCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['RefreshTokenCreateWithoutRelationsInput', list['RefreshTokenCreateWithoutRelationsInput']]
     connect: Union['RefreshTokenWhereUniqueInput', list['RefreshTokenWhereUniqueInput']]
-    connect_or_create: Union['RefreshTokenConnectOrCreateWithoutRelationsInput', list['RefreshTokenConnectOrCreateWithoutRelationsInput']]
+
 
 class _RefreshTokenWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -4265,7 +4364,6 @@ class RefreshTokenUpdateManyMutationInput(TypedDict, total=False):
 class RefreshTokenUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['RefreshTokenCreateWithoutRelationsInput']
     connect: list['RefreshTokenWhereUniqueInput']
-    connect_or_create: list['RefreshTokenConnectOrCreateWithoutRelationsInput']
     set: list['RefreshTokenWhereUniqueInput']
     disconnect: list['RefreshTokenWhereUniqueInput']
     delete: list['RefreshTokenWhereUniqueInput']
@@ -4275,18 +4373,19 @@ class RefreshTokenUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['RefreshTokenUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['RefreshTokenScalarWhereInput']
     # upsert: List['RefreshTokenUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['RefreshTokenCreateOrConnectWithoutRelationsInput']
 
 
 class RefreshTokenUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'RefreshTokenCreateWithoutRelationsInput'
     connect: 'RefreshTokenWhereUniqueInput'
-    connect_or_create: 'RefreshTokenConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'RefreshTokenUpdateInput'
     # upsert: 'RefreshTokenUpsertWithoutRelationsInput'
+    # connectOrCreate: 'RefreshTokenCreateOrConnectWithoutRelationsInput'
 
 
 class RefreshTokenUpsertInput(TypedDict):
@@ -4312,14 +4411,6 @@ class _RefreshToken_createdAt_OrderByInput(TypedDict, total=True):
 class _RefreshToken_revokedAt_OrderByInput(TypedDict, total=True):
     revokedAt: 'SortOrder'
 
-class _RefreshToken_RelevanceInner(TypedDict, total=True):
-    fields: 'list[RefreshTokenScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _RefreshToken_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_RefreshToken_RelevanceInner'
-
 RefreshTokenOrderByInput = Union[
     '_RefreshToken_id_OrderByInput',
     '_RefreshToken_token_OrderByInput',
@@ -4327,7 +4418,6 @@ RefreshTokenOrderByInput = Union[
     '_RefreshToken_expiresAt_OrderByInput',
     '_RefreshToken_createdAt_OrderByInput',
     '_RefreshToken_revokedAt_OrderByInput',
-    '_RefreshToken_RelevanceOrderByInput',
 ]
 
 
@@ -6360,6 +6450,107 @@ class FindManySystemConfigArgsFromRefreshTokenRecursive4(TypedDict, total=False)
 
 
 
+class RuleIncludeFromRefreshToken(TypedDict, total=False):
+    """Relational arguments for RefreshToken"""
+
+
+class RuleIncludeFromRefreshTokenRecursive1(TypedDict, total=False):
+    """Relational arguments for RefreshToken"""
+
+
+class RuleIncludeFromRefreshTokenRecursive2(TypedDict, total=False):
+    """Relational arguments for RefreshToken"""
+
+
+class RuleIncludeFromRefreshTokenRecursive3(TypedDict, total=False):
+    """Relational arguments for RefreshToken"""
+
+
+class RuleIncludeFromRefreshTokenRecursive4(TypedDict, total=False):
+    """Relational arguments for RefreshToken"""
+
+
+
+class RuleArgsFromRefreshToken(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromRefreshTokenRecursive1(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromRefreshTokenRecursive2(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromRefreshTokenRecursive3(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromRefreshTokenRecursive4(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+
+
+
+class FindManyRuleArgsFromRefreshToken(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromRefreshTokenRecursive1(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromRefreshTokenRecursive2(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromRefreshTokenRecursive3(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromRefreshTokenRecursive4(TypedDict, total=False):
+    """Arguments for RefreshToken"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyRefreshTokenArgs = FindManyRefreshTokenArgsFromRefreshToken
 FindFirstRefreshTokenArgs = FindManyRefreshTokenArgsFromRefreshToken
 
@@ -6683,20 +6874,16 @@ class CompanyCreateWithoutRelationsInput(CompanyOptionalCreateWithoutRelationsIn
     name: _str
     cnpj: _str
 
-class CompanyConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'CompanyCreateWithoutRelationsInput'
-    where: 'CompanyWhereUniqueInput'
 
 class CompanyCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'CompanyCreateWithoutRelationsInput'
     connect: 'CompanyWhereUniqueInput'
-    connect_or_create: 'CompanyConnectOrCreateWithoutRelationsInput'
 
 
 class CompanyCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['CompanyCreateWithoutRelationsInput', list['CompanyCreateWithoutRelationsInput']]
     connect: Union['CompanyWhereUniqueInput', list['CompanyWhereUniqueInput']]
-    connect_or_create: Union['CompanyConnectOrCreateWithoutRelationsInput', list['CompanyConnectOrCreateWithoutRelationsInput']]
+
 
 class _CompanyWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -6760,7 +6947,6 @@ class CompanyUpdateManyMutationInput(TypedDict, total=False):
 class CompanyUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['CompanyCreateWithoutRelationsInput']
     connect: list['CompanyWhereUniqueInput']
-    connect_or_create: list['CompanyConnectOrCreateWithoutRelationsInput']
     set: list['CompanyWhereUniqueInput']
     disconnect: list['CompanyWhereUniqueInput']
     delete: list['CompanyWhereUniqueInput']
@@ -6770,18 +6956,19 @@ class CompanyUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['CompanyUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['CompanyScalarWhereInput']
     # upsert: List['CompanyUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['CompanyCreateOrConnectWithoutRelationsInput']
 
 
 class CompanyUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'CompanyCreateWithoutRelationsInput'
     connect: 'CompanyWhereUniqueInput'
-    connect_or_create: 'CompanyConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'CompanyUpdateInput'
     # upsert: 'CompanyUpsertWithoutRelationsInput'
+    # connectOrCreate: 'CompanyCreateOrConnectWithoutRelationsInput'
 
 
 class CompanyUpsertInput(TypedDict):
@@ -6834,14 +7021,6 @@ class _Company_createdAt_OrderByInput(TypedDict, total=True):
 class _Company_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Company_RelevanceInner(TypedDict, total=True):
-    fields: 'list[CompanyScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Company_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Company_RelevanceInner'
-
 CompanyOrderByInput = Union[
     '_Company_id_OrderByInput',
     '_Company_name_OrderByInput',
@@ -6858,7 +7037,6 @@ CompanyOrderByInput = Union[
     '_Company_isActive_OrderByInput',
     '_Company_createdAt_OrderByInput',
     '_Company_updatedAt_OrderByInput',
-    '_Company_RelevanceOrderByInput',
 ]
 
 
@@ -8899,6 +9077,107 @@ class FindManySystemConfigArgsFromCompanyRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromCompany(TypedDict, total=False):
+    """Relational arguments for Company"""
+
+
+class RuleIncludeFromCompanyRecursive1(TypedDict, total=False):
+    """Relational arguments for Company"""
+
+
+class RuleIncludeFromCompanyRecursive2(TypedDict, total=False):
+    """Relational arguments for Company"""
+
+
+class RuleIncludeFromCompanyRecursive3(TypedDict, total=False):
+    """Relational arguments for Company"""
+
+
+class RuleIncludeFromCompanyRecursive4(TypedDict, total=False):
+    """Relational arguments for Company"""
+
+
+
+class RuleArgsFromCompany(TypedDict, total=False):
+    """Arguments for Company"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromCompanyRecursive1(TypedDict, total=False):
+    """Arguments for Company"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromCompanyRecursive2(TypedDict, total=False):
+    """Arguments for Company"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromCompanyRecursive3(TypedDict, total=False):
+    """Arguments for Company"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromCompanyRecursive4(TypedDict, total=False):
+    """Arguments for Company"""
+
+
+
+class FindManyRuleArgsFromCompany(TypedDict, total=False):
+    """Arguments for Company"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromCompanyRecursive1(TypedDict, total=False):
+    """Arguments for Company"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromCompanyRecursive2(TypedDict, total=False):
+    """Arguments for Company"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromCompanyRecursive3(TypedDict, total=False):
+    """Arguments for Company"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromCompanyRecursive4(TypedDict, total=False):
+    """Arguments for Company"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyCompanyArgs = FindManyCompanyArgsFromCompany
 FindFirstCompanyArgs = FindManyCompanyArgsFromCompany
 
@@ -9443,20 +9722,16 @@ class ClientCreateWithoutRelationsInput(ClientOptionalCreateWithoutRelationsInpu
     cnpj: _str
     email: _str
 
-class ClientConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'ClientCreateWithoutRelationsInput'
-    where: 'ClientWhereUniqueInput'
 
 class ClientCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'ClientCreateWithoutRelationsInput'
     connect: 'ClientWhereUniqueInput'
-    connect_or_create: 'ClientConnectOrCreateWithoutRelationsInput'
 
 
 class ClientCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['ClientCreateWithoutRelationsInput', list['ClientCreateWithoutRelationsInput']]
     connect: Union['ClientWhereUniqueInput', list['ClientWhereUniqueInput']]
-    connect_or_create: Union['ClientConnectOrCreateWithoutRelationsInput', list['ClientConnectOrCreateWithoutRelationsInput']]
+
 
 class _ClientWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -9525,7 +9800,6 @@ class ClientUpdateManyMutationInput(TypedDict, total=False):
 class ClientUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['ClientCreateWithoutRelationsInput']
     connect: list['ClientWhereUniqueInput']
-    connect_or_create: list['ClientConnectOrCreateWithoutRelationsInput']
     set: list['ClientWhereUniqueInput']
     disconnect: list['ClientWhereUniqueInput']
     delete: list['ClientWhereUniqueInput']
@@ -9535,18 +9809,19 @@ class ClientUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['ClientUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['ClientScalarWhereInput']
     # upsert: List['ClientUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['ClientCreateOrConnectWithoutRelationsInput']
 
 
 class ClientUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'ClientCreateWithoutRelationsInput'
     connect: 'ClientWhereUniqueInput'
-    connect_or_create: 'ClientConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'ClientUpdateInput'
     # upsert: 'ClientUpsertWithoutRelationsInput'
+    # connectOrCreate: 'ClientCreateOrConnectWithoutRelationsInput'
 
 
 class ClientUpsertInput(TypedDict):
@@ -9605,14 +9880,6 @@ class _Client_createdAt_OrderByInput(TypedDict, total=True):
 class _Client_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Client_RelevanceInner(TypedDict, total=True):
-    fields: 'list[ClientScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Client_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Client_RelevanceInner'
-
 ClientOrderByInput = Union[
     '_Client_id_OrderByInput',
     '_Client_companyId_OrderByInput',
@@ -9631,7 +9898,6 @@ ClientOrderByInput = Union[
     '_Client_isActive_OrderByInput',
     '_Client_createdAt_OrderByInput',
     '_Client_updatedAt_OrderByInput',
-    '_Client_RelevanceOrderByInput',
 ]
 
 
@@ -11671,6 +11937,107 @@ class FindManySystemConfigArgsFromClientRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromClient(TypedDict, total=False):
+    """Relational arguments for Client"""
+
+
+class RuleIncludeFromClientRecursive1(TypedDict, total=False):
+    """Relational arguments for Client"""
+
+
+class RuleIncludeFromClientRecursive2(TypedDict, total=False):
+    """Relational arguments for Client"""
+
+
+class RuleIncludeFromClientRecursive3(TypedDict, total=False):
+    """Relational arguments for Client"""
+
+
+class RuleIncludeFromClientRecursive4(TypedDict, total=False):
+    """Relational arguments for Client"""
+
+
+
+class RuleArgsFromClient(TypedDict, total=False):
+    """Arguments for Client"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromClientRecursive1(TypedDict, total=False):
+    """Arguments for Client"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromClientRecursive2(TypedDict, total=False):
+    """Arguments for Client"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromClientRecursive3(TypedDict, total=False):
+    """Arguments for Client"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromClientRecursive4(TypedDict, total=False):
+    """Arguments for Client"""
+
+
+
+class FindManyRuleArgsFromClient(TypedDict, total=False):
+    """Arguments for Client"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromClientRecursive1(TypedDict, total=False):
+    """Arguments for Client"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromClientRecursive2(TypedDict, total=False):
+    """Arguments for Client"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromClientRecursive3(TypedDict, total=False):
+    """Arguments for Client"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromClientRecursive4(TypedDict, total=False):
+    """Arguments for Client"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyClientArgs = FindManyClientArgsFromClient
 FindFirstClientArgs = FindManyClientArgsFromClient
 
@@ -12226,20 +12593,16 @@ class BranchCreateWithoutRelationsInput(BranchOptionalCreateWithoutRelationsInpu
     name: _str
     code: _str
 
-class BranchConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'BranchCreateWithoutRelationsInput'
-    where: 'BranchWhereUniqueInput'
 
 class BranchCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'BranchCreateWithoutRelationsInput'
     connect: 'BranchWhereUniqueInput'
-    connect_or_create: 'BranchConnectOrCreateWithoutRelationsInput'
 
 
 class BranchCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['BranchCreateWithoutRelationsInput', list['BranchCreateWithoutRelationsInput']]
     connect: Union['BranchWhereUniqueInput', list['BranchWhereUniqueInput']]
-    connect_or_create: Union['BranchConnectOrCreateWithoutRelationsInput', list['BranchConnectOrCreateWithoutRelationsInput']]
+
 
 class _BranchWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -12288,7 +12651,6 @@ class BranchUpdateManyMutationInput(TypedDict, total=False):
 class BranchUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['BranchCreateWithoutRelationsInput']
     connect: list['BranchWhereUniqueInput']
-    connect_or_create: list['BranchConnectOrCreateWithoutRelationsInput']
     set: list['BranchWhereUniqueInput']
     disconnect: list['BranchWhereUniqueInput']
     delete: list['BranchWhereUniqueInput']
@@ -12298,18 +12660,19 @@ class BranchUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['BranchUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['BranchScalarWhereInput']
     # upsert: List['BranchUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['BranchCreateOrConnectWithoutRelationsInput']
 
 
 class BranchUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'BranchCreateWithoutRelationsInput'
     connect: 'BranchWhereUniqueInput'
-    connect_or_create: 'BranchConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'BranchUpdateInput'
     # upsert: 'BranchUpsertWithoutRelationsInput'
+    # connectOrCreate: 'BranchCreateOrConnectWithoutRelationsInput'
 
 
 class BranchUpsertInput(TypedDict):
@@ -12347,14 +12710,6 @@ class _Branch_createdAt_OrderByInput(TypedDict, total=True):
 class _Branch_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Branch_RelevanceInner(TypedDict, total=True):
-    fields: 'list[BranchScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Branch_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Branch_RelevanceInner'
-
 BranchOrderByInput = Union[
     '_Branch_id_OrderByInput',
     '_Branch_companyId_OrderByInput',
@@ -12366,7 +12721,6 @@ BranchOrderByInput = Union[
     '_Branch_isActive_OrderByInput',
     '_Branch_createdAt_OrderByInput',
     '_Branch_updatedAt_OrderByInput',
-    '_Branch_RelevanceOrderByInput',
 ]
 
 
@@ -14402,6 +14756,107 @@ class FindManySystemConfigArgsFromBranchRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromBranch(TypedDict, total=False):
+    """Relational arguments for Branch"""
+
+
+class RuleIncludeFromBranchRecursive1(TypedDict, total=False):
+    """Relational arguments for Branch"""
+
+
+class RuleIncludeFromBranchRecursive2(TypedDict, total=False):
+    """Relational arguments for Branch"""
+
+
+class RuleIncludeFromBranchRecursive3(TypedDict, total=False):
+    """Relational arguments for Branch"""
+
+
+class RuleIncludeFromBranchRecursive4(TypedDict, total=False):
+    """Relational arguments for Branch"""
+
+
+
+class RuleArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromBranchRecursive1(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromBranchRecursive2(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromBranchRecursive3(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromBranchRecursive4(TypedDict, total=False):
+    """Arguments for Branch"""
+
+
+
+class FindManyRuleArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromBranchRecursive1(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromBranchRecursive2(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromBranchRecursive3(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromBranchRecursive4(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyBranchArgs = FindManyBranchArgsFromBranch
 FindFirstBranchArgs = FindManyBranchArgsFromBranch
 
@@ -14814,20 +15269,16 @@ class CarrierCreateWithoutRelationsInput(CarrierOptionalCreateWithoutRelationsIn
     name: _str
     cnpj: _str
 
-class CarrierConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'CarrierCreateWithoutRelationsInput'
-    where: 'CarrierWhereUniqueInput'
 
 class CarrierCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'CarrierCreateWithoutRelationsInput'
     connect: 'CarrierWhereUniqueInput'
-    connect_or_create: 'CarrierConnectOrCreateWithoutRelationsInput'
 
 
 class CarrierCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['CarrierCreateWithoutRelationsInput', list['CarrierCreateWithoutRelationsInput']]
     connect: Union['CarrierWhereUniqueInput', list['CarrierWhereUniqueInput']]
-    connect_or_create: Union['CarrierConnectOrCreateWithoutRelationsInput', list['CarrierConnectOrCreateWithoutRelationsInput']]
+
 
 class _CarrierWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -14885,7 +15336,6 @@ class CarrierUpdateManyMutationInput(TypedDict, total=False):
 class CarrierUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['CarrierCreateWithoutRelationsInput']
     connect: list['CarrierWhereUniqueInput']
-    connect_or_create: list['CarrierConnectOrCreateWithoutRelationsInput']
     set: list['CarrierWhereUniqueInput']
     disconnect: list['CarrierWhereUniqueInput']
     delete: list['CarrierWhereUniqueInput']
@@ -14895,18 +15345,19 @@ class CarrierUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['CarrierUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['CarrierScalarWhereInput']
     # upsert: List['CarrierUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['CarrierCreateOrConnectWithoutRelationsInput']
 
 
 class CarrierUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'CarrierCreateWithoutRelationsInput'
     connect: 'CarrierWhereUniqueInput'
-    connect_or_create: 'CarrierConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'CarrierUpdateInput'
     # upsert: 'CarrierUpsertWithoutRelationsInput'
+    # connectOrCreate: 'CarrierCreateOrConnectWithoutRelationsInput'
 
 
 class CarrierUpsertInput(TypedDict):
@@ -14959,14 +15410,6 @@ class _Carrier_createdAt_OrderByInput(TypedDict, total=True):
 class _Carrier_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Carrier_RelevanceInner(TypedDict, total=True):
-    fields: 'list[CarrierScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Carrier_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Carrier_RelevanceInner'
-
 CarrierOrderByInput = Union[
     '_Carrier_id_OrderByInput',
     '_Carrier_companyId_OrderByInput',
@@ -14983,7 +15426,6 @@ CarrierOrderByInput = Union[
     '_Carrier_isActive_OrderByInput',
     '_Carrier_createdAt_OrderByInput',
     '_Carrier_updatedAt_OrderByInput',
-    '_Carrier_RelevanceOrderByInput',
 ]
 
 
@@ -17020,6 +17462,107 @@ class FindManySystemConfigArgsFromCarrierRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromCarrier(TypedDict, total=False):
+    """Relational arguments for Carrier"""
+
+
+class RuleIncludeFromCarrierRecursive1(TypedDict, total=False):
+    """Relational arguments for Carrier"""
+
+
+class RuleIncludeFromCarrierRecursive2(TypedDict, total=False):
+    """Relational arguments for Carrier"""
+
+
+class RuleIncludeFromCarrierRecursive3(TypedDict, total=False):
+    """Relational arguments for Carrier"""
+
+
+class RuleIncludeFromCarrierRecursive4(TypedDict, total=False):
+    """Relational arguments for Carrier"""
+
+
+
+class RuleArgsFromCarrier(TypedDict, total=False):
+    """Arguments for Carrier"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromCarrierRecursive1(TypedDict, total=False):
+    """Arguments for Carrier"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromCarrierRecursive2(TypedDict, total=False):
+    """Arguments for Carrier"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromCarrierRecursive3(TypedDict, total=False):
+    """Arguments for Carrier"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromCarrierRecursive4(TypedDict, total=False):
+    """Arguments for Carrier"""
+
+
+
+class FindManyRuleArgsFromCarrier(TypedDict, total=False):
+    """Arguments for Carrier"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromCarrierRecursive1(TypedDict, total=False):
+    """Arguments for Carrier"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromCarrierRecursive2(TypedDict, total=False):
+    """Arguments for Carrier"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromCarrierRecursive3(TypedDict, total=False):
+    """Arguments for Carrier"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromCarrierRecursive4(TypedDict, total=False):
+    """Arguments for Carrier"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyCarrierArgs = FindManyCarrierArgsFromCarrier
 FindFirstCarrierArgs = FindManyCarrierArgsFromCarrier
 
@@ -17541,20 +18084,16 @@ class ContractCreateWithoutRelationsInput(ContractOptionalCreateWithoutRelations
     number: _str
     startDate: datetime.datetime
 
-class ContractConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'ContractCreateWithoutRelationsInput'
-    where: 'ContractWhereUniqueInput'
 
 class ContractCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'ContractCreateWithoutRelationsInput'
     connect: 'ContractWhereUniqueInput'
-    connect_or_create: 'ContractConnectOrCreateWithoutRelationsInput'
 
 
 class ContractCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['ContractCreateWithoutRelationsInput', list['ContractCreateWithoutRelationsInput']]
     connect: Union['ContractWhereUniqueInput', list['ContractWhereUniqueInput']]
-    connect_or_create: Union['ContractConnectOrCreateWithoutRelationsInput', list['ContractConnectOrCreateWithoutRelationsInput']]
+
 
 class _ContractWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -17624,7 +18163,6 @@ class ContractUpdateManyMutationInput(TypedDict, total=False):
 class ContractUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['ContractCreateWithoutRelationsInput']
     connect: list['ContractWhereUniqueInput']
-    connect_or_create: list['ContractConnectOrCreateWithoutRelationsInput']
     set: list['ContractWhereUniqueInput']
     disconnect: list['ContractWhereUniqueInput']
     delete: list['ContractWhereUniqueInput']
@@ -17634,18 +18172,19 @@ class ContractUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['ContractUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['ContractScalarWhereInput']
     # upsert: List['ContractUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['ContractCreateOrConnectWithoutRelationsInput']
 
 
 class ContractUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'ContractCreateWithoutRelationsInput'
     connect: 'ContractWhereUniqueInput'
-    connect_or_create: 'ContractConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'ContractUpdateInput'
     # upsert: 'ContractUpsertWithoutRelationsInput'
+    # connectOrCreate: 'ContractCreateOrConnectWithoutRelationsInput'
 
 
 class ContractUpsertInput(TypedDict):
@@ -17713,14 +18252,6 @@ class _Contract_createdAt_OrderByInput(TypedDict, total=True):
 class _Contract_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Contract_RelevanceInner(TypedDict, total=True):
-    fields: 'list[ContractScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Contract_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Contract_RelevanceInner'
-
 ContractOrderByInput = Union[
     '_Contract_id_OrderByInput',
     '_Contract_companyId_OrderByInput',
@@ -17742,7 +18273,6 @@ ContractOrderByInput = Union[
     '_Contract_progressiveMonth2Pct_OrderByInput',
     '_Contract_createdAt_OrderByInput',
     '_Contract_updatedAt_OrderByInput',
-    '_Contract_RelevanceOrderByInput',
 ]
 
 
@@ -19781,6 +20311,107 @@ class FindManySystemConfigArgsFromContractRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromContract(TypedDict, total=False):
+    """Relational arguments for Contract"""
+
+
+class RuleIncludeFromContractRecursive1(TypedDict, total=False):
+    """Relational arguments for Contract"""
+
+
+class RuleIncludeFromContractRecursive2(TypedDict, total=False):
+    """Relational arguments for Contract"""
+
+
+class RuleIncludeFromContractRecursive3(TypedDict, total=False):
+    """Relational arguments for Contract"""
+
+
+class RuleIncludeFromContractRecursive4(TypedDict, total=False):
+    """Relational arguments for Contract"""
+
+
+
+class RuleArgsFromContract(TypedDict, total=False):
+    """Arguments for Contract"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromContractRecursive1(TypedDict, total=False):
+    """Arguments for Contract"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromContractRecursive2(TypedDict, total=False):
+    """Arguments for Contract"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromContractRecursive3(TypedDict, total=False):
+    """Arguments for Contract"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromContractRecursive4(TypedDict, total=False):
+    """Arguments for Contract"""
+
+
+
+class FindManyRuleArgsFromContract(TypedDict, total=False):
+    """Arguments for Contract"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromContractRecursive1(TypedDict, total=False):
+    """Arguments for Contract"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromContractRecursive2(TypedDict, total=False):
+    """Arguments for Contract"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromContractRecursive3(TypedDict, total=False):
+    """Arguments for Contract"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromContractRecursive4(TypedDict, total=False):
+    """Arguments for Contract"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyContractArgs = FindManyContractArgsFromContract
 FindFirstContractArgs = FindManyContractArgsFromContract
 
@@ -20394,20 +21025,16 @@ class FreightTableCreateWithoutRelationsInput(FreightTableOptionalCreateWithoutR
     effectiveFrom: datetime.datetime
     rules: 'fields.Json'
 
-class FreightTableConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'FreightTableCreateWithoutRelationsInput'
-    where: 'FreightTableWhereUniqueInput'
 
 class FreightTableCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'FreightTableCreateWithoutRelationsInput'
     connect: 'FreightTableWhereUniqueInput'
-    connect_or_create: 'FreightTableConnectOrCreateWithoutRelationsInput'
 
 
 class FreightTableCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['FreightTableCreateWithoutRelationsInput', list['FreightTableCreateWithoutRelationsInput']]
     connect: Union['FreightTableWhereUniqueInput', list['FreightTableWhereUniqueInput']]
-    connect_or_create: Union['FreightTableConnectOrCreateWithoutRelationsInput', list['FreightTableConnectOrCreateWithoutRelationsInput']]
+
 
 class _FreightTableWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -20447,7 +21074,6 @@ class FreightTableUpdateManyMutationInput(TypedDict, total=False):
 class FreightTableUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['FreightTableCreateWithoutRelationsInput']
     connect: list['FreightTableWhereUniqueInput']
-    connect_or_create: list['FreightTableConnectOrCreateWithoutRelationsInput']
     set: list['FreightTableWhereUniqueInput']
     disconnect: list['FreightTableWhereUniqueInput']
     delete: list['FreightTableWhereUniqueInput']
@@ -20457,18 +21083,19 @@ class FreightTableUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['FreightTableUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['FreightTableScalarWhereInput']
     # upsert: List['FreightTableUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['FreightTableCreateOrConnectWithoutRelationsInput']
 
 
 class FreightTableUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'FreightTableCreateWithoutRelationsInput'
     connect: 'FreightTableWhereUniqueInput'
-    connect_or_create: 'FreightTableConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'FreightTableUpdateInput'
     # upsert: 'FreightTableUpsertWithoutRelationsInput'
+    # connectOrCreate: 'FreightTableCreateOrConnectWithoutRelationsInput'
 
 
 class FreightTableUpsertInput(TypedDict):
@@ -20509,14 +21136,6 @@ class _FreightTable_createdAt_OrderByInput(TypedDict, total=True):
 class _FreightTable_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _FreightTable_RelevanceInner(TypedDict, total=True):
-    fields: 'list[FreightTableScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _FreightTable_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_FreightTable_RelevanceInner'
-
 FreightTableOrderByInput = Union[
     '_FreightTable_id_OrderByInput',
     '_FreightTable_contractId_OrderByInput',
@@ -20529,7 +21148,6 @@ FreightTableOrderByInput = Union[
     '_FreightTable_isActive_OrderByInput',
     '_FreightTable_createdAt_OrderByInput',
     '_FreightTable_updatedAt_OrderByInput',
-    '_FreightTable_RelevanceOrderByInput',
 ]
 
 
@@ -22562,6 +23180,107 @@ class FindManySystemConfigArgsFromFreightTableRecursive4(TypedDict, total=False)
 
 
 
+class RuleIncludeFromFreightTable(TypedDict, total=False):
+    """Relational arguments for FreightTable"""
+
+
+class RuleIncludeFromFreightTableRecursive1(TypedDict, total=False):
+    """Relational arguments for FreightTable"""
+
+
+class RuleIncludeFromFreightTableRecursive2(TypedDict, total=False):
+    """Relational arguments for FreightTable"""
+
+
+class RuleIncludeFromFreightTableRecursive3(TypedDict, total=False):
+    """Relational arguments for FreightTable"""
+
+
+class RuleIncludeFromFreightTableRecursive4(TypedDict, total=False):
+    """Relational arguments for FreightTable"""
+
+
+
+class RuleArgsFromFreightTable(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromFreightTableRecursive1(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromFreightTableRecursive2(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromFreightTableRecursive3(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromFreightTableRecursive4(TypedDict, total=False):
+    """Arguments for FreightTable"""
+
+
+
+class FindManyRuleArgsFromFreightTable(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromFreightTableRecursive1(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromFreightTableRecursive2(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromFreightTableRecursive3(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromFreightTableRecursive4(TypedDict, total=False):
+    """Arguments for FreightTable"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyFreightTableArgs = FindManyFreightTableArgsFromFreightTable
 FindFirstFreightTableArgs = FindManyFreightTableArgsFromFreightTable
 
@@ -22998,20 +23717,16 @@ class DocumentCreateWithoutRelationsInput(DocumentOptionalCreateWithoutRelations
     mimeType: _str
     fileSize: _int
 
-class DocumentConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'DocumentCreateWithoutRelationsInput'
-    where: 'DocumentWhereUniqueInput'
 
 class DocumentCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'DocumentCreateWithoutRelationsInput'
     connect: 'DocumentWhereUniqueInput'
-    connect_or_create: 'DocumentConnectOrCreateWithoutRelationsInput'
 
 
 class DocumentCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['DocumentCreateWithoutRelationsInput', list['DocumentCreateWithoutRelationsInput']]
     connect: Union['DocumentWhereUniqueInput', list['DocumentWhereUniqueInput']]
-    connect_or_create: Union['DocumentConnectOrCreateWithoutRelationsInput', list['DocumentConnectOrCreateWithoutRelationsInput']]
+
 
 class _DocumentWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -23092,7 +23807,6 @@ class DocumentUpdateManyMutationInput(TypedDict, total=False):
 class DocumentUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['DocumentCreateWithoutRelationsInput']
     connect: list['DocumentWhereUniqueInput']
-    connect_or_create: list['DocumentConnectOrCreateWithoutRelationsInput']
     set: list['DocumentWhereUniqueInput']
     disconnect: list['DocumentWhereUniqueInput']
     delete: list['DocumentWhereUniqueInput']
@@ -23102,18 +23816,19 @@ class DocumentUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['DocumentUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['DocumentScalarWhereInput']
     # upsert: List['DocumentUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['DocumentCreateOrConnectWithoutRelationsInput']
 
 
 class DocumentUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'DocumentCreateWithoutRelationsInput'
     connect: 'DocumentWhereUniqueInput'
-    connect_or_create: 'DocumentConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'DocumentUpdateInput'
     # upsert: 'DocumentUpsertWithoutRelationsInput'
+    # connectOrCreate: 'DocumentCreateOrConnectWithoutRelationsInput'
 
 
 class DocumentUpsertInput(TypedDict):
@@ -23205,14 +23920,6 @@ class _Document_updatedAt_OrderByInput(TypedDict, total=True):
 class _Document_processedAt_OrderByInput(TypedDict, total=True):
     processedAt: 'SortOrder'
 
-class _Document_RelevanceInner(TypedDict, total=True):
-    fields: 'list[DocumentScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Document_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Document_RelevanceInner'
-
 DocumentOrderByInput = Union[
     '_Document_id_OrderByInput',
     '_Document_companyId_OrderByInput',
@@ -23242,7 +23949,6 @@ DocumentOrderByInput = Union[
     '_Document_createdAt_OrderByInput',
     '_Document_updatedAt_OrderByInput',
     '_Document_processedAt_OrderByInput',
-    '_Document_RelevanceOrderByInput',
 ]
 
 
@@ -25280,6 +25986,107 @@ class FindManySystemConfigArgsFromDocumentRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromDocument(TypedDict, total=False):
+    """Relational arguments for Document"""
+
+
+class RuleIncludeFromDocumentRecursive1(TypedDict, total=False):
+    """Relational arguments for Document"""
+
+
+class RuleIncludeFromDocumentRecursive2(TypedDict, total=False):
+    """Relational arguments for Document"""
+
+
+class RuleIncludeFromDocumentRecursive3(TypedDict, total=False):
+    """Relational arguments for Document"""
+
+
+class RuleIncludeFromDocumentRecursive4(TypedDict, total=False):
+    """Relational arguments for Document"""
+
+
+
+class RuleArgsFromDocument(TypedDict, total=False):
+    """Arguments for Document"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromDocumentRecursive1(TypedDict, total=False):
+    """Arguments for Document"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromDocumentRecursive2(TypedDict, total=False):
+    """Arguments for Document"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromDocumentRecursive3(TypedDict, total=False):
+    """Arguments for Document"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromDocumentRecursive4(TypedDict, total=False):
+    """Arguments for Document"""
+
+
+
+class FindManyRuleArgsFromDocument(TypedDict, total=False):
+    """Arguments for Document"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromDocumentRecursive1(TypedDict, total=False):
+    """Arguments for Document"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromDocumentRecursive2(TypedDict, total=False):
+    """Arguments for Document"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromDocumentRecursive3(TypedDict, total=False):
+    """Arguments for Document"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromDocumentRecursive4(TypedDict, total=False):
+    """Arguments for Document"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyDocumentArgs = FindManyDocumentArgsFromDocument
 FindFirstDocumentArgs = FindManyDocumentArgsFromDocument
 
@@ -26014,6 +26821,7 @@ class DiscrepancyOptionalCreateInput(TypedDict, total=False):
     documentId: _str
     document: 'DocumentCreateNestedWithoutRelationsInput'
     status: 'enums.DiscrepancyStatus'
+    ruleVersion: _int
     currency: _str
     details: Optional['fields.Json']
     evidence: Optional['fields.Json']
@@ -26049,6 +26857,7 @@ class DiscrepancyOptionalCreateWithoutRelationsInput(TypedDict, total=False):
     contractId: _str | None
     documentId: _str
     status: 'enums.DiscrepancyStatus'
+    ruleVersion: _int
     currency: _str
     details: Optional['fields.Json']
     evidence: Optional['fields.Json']
@@ -26069,20 +26878,16 @@ class DiscrepancyCreateWithoutRelationsInput(DiscrepancyOptionalCreateWithoutRel
     difference: _float
     differencePct: _float
 
-class DiscrepancyConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'DiscrepancyCreateWithoutRelationsInput'
-    where: 'DiscrepancyWhereUniqueInput'
 
 class DiscrepancyCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'DiscrepancyCreateWithoutRelationsInput'
     connect: 'DiscrepancyWhereUniqueInput'
-    connect_or_create: 'DiscrepancyConnectOrCreateWithoutRelationsInput'
 
 
 class DiscrepancyCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['DiscrepancyCreateWithoutRelationsInput', list['DiscrepancyCreateWithoutRelationsInput']]
     connect: Union['DiscrepancyWhereUniqueInput', list['DiscrepancyWhereUniqueInput']]
-    connect_or_create: Union['DiscrepancyConnectOrCreateWithoutRelationsInput', list['DiscrepancyConnectOrCreateWithoutRelationsInput']]
+
 
 class _DiscrepancyWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -26102,6 +26907,7 @@ class DiscrepancyUpdateInput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: _str
+    ruleVersion: AtomicIntInput | _int
     ruleDescription: _str
     expectedValue: AtomicFloatInput | _float
     actualValue: AtomicFloatInput | _float
@@ -26124,6 +26930,7 @@ class DiscrepancyUpdateManyMutationInput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: _str
+    ruleVersion: AtomicIntInput | _int
     ruleDescription: _str
     expectedValue: AtomicFloatInput | _float
     actualValue: AtomicFloatInput | _float
@@ -26142,7 +26949,6 @@ class DiscrepancyUpdateManyMutationInput(TypedDict, total=False):
 class DiscrepancyUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['DiscrepancyCreateWithoutRelationsInput']
     connect: list['DiscrepancyWhereUniqueInput']
-    connect_or_create: list['DiscrepancyConnectOrCreateWithoutRelationsInput']
     set: list['DiscrepancyWhereUniqueInput']
     disconnect: list['DiscrepancyWhereUniqueInput']
     delete: list['DiscrepancyWhereUniqueInput']
@@ -26152,18 +26958,19 @@ class DiscrepancyUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['DiscrepancyUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['DiscrepancyScalarWhereInput']
     # upsert: List['DiscrepancyUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['DiscrepancyCreateOrConnectWithoutRelationsInput']
 
 
 class DiscrepancyUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'DiscrepancyCreateWithoutRelationsInput'
     connect: 'DiscrepancyWhereUniqueInput'
-    connect_or_create: 'DiscrepancyConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'DiscrepancyUpdateInput'
     # upsert: 'DiscrepancyUpsertWithoutRelationsInput'
+    # connectOrCreate: 'DiscrepancyCreateOrConnectWithoutRelationsInput'
 
 
 class DiscrepancyUpsertInput(TypedDict):
@@ -26200,6 +27007,9 @@ class _Discrepancy_status_OrderByInput(TypedDict, total=True):
 
 class _Discrepancy_ruleCode_OrderByInput(TypedDict, total=True):
     ruleCode: 'SortOrder'
+
+class _Discrepancy_ruleVersion_OrderByInput(TypedDict, total=True):
+    ruleVersion: 'SortOrder'
 
 class _Discrepancy_ruleDescription_OrderByInput(TypedDict, total=True):
     ruleDescription: 'SortOrder'
@@ -26240,14 +27050,6 @@ class _Discrepancy_createdAt_OrderByInput(TypedDict, total=True):
 class _Discrepancy_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Discrepancy_RelevanceInner(TypedDict, total=True):
-    fields: 'list[DiscrepancyScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Discrepancy_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Discrepancy_RelevanceInner'
-
 DiscrepancyOrderByInput = Union[
     '_Discrepancy_id_OrderByInput',
     '_Discrepancy_companyId_OrderByInput',
@@ -26259,6 +27061,7 @@ DiscrepancyOrderByInput = Union[
     '_Discrepancy_type_OrderByInput',
     '_Discrepancy_status_OrderByInput',
     '_Discrepancy_ruleCode_OrderByInput',
+    '_Discrepancy_ruleVersion_OrderByInput',
     '_Discrepancy_ruleDescription_OrderByInput',
     '_Discrepancy_expectedValue_OrderByInput',
     '_Discrepancy_actualValue_OrderByInput',
@@ -26272,7 +27075,6 @@ DiscrepancyOrderByInput = Union[
     '_Discrepancy_reviewedAt_OrderByInput',
     '_Discrepancy_createdAt_OrderByInput',
     '_Discrepancy_updatedAt_OrderByInput',
-    '_Discrepancy_RelevanceOrderByInput',
 ]
 
 
@@ -28311,6 +29113,107 @@ class FindManySystemConfigArgsFromDiscrepancyRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromDiscrepancy(TypedDict, total=False):
+    """Relational arguments for Discrepancy"""
+
+
+class RuleIncludeFromDiscrepancyRecursive1(TypedDict, total=False):
+    """Relational arguments for Discrepancy"""
+
+
+class RuleIncludeFromDiscrepancyRecursive2(TypedDict, total=False):
+    """Relational arguments for Discrepancy"""
+
+
+class RuleIncludeFromDiscrepancyRecursive3(TypedDict, total=False):
+    """Relational arguments for Discrepancy"""
+
+
+class RuleIncludeFromDiscrepancyRecursive4(TypedDict, total=False):
+    """Relational arguments for Discrepancy"""
+
+
+
+class RuleArgsFromDiscrepancy(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromDiscrepancyRecursive1(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromDiscrepancyRecursive2(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromDiscrepancyRecursive3(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromDiscrepancyRecursive4(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+
+
+
+class FindManyRuleArgsFromDiscrepancy(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromDiscrepancyRecursive1(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromDiscrepancyRecursive2(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromDiscrepancyRecursive3(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromDiscrepancyRecursive4(TypedDict, total=False):
+    """Arguments for Discrepancy"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyDiscrepancyArgs = FindManyDiscrepancyArgsFromDiscrepancy
 FindFirstDiscrepancyArgs = FindManyDiscrepancyArgsFromDiscrepancy
 
@@ -28335,6 +29238,7 @@ class DiscrepancyWhereInput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringFilter']
+    ruleVersion: Union[_int, 'types.IntFilter']
     ruleDescription: Union[_str, 'types.StringFilter']
     expectedValue: Union[_float, 'types.FloatFilter']
     actualValue: Union[_float, 'types.FloatFilter']
@@ -28375,6 +29279,7 @@ class DiscrepancyWhereInputRecursive1(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringFilter']
+    ruleVersion: Union[_int, 'types.IntFilter']
     ruleDescription: Union[_str, 'types.StringFilter']
     expectedValue: Union[_float, 'types.FloatFilter']
     actualValue: Union[_float, 'types.FloatFilter']
@@ -28415,6 +29320,7 @@ class DiscrepancyWhereInputRecursive2(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringFilter']
+    ruleVersion: Union[_int, 'types.IntFilter']
     ruleDescription: Union[_str, 'types.StringFilter']
     expectedValue: Union[_float, 'types.FloatFilter']
     actualValue: Union[_float, 'types.FloatFilter']
@@ -28455,6 +29361,7 @@ class DiscrepancyWhereInputRecursive3(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringFilter']
+    ruleVersion: Union[_int, 'types.IntFilter']
     ruleDescription: Union[_str, 'types.StringFilter']
     expectedValue: Union[_float, 'types.FloatFilter']
     actualValue: Union[_float, 'types.FloatFilter']
@@ -28495,6 +29402,7 @@ class DiscrepancyWhereInputRecursive4(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringFilter']
+    ruleVersion: Union[_int, 'types.IntFilter']
     ruleDescription: Union[_str, 'types.StringFilter']
     expectedValue: Union[_float, 'types.FloatFilter']
     actualValue: Union[_float, 'types.FloatFilter']
@@ -28529,6 +29437,7 @@ class DiscrepancyScalarWhereWithAggregatesInput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringWithAggregatesFilter']
+    ruleVersion: Union[_int, 'types.IntWithAggregatesFilter']
     ruleDescription: Union[_str, 'types.StringWithAggregatesFilter']
     expectedValue: Union[_float, 'types.FloatWithAggregatesFilter']
     actualValue: Union[_float, 'types.FloatWithAggregatesFilter']
@@ -28560,6 +29469,7 @@ class DiscrepancyScalarWhereWithAggregatesInputRecursive1(TypedDict, total=False
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringWithAggregatesFilter']
+    ruleVersion: Union[_int, 'types.IntWithAggregatesFilter']
     ruleDescription: Union[_str, 'types.StringWithAggregatesFilter']
     expectedValue: Union[_float, 'types.FloatWithAggregatesFilter']
     actualValue: Union[_float, 'types.FloatWithAggregatesFilter']
@@ -28591,6 +29501,7 @@ class DiscrepancyScalarWhereWithAggregatesInputRecursive2(TypedDict, total=False
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringWithAggregatesFilter']
+    ruleVersion: Union[_int, 'types.IntWithAggregatesFilter']
     ruleDescription: Union[_str, 'types.StringWithAggregatesFilter']
     expectedValue: Union[_float, 'types.FloatWithAggregatesFilter']
     actualValue: Union[_float, 'types.FloatWithAggregatesFilter']
@@ -28622,6 +29533,7 @@ class DiscrepancyScalarWhereWithAggregatesInputRecursive3(TypedDict, total=False
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringWithAggregatesFilter']
+    ruleVersion: Union[_int, 'types.IntWithAggregatesFilter']
     ruleDescription: Union[_str, 'types.StringWithAggregatesFilter']
     expectedValue: Union[_float, 'types.FloatWithAggregatesFilter']
     actualValue: Union[_float, 'types.FloatWithAggregatesFilter']
@@ -28653,6 +29565,7 @@ class DiscrepancyScalarWhereWithAggregatesInputRecursive4(TypedDict, total=False
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: Union[_str, 'types.StringWithAggregatesFilter']
+    ruleVersion: Union[_int, 'types.IntWithAggregatesFilter']
     ruleDescription: Union[_str, 'types.StringWithAggregatesFilter']
     expectedValue: Union[_float, 'types.FloatWithAggregatesFilter']
     actualValue: Union[_float, 'types.FloatWithAggregatesFilter']
@@ -28680,6 +29593,7 @@ class DiscrepancyGroupByOutput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: _str
+    ruleVersion: _int
     ruleDescription: _str
     expectedValue: _float
     actualValue: _float
@@ -28702,6 +29616,7 @@ class DiscrepancyGroupByOutput(TypedDict, total=False):
 
 class DiscrepancyAvgAggregateOutput(TypedDict, total=False):
     """Discrepancy output for aggregating averages"""
+    ruleVersion: float
     expectedValue: float
     actualValue: float
     difference: float
@@ -28710,6 +29625,7 @@ class DiscrepancyAvgAggregateOutput(TypedDict, total=False):
 
 class DiscrepancySumAggregateOutput(TypedDict, total=False):
     """Discrepancy output for aggregating sums"""
+    ruleVersion: _int
     expectedValue: _float
     actualValue: _float
     difference: _float
@@ -28728,6 +29644,7 @@ class DiscrepancyScalarAggregateOutput(TypedDict, total=False):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: _str
+    ruleVersion: _int
     ruleDescription: _str
     expectedValue: _float
     actualValue: _float
@@ -28759,6 +29676,7 @@ class DiscrepancyMaxAggregateInput(TypedDict, total=False):
     type: bool
     status: bool
     ruleCode: bool
+    ruleVersion: bool
     ruleDescription: bool
     expectedValue: bool
     actualValue: bool
@@ -28786,6 +29704,7 @@ class DiscrepancyMinAggregateInput(TypedDict, total=False):
     type: bool
     status: bool
     ruleCode: bool
+    ruleVersion: bool
     ruleDescription: bool
     expectedValue: bool
     actualValue: bool
@@ -28803,6 +29722,7 @@ class DiscrepancyMinAggregateInput(TypedDict, total=False):
 
 class DiscrepancyNumberAggregateInput(TypedDict, total=False):
     """Discrepancy input for aggregating numbers"""
+    ruleVersion: bool
     expectedValue: bool
     actualValue: bool
     difference: bool
@@ -28824,6 +29744,7 @@ class DiscrepancyCountAggregateInput(TypedDict, total=False):
     type: bool
     status: bool
     ruleCode: bool
+    ruleVersion: bool
     ruleDescription: bool
     expectedValue: bool
     actualValue: bool
@@ -28850,6 +29771,7 @@ class DiscrepancyCountAggregateOutput(TypedDict, total=False):
     type: int
     status: int
     ruleCode: int
+    ruleVersion: int
     ruleDescription: int
     expectedValue: int
     actualValue: int
@@ -28883,6 +29805,7 @@ DiscrepancyKeys = Literal[
     'type',
     'status',
     'ruleCode',
+    'ruleVersion',
     'ruleDescription',
     'expectedValue',
     'actualValue',
@@ -28909,6 +29832,7 @@ DiscrepancyScalarFieldKeys = Literal[
     'type',
     'status',
     'ruleCode',
+    'ruleVersion',
     'ruleDescription',
     'expectedValue',
     'actualValue',
@@ -29004,20 +29928,16 @@ class ContestCreateWithoutRelationsInput(ContestOptionalCreateWithoutRelationsIn
     number: _str
     successFeePct: _float
 
-class ContestConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'ContestCreateWithoutRelationsInput'
-    where: 'ContestWhereUniqueInput'
 
 class ContestCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'ContestCreateWithoutRelationsInput'
     connect: 'ContestWhereUniqueInput'
-    connect_or_create: 'ContestConnectOrCreateWithoutRelationsInput'
 
 
 class ContestCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['ContestCreateWithoutRelationsInput', list['ContestCreateWithoutRelationsInput']]
     connect: Union['ContestWhereUniqueInput', list['ContestWhereUniqueInput']]
-    connect_or_create: Union['ContestConnectOrCreateWithoutRelationsInput', list['ContestConnectOrCreateWithoutRelationsInput']]
+
 
 class _ContestWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -29087,7 +30007,6 @@ class ContestUpdateManyMutationInput(TypedDict, total=False):
 class ContestUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['ContestCreateWithoutRelationsInput']
     connect: list['ContestWhereUniqueInput']
-    connect_or_create: list['ContestConnectOrCreateWithoutRelationsInput']
     set: list['ContestWhereUniqueInput']
     disconnect: list['ContestWhereUniqueInput']
     delete: list['ContestWhereUniqueInput']
@@ -29097,18 +30016,19 @@ class ContestUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['ContestUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['ContestScalarWhereInput']
     # upsert: List['ContestUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['ContestCreateOrConnectWithoutRelationsInput']
 
 
 class ContestUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'ContestCreateWithoutRelationsInput'
     connect: 'ContestWhereUniqueInput'
-    connect_or_create: 'ContestConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'ContestUpdateInput'
     # upsert: 'ContestUpsertWithoutRelationsInput'
+    # connectOrCreate: 'ContestCreateOrConnectWithoutRelationsInput'
 
 
 class ContestUpsertInput(TypedDict):
@@ -29179,14 +30099,6 @@ class _Contest_createdAt_OrderByInput(TypedDict, total=True):
 class _Contest_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _Contest_RelevanceInner(TypedDict, total=True):
-    fields: 'list[ContestScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Contest_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Contest_RelevanceInner'
-
 ContestOrderByInput = Union[
     '_Contest_id_OrderByInput',
     '_Contest_companyId_OrderByInput',
@@ -29209,7 +30121,6 @@ ContestOrderByInput = Union[
     '_Contest_metadata_OrderByInput',
     '_Contest_createdAt_OrderByInput',
     '_Contest_updatedAt_OrderByInput',
-    '_Contest_RelevanceOrderByInput',
 ]
 
 
@@ -31248,6 +32159,107 @@ class FindManySystemConfigArgsFromContestRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromContest(TypedDict, total=False):
+    """Relational arguments for Contest"""
+
+
+class RuleIncludeFromContestRecursive1(TypedDict, total=False):
+    """Relational arguments for Contest"""
+
+
+class RuleIncludeFromContestRecursive2(TypedDict, total=False):
+    """Relational arguments for Contest"""
+
+
+class RuleIncludeFromContestRecursive3(TypedDict, total=False):
+    """Relational arguments for Contest"""
+
+
+class RuleIncludeFromContestRecursive4(TypedDict, total=False):
+    """Relational arguments for Contest"""
+
+
+
+class RuleArgsFromContest(TypedDict, total=False):
+    """Arguments for Contest"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromContestRecursive1(TypedDict, total=False):
+    """Arguments for Contest"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromContestRecursive2(TypedDict, total=False):
+    """Arguments for Contest"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromContestRecursive3(TypedDict, total=False):
+    """Arguments for Contest"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromContestRecursive4(TypedDict, total=False):
+    """Arguments for Contest"""
+
+
+
+class FindManyRuleArgsFromContest(TypedDict, total=False):
+    """Arguments for Contest"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromContestRecursive1(TypedDict, total=False):
+    """Arguments for Contest"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromContestRecursive2(TypedDict, total=False):
+    """Arguments for Contest"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromContestRecursive3(TypedDict, total=False):
+    """Arguments for Contest"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromContestRecursive4(TypedDict, total=False):
+    """Arguments for Contest"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyContestArgs = FindManyContestArgsFromContest
 FindFirstContestArgs = FindManyContestArgsFromContest
 
@@ -31882,20 +32894,16 @@ class ContestItemCreateWithoutRelationsInput(ContestItemOptionalCreateWithoutRel
     expectedValue: _float
     contestedValue: _float
 
-class ContestItemConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'ContestItemCreateWithoutRelationsInput'
-    where: 'ContestItemWhereUniqueInput'
 
 class ContestItemCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'ContestItemCreateWithoutRelationsInput'
     connect: 'ContestItemWhereUniqueInput'
-    connect_or_create: 'ContestItemConnectOrCreateWithoutRelationsInput'
 
 
 class ContestItemCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['ContestItemCreateWithoutRelationsInput', list['ContestItemCreateWithoutRelationsInput']]
     connect: Union['ContestItemWhereUniqueInput', list['ContestItemWhereUniqueInput']]
-    connect_or_create: Union['ContestItemConnectOrCreateWithoutRelationsInput', list['ContestItemConnectOrCreateWithoutRelationsInput']]
+
 
 class _ContestItemWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -31933,7 +32941,6 @@ class ContestItemUpdateManyMutationInput(TypedDict, total=False):
 class ContestItemUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['ContestItemCreateWithoutRelationsInput']
     connect: list['ContestItemWhereUniqueInput']
-    connect_or_create: list['ContestItemConnectOrCreateWithoutRelationsInput']
     set: list['ContestItemWhereUniqueInput']
     disconnect: list['ContestItemWhereUniqueInput']
     delete: list['ContestItemWhereUniqueInput']
@@ -31943,18 +32950,19 @@ class ContestItemUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['ContestItemUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['ContestItemScalarWhereInput']
     # upsert: List['ContestItemUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['ContestItemCreateOrConnectWithoutRelationsInput']
 
 
 class ContestItemUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'ContestItemCreateWithoutRelationsInput'
     connect: 'ContestItemWhereUniqueInput'
-    connect_or_create: 'ContestItemConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'ContestItemUpdateInput'
     # upsert: 'ContestItemUpsertWithoutRelationsInput'
+    # connectOrCreate: 'ContestItemCreateOrConnectWithoutRelationsInput'
 
 
 class ContestItemUpsertInput(TypedDict):
@@ -31992,14 +33000,6 @@ class _ContestItem_createdAt_OrderByInput(TypedDict, total=True):
 class _ContestItem_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _ContestItem_RelevanceInner(TypedDict, total=True):
-    fields: 'list[ContestItemScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _ContestItem_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_ContestItem_RelevanceInner'
-
 ContestItemOrderByInput = Union[
     '_ContestItem_id_OrderByInput',
     '_ContestItem_contestId_OrderByInput',
@@ -32011,7 +33011,6 @@ ContestItemOrderByInput = Union[
     '_ContestItem_notes_OrderByInput',
     '_ContestItem_createdAt_OrderByInput',
     '_ContestItem_updatedAt_OrderByInput',
-    '_ContestItem_RelevanceOrderByInput',
 ]
 
 
@@ -34046,6 +35045,107 @@ class FindManySystemConfigArgsFromContestItemRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromContestItem(TypedDict, total=False):
+    """Relational arguments for ContestItem"""
+
+
+class RuleIncludeFromContestItemRecursive1(TypedDict, total=False):
+    """Relational arguments for ContestItem"""
+
+
+class RuleIncludeFromContestItemRecursive2(TypedDict, total=False):
+    """Relational arguments for ContestItem"""
+
+
+class RuleIncludeFromContestItemRecursive3(TypedDict, total=False):
+    """Relational arguments for ContestItem"""
+
+
+class RuleIncludeFromContestItemRecursive4(TypedDict, total=False):
+    """Relational arguments for ContestItem"""
+
+
+
+class RuleArgsFromContestItem(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromContestItemRecursive1(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromContestItemRecursive2(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromContestItemRecursive3(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromContestItemRecursive4(TypedDict, total=False):
+    """Arguments for ContestItem"""
+
+
+
+class FindManyRuleArgsFromContestItem(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromContestItemRecursive1(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromContestItemRecursive2(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromContestItemRecursive3(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromContestItemRecursive4(TypedDict, total=False):
+    """Arguments for ContestItem"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyContestItemArgs = FindManyContestItemArgsFromContestItem
 FindFirstContestItemArgs = FindManyContestItemArgsFromContestItem
 
@@ -34446,20 +35546,16 @@ class CommunicationCreateWithoutRelationsInput(CommunicationOptionalCreateWithou
     direction: _str
     content: _str
 
-class CommunicationConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'CommunicationCreateWithoutRelationsInput'
-    where: 'CommunicationWhereUniqueInput'
 
 class CommunicationCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'CommunicationCreateWithoutRelationsInput'
     connect: 'CommunicationWhereUniqueInput'
-    connect_or_create: 'CommunicationConnectOrCreateWithoutRelationsInput'
 
 
 class CommunicationCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['CommunicationCreateWithoutRelationsInput', list['CommunicationCreateWithoutRelationsInput']]
     connect: Union['CommunicationWhereUniqueInput', list['CommunicationWhereUniqueInput']]
-    connect_or_create: Union['CommunicationConnectOrCreateWithoutRelationsInput', list['CommunicationConnectOrCreateWithoutRelationsInput']]
+
 
 class _CommunicationWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -34497,7 +35593,6 @@ class CommunicationUpdateManyMutationInput(TypedDict, total=False):
 class CommunicationUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['CommunicationCreateWithoutRelationsInput']
     connect: list['CommunicationWhereUniqueInput']
-    connect_or_create: list['CommunicationConnectOrCreateWithoutRelationsInput']
     set: list['CommunicationWhereUniqueInput']
     disconnect: list['CommunicationWhereUniqueInput']
     delete: list['CommunicationWhereUniqueInput']
@@ -34507,18 +35602,19 @@ class CommunicationUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['CommunicationUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['CommunicationScalarWhereInput']
     # upsert: List['CommunicationUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['CommunicationCreateOrConnectWithoutRelationsInput']
 
 
 class CommunicationUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'CommunicationCreateWithoutRelationsInput'
     connect: 'CommunicationWhereUniqueInput'
-    connect_or_create: 'CommunicationConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'CommunicationUpdateInput'
     # upsert: 'CommunicationUpsertWithoutRelationsInput'
+    # connectOrCreate: 'CommunicationCreateOrConnectWithoutRelationsInput'
 
 
 class CommunicationUpsertInput(TypedDict):
@@ -34556,14 +35652,6 @@ class _Communication_sentAt_OrderByInput(TypedDict, total=True):
 class _Communication_readAt_OrderByInput(TypedDict, total=True):
     readAt: 'SortOrder'
 
-class _Communication_RelevanceInner(TypedDict, total=True):
-    fields: 'list[CommunicationScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Communication_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Communication_RelevanceInner'
-
 CommunicationOrderByInput = Union[
     '_Communication_id_OrderByInput',
     '_Communication_contestId_OrderByInput',
@@ -34575,7 +35663,6 @@ CommunicationOrderByInput = Union[
     '_Communication_sentById_OrderByInput',
     '_Communication_sentAt_OrderByInput',
     '_Communication_readAt_OrderByInput',
-    '_Communication_RelevanceOrderByInput',
 ]
 
 
@@ -36608,6 +37695,107 @@ class FindManySystemConfigArgsFromCommunicationRecursive4(TypedDict, total=False
 
 
 
+class RuleIncludeFromCommunication(TypedDict, total=False):
+    """Relational arguments for Communication"""
+
+
+class RuleIncludeFromCommunicationRecursive1(TypedDict, total=False):
+    """Relational arguments for Communication"""
+
+
+class RuleIncludeFromCommunicationRecursive2(TypedDict, total=False):
+    """Relational arguments for Communication"""
+
+
+class RuleIncludeFromCommunicationRecursive3(TypedDict, total=False):
+    """Relational arguments for Communication"""
+
+
+class RuleIncludeFromCommunicationRecursive4(TypedDict, total=False):
+    """Relational arguments for Communication"""
+
+
+
+class RuleArgsFromCommunication(TypedDict, total=False):
+    """Arguments for Communication"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromCommunicationRecursive1(TypedDict, total=False):
+    """Arguments for Communication"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromCommunicationRecursive2(TypedDict, total=False):
+    """Arguments for Communication"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromCommunicationRecursive3(TypedDict, total=False):
+    """Arguments for Communication"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromCommunicationRecursive4(TypedDict, total=False):
+    """Arguments for Communication"""
+
+
+
+class FindManyRuleArgsFromCommunication(TypedDict, total=False):
+    """Arguments for Communication"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromCommunicationRecursive1(TypedDict, total=False):
+    """Arguments for Communication"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromCommunicationRecursive2(TypedDict, total=False):
+    """Arguments for Communication"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromCommunicationRecursive3(TypedDict, total=False):
+    """Arguments for Communication"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromCommunicationRecursive4(TypedDict, total=False):
+    """Arguments for Communication"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyCommunicationArgs = FindManyCommunicationArgsFromCommunication
 FindFirstCommunicationArgs = FindManyCommunicationArgsFromCommunication
 
@@ -36990,20 +38178,16 @@ class PaymentCreateWithoutRelationsInput(PaymentOptionalCreateWithoutRelationsIn
     amount: _float
     status: _str
 
-class PaymentConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'PaymentCreateWithoutRelationsInput'
-    where: 'PaymentWhereUniqueInput'
 
 class PaymentCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'PaymentCreateWithoutRelationsInput'
     connect: 'PaymentWhereUniqueInput'
-    connect_or_create: 'PaymentConnectOrCreateWithoutRelationsInput'
 
 
 class PaymentCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['PaymentCreateWithoutRelationsInput', list['PaymentCreateWithoutRelationsInput']]
     connect: Union['PaymentWhereUniqueInput', list['PaymentWhereUniqueInput']]
-    connect_or_create: Union['PaymentConnectOrCreateWithoutRelationsInput', list['PaymentConnectOrCreateWithoutRelationsInput']]
+
 
 class _PaymentWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -37044,7 +38228,6 @@ class PaymentUpdateManyMutationInput(TypedDict, total=False):
 class PaymentUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['PaymentCreateWithoutRelationsInput']
     connect: list['PaymentWhereUniqueInput']
-    connect_or_create: list['PaymentConnectOrCreateWithoutRelationsInput']
     set: list['PaymentWhereUniqueInput']
     disconnect: list['PaymentWhereUniqueInput']
     delete: list['PaymentWhereUniqueInput']
@@ -37054,18 +38237,19 @@ class PaymentUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['PaymentUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['PaymentScalarWhereInput']
     # upsert: List['PaymentUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['PaymentCreateOrConnectWithoutRelationsInput']
 
 
 class PaymentUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'PaymentCreateWithoutRelationsInput'
     connect: 'PaymentWhereUniqueInput'
-    connect_or_create: 'PaymentConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'PaymentUpdateInput'
     # upsert: 'PaymentUpsertWithoutRelationsInput'
+    # connectOrCreate: 'PaymentCreateOrConnectWithoutRelationsInput'
 
 
 class PaymentUpsertInput(TypedDict):
@@ -37109,14 +38293,6 @@ class _Payment_metadata_OrderByInput(TypedDict, total=True):
 class _Payment_createdAt_OrderByInput(TypedDict, total=True):
     createdAt: 'SortOrder'
 
-class _Payment_RelevanceInner(TypedDict, total=True):
-    fields: 'list[PaymentScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Payment_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Payment_RelevanceInner'
-
 PaymentOrderByInput = Union[
     '_Payment_id_OrderByInput',
     '_Payment_contestId_OrderByInput',
@@ -37130,7 +38306,6 @@ PaymentOrderByInput = Union[
     '_Payment_confirmedAt_OrderByInput',
     '_Payment_metadata_OrderByInput',
     '_Payment_createdAt_OrderByInput',
-    '_Payment_RelevanceOrderByInput',
 ]
 
 
@@ -39164,6 +40339,107 @@ class FindManySystemConfigArgsFromPaymentRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromPayment(TypedDict, total=False):
+    """Relational arguments for Payment"""
+
+
+class RuleIncludeFromPaymentRecursive1(TypedDict, total=False):
+    """Relational arguments for Payment"""
+
+
+class RuleIncludeFromPaymentRecursive2(TypedDict, total=False):
+    """Relational arguments for Payment"""
+
+
+class RuleIncludeFromPaymentRecursive3(TypedDict, total=False):
+    """Relational arguments for Payment"""
+
+
+class RuleIncludeFromPaymentRecursive4(TypedDict, total=False):
+    """Relational arguments for Payment"""
+
+
+
+class RuleArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromPaymentRecursive1(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromPaymentRecursive2(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromPaymentRecursive3(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromPaymentRecursive4(TypedDict, total=False):
+    """Arguments for Payment"""
+
+
+
+class FindManyRuleArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromPaymentRecursive1(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromPaymentRecursive2(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromPaymentRecursive3(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromPaymentRecursive4(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyPaymentArgs = FindManyPaymentArgsFromPayment
 FindFirstPaymentArgs = FindManyPaymentArgsFromPayment
 
@@ -39590,20 +40866,16 @@ class AuditLogCreateWithoutRelationsInput(AuditLogOptionalCreateWithoutRelations
     entityType: _str
     entityId: _str
 
-class AuditLogConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'AuditLogCreateWithoutRelationsInput'
-    where: 'AuditLogWhereUniqueInput'
 
 class AuditLogCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'AuditLogCreateWithoutRelationsInput'
     connect: 'AuditLogWhereUniqueInput'
-    connect_or_create: 'AuditLogConnectOrCreateWithoutRelationsInput'
 
 
 class AuditLogCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['AuditLogCreateWithoutRelationsInput', list['AuditLogCreateWithoutRelationsInput']]
     connect: Union['AuditLogWhereUniqueInput', list['AuditLogWhereUniqueInput']]
-    connect_or_create: Union['AuditLogConnectOrCreateWithoutRelationsInput', list['AuditLogConnectOrCreateWithoutRelationsInput']]
+
 
 class _AuditLogWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -39642,7 +40914,6 @@ class AuditLogUpdateManyMutationInput(TypedDict, total=False):
 class AuditLogUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['AuditLogCreateWithoutRelationsInput']
     connect: list['AuditLogWhereUniqueInput']
-    connect_or_create: list['AuditLogConnectOrCreateWithoutRelationsInput']
     set: list['AuditLogWhereUniqueInput']
     disconnect: list['AuditLogWhereUniqueInput']
     delete: list['AuditLogWhereUniqueInput']
@@ -39652,18 +40923,19 @@ class AuditLogUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['AuditLogUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['AuditLogScalarWhereInput']
     # upsert: List['AuditLogUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['AuditLogCreateOrConnectWithoutRelationsInput']
 
 
 class AuditLogUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'AuditLogCreateWithoutRelationsInput'
     connect: 'AuditLogWhereUniqueInput'
-    connect_or_create: 'AuditLogConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'AuditLogUpdateInput'
     # upsert: 'AuditLogUpsertWithoutRelationsInput'
+    # connectOrCreate: 'AuditLogCreateOrConnectWithoutRelationsInput'
 
 
 class AuditLogUpsertInput(TypedDict):
@@ -39704,14 +40976,6 @@ class _AuditLog_userAgent_OrderByInput(TypedDict, total=True):
 class _AuditLog_createdAt_OrderByInput(TypedDict, total=True):
     createdAt: 'SortOrder'
 
-class _AuditLog_RelevanceInner(TypedDict, total=True):
-    fields: 'list[AuditLogScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _AuditLog_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_AuditLog_RelevanceInner'
-
 AuditLogOrderByInput = Union[
     '_AuditLog_id_OrderByInput',
     '_AuditLog_companyId_OrderByInput',
@@ -39724,7 +40988,6 @@ AuditLogOrderByInput = Union[
     '_AuditLog_ipAddress_OrderByInput',
     '_AuditLog_userAgent_OrderByInput',
     '_AuditLog_createdAt_OrderByInput',
-    '_AuditLog_RelevanceOrderByInput',
 ]
 
 
@@ -41758,6 +43021,107 @@ class FindManySystemConfigArgsFromAuditLogRecursive4(TypedDict, total=False):
 
 
 
+class RuleIncludeFromAuditLog(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+
+
+class RuleIncludeFromAuditLogRecursive1(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+
+
+class RuleIncludeFromAuditLogRecursive2(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+
+
+class RuleIncludeFromAuditLogRecursive3(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+
+
+class RuleIncludeFromAuditLogRecursive4(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+
+
+
+class RuleArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromAuditLogRecursive1(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromAuditLogRecursive2(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromAuditLogRecursive3(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromAuditLogRecursive4(TypedDict, total=False):
+    """Arguments for AuditLog"""
+
+
+
+class FindManyRuleArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromAuditLogRecursive1(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromAuditLogRecursive2(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromAuditLogRecursive3(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromAuditLogRecursive4(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyAuditLogArgs = FindManyAuditLogArgsFromAuditLog
 FindFirstAuditLogArgs = FindManyAuditLogArgsFromAuditLog
 
@@ -42161,20 +43525,16 @@ class NotificationCreateWithoutRelationsInput(NotificationOptionalCreateWithoutR
     title: _str
     message: _str
 
-class NotificationConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'NotificationCreateWithoutRelationsInput'
-    where: 'NotificationWhereUniqueInput'
 
 class NotificationCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'NotificationCreateWithoutRelationsInput'
     connect: 'NotificationWhereUniqueInput'
-    connect_or_create: 'NotificationConnectOrCreateWithoutRelationsInput'
 
 
 class NotificationCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['NotificationCreateWithoutRelationsInput', list['NotificationCreateWithoutRelationsInput']]
     connect: Union['NotificationWhereUniqueInput', list['NotificationWhereUniqueInput']]
-    connect_or_create: Union['NotificationConnectOrCreateWithoutRelationsInput', list['NotificationConnectOrCreateWithoutRelationsInput']]
+
 
 class _NotificationWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -42211,7 +43571,6 @@ class NotificationUpdateManyMutationInput(TypedDict, total=False):
 class NotificationUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['NotificationCreateWithoutRelationsInput']
     connect: list['NotificationWhereUniqueInput']
-    connect_or_create: list['NotificationConnectOrCreateWithoutRelationsInput']
     set: list['NotificationWhereUniqueInput']
     disconnect: list['NotificationWhereUniqueInput']
     delete: list['NotificationWhereUniqueInput']
@@ -42221,18 +43580,19 @@ class NotificationUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['NotificationUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['NotificationScalarWhereInput']
     # upsert: List['NotificationUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['NotificationCreateOrConnectWithoutRelationsInput']
 
 
 class NotificationUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'NotificationCreateWithoutRelationsInput'
     connect: 'NotificationWhereUniqueInput'
-    connect_or_create: 'NotificationConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'NotificationUpdateInput'
     # upsert: 'NotificationUpsertWithoutRelationsInput'
+    # connectOrCreate: 'NotificationCreateOrConnectWithoutRelationsInput'
 
 
 class NotificationUpsertInput(TypedDict):
@@ -42270,14 +43630,6 @@ class _Notification_sentAt_OrderByInput(TypedDict, total=True):
 class _Notification_channels_OrderByInput(TypedDict, total=True):
     channels: 'SortOrder'
 
-class _Notification_RelevanceInner(TypedDict, total=True):
-    fields: 'list[NotificationScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _Notification_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_Notification_RelevanceInner'
-
 NotificationOrderByInput = Union[
     '_Notification_id_OrderByInput',
     '_Notification_clientId_OrderByInput',
@@ -42289,7 +43641,6 @@ NotificationOrderByInput = Union[
     '_Notification_readAt_OrderByInput',
     '_Notification_sentAt_OrderByInput',
     '_Notification_channels_OrderByInput',
-    '_Notification_RelevanceOrderByInput',
 ]
 
 
@@ -44323,6 +45674,107 @@ class FindManySystemConfigArgsFromNotificationRecursive4(TypedDict, total=False)
 
 
 
+class RuleIncludeFromNotification(TypedDict, total=False):
+    """Relational arguments for Notification"""
+
+
+class RuleIncludeFromNotificationRecursive1(TypedDict, total=False):
+    """Relational arguments for Notification"""
+
+
+class RuleIncludeFromNotificationRecursive2(TypedDict, total=False):
+    """Relational arguments for Notification"""
+
+
+class RuleIncludeFromNotificationRecursive3(TypedDict, total=False):
+    """Relational arguments for Notification"""
+
+
+class RuleIncludeFromNotificationRecursive4(TypedDict, total=False):
+    """Relational arguments for Notification"""
+
+
+
+class RuleArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromNotificationRecursive1(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromNotificationRecursive2(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromNotificationRecursive3(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromNotificationRecursive4(TypedDict, total=False):
+    """Arguments for Notification"""
+
+
+
+class FindManyRuleArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromNotificationRecursive1(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromNotificationRecursive2(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromNotificationRecursive3(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromNotificationRecursive4(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManyNotificationArgs = FindManyNotificationArgsFromNotification
 FindFirstNotificationArgs = FindManyNotificationArgsFromNotification
 
@@ -44700,20 +46152,16 @@ class SystemConfigCreateWithoutRelationsInput(SystemConfigOptionalCreateWithoutR
     key: _str
     value: 'fields.Json'
 
-class SystemConfigConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: 'SystemConfigCreateWithoutRelationsInput'
-    where: 'SystemConfigWhereUniqueInput'
 
 class SystemConfigCreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: 'SystemConfigCreateWithoutRelationsInput'
     connect: 'SystemConfigWhereUniqueInput'
-    connect_or_create: 'SystemConfigConnectOrCreateWithoutRelationsInput'
 
 
 class SystemConfigCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['SystemConfigCreateWithoutRelationsInput', list['SystemConfigCreateWithoutRelationsInput']]
     connect: Union['SystemConfigWhereUniqueInput', list['SystemConfigWhereUniqueInput']]
-    connect_or_create: Union['SystemConfigConnectOrCreateWithoutRelationsInput', list['SystemConfigConnectOrCreateWithoutRelationsInput']]
+
 
 class _SystemConfigWhereUnique_id_Input(TypedDict, total=True):
     id: '_str'
@@ -44752,7 +46200,6 @@ class SystemConfigUpdateManyMutationInput(TypedDict, total=False):
 class SystemConfigUpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: list['SystemConfigCreateWithoutRelationsInput']
     connect: list['SystemConfigWhereUniqueInput']
-    connect_or_create: list['SystemConfigConnectOrCreateWithoutRelationsInput']
     set: list['SystemConfigWhereUniqueInput']
     disconnect: list['SystemConfigWhereUniqueInput']
     delete: list['SystemConfigWhereUniqueInput']
@@ -44762,18 +46209,19 @@ class SystemConfigUpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['SystemConfigUpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['SystemConfigScalarWhereInput']
     # upsert: List['SystemConfigUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['SystemConfigCreateOrConnectWithoutRelationsInput']
 
 
 class SystemConfigUpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: 'SystemConfigCreateWithoutRelationsInput'
     connect: 'SystemConfigWhereUniqueInput'
-    connect_or_create: 'SystemConfigConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: 'SystemConfigUpdateInput'
     # upsert: 'SystemConfigUpsertWithoutRelationsInput'
+    # connectOrCreate: 'SystemConfigCreateOrConnectWithoutRelationsInput'
 
 
 class SystemConfigUpsertInput(TypedDict):
@@ -44802,14 +46250,6 @@ class _SystemConfig_createdAt_OrderByInput(TypedDict, total=True):
 class _SystemConfig_updatedAt_OrderByInput(TypedDict, total=True):
     updatedAt: 'SortOrder'
 
-class _SystemConfig_RelevanceInner(TypedDict, total=True):
-    fields: 'list[SystemConfigScalarFieldKeys]'
-    search: 'str'
-    sort: 'SortOrder'
-
-class _SystemConfig_RelevanceOrderByInput(TypedDict, total=True):
-    _relevance: '_SystemConfig_RelevanceInner'
-
 SystemConfigOrderByInput = Union[
     '_SystemConfig_id_OrderByInput',
     '_SystemConfig_key_OrderByInput',
@@ -44818,7 +46258,6 @@ SystemConfigOrderByInput = Union[
     '_SystemConfig_isPublic_OrderByInput',
     '_SystemConfig_createdAt_OrderByInput',
     '_SystemConfig_updatedAt_OrderByInput',
-    '_SystemConfig_RelevanceOrderByInput',
 ]
 
 
@@ -46850,6 +48289,107 @@ class FindManySystemConfigArgsFromSystemConfigRecursive4(TypedDict, total=False)
 
 
 
+class RuleIncludeFromSystemConfig(TypedDict, total=False):
+    """Relational arguments for SystemConfig"""
+
+
+class RuleIncludeFromSystemConfigRecursive1(TypedDict, total=False):
+    """Relational arguments for SystemConfig"""
+
+
+class RuleIncludeFromSystemConfigRecursive2(TypedDict, total=False):
+    """Relational arguments for SystemConfig"""
+
+
+class RuleIncludeFromSystemConfigRecursive3(TypedDict, total=False):
+    """Relational arguments for SystemConfig"""
+
+
+class RuleIncludeFromSystemConfigRecursive4(TypedDict, total=False):
+    """Relational arguments for SystemConfig"""
+
+
+
+class RuleArgsFromSystemConfig(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromSystemConfigRecursive1(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromSystemConfigRecursive2(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromSystemConfigRecursive3(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromSystemConfigRecursive4(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+
+
+
+class FindManyRuleArgsFromSystemConfig(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromSystemConfigRecursive1(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromSystemConfigRecursive2(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromSystemConfigRecursive3(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromSystemConfigRecursive4(TypedDict, total=False):
+    """Arguments for SystemConfig"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
 FindManySystemConfigArgs = FindManySystemConfigArgsFromSystemConfig
 FindFirstSystemConfigArgs = FindManySystemConfigArgsFromSystemConfig
 
@@ -47123,6 +48663,2685 @@ SystemConfigScalarFieldKeys = Literal[
 SystemConfigScalarFieldKeysT = TypeVar('SystemConfigScalarFieldKeysT', bound=SystemConfigScalarFieldKeys)
 
 SystemConfigRelationalFieldKeys = _NoneType
+
+# Rule types
+
+class RuleOptionalCreateInput(TypedDict, total=False):
+    """Optional arguments to the Rule create method"""
+    id: _str
+    configJson: 'fields.Json'
+    version: _int
+    isActive: _bool
+    description: _str | None
+    tags: list[_str]
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class RuleCreateInput(RuleOptionalCreateInput):
+    """Required arguments to the Rule create method"""
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+
+
+# TODO: remove this in favour of without explicit relations
+# e.g. PostCreateWithoutAuthorInput
+
+class RuleOptionalCreateWithoutRelationsInput(TypedDict, total=False):
+    """Optional arguments to the Rule create method, without relations"""
+    id: _str
+    configJson: 'fields.Json'
+    version: _int
+    isActive: _bool
+    description: _str | None
+    tags: list[_str]
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class RuleCreateWithoutRelationsInput(RuleOptionalCreateWithoutRelationsInput):
+    """Required arguments to the Rule create method, without relations"""
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+
+
+class RuleCreateNestedWithoutRelationsInput(TypedDict, total=False):
+    create: 'RuleCreateWithoutRelationsInput'
+    connect: 'RuleWhereUniqueInput'
+
+
+class RuleCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
+    create: Union['RuleCreateWithoutRelationsInput', list['RuleCreateWithoutRelationsInput']]
+    connect: Union['RuleWhereUniqueInput', list['RuleWhereUniqueInput']]
+
+
+class _RuleWhereUnique_id_Input(TypedDict, total=True):
+    id: '_str'
+
+class _RuleWhereUnique_code_Input(TypedDict, total=True):
+    code: '_str'
+
+RuleWhereUniqueInput = Union[
+    '_RuleWhereUnique_id_Input',
+    '_RuleWhereUnique_code_Input',
+]
+
+
+class RuleUpdateInput(TypedDict, total=False):
+    """Optional arguments for updating a record"""
+    id: _str
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+    configJson: 'fields.Json'
+    version: AtomicIntInput | _int
+    isActive: _bool
+    description: _str | None
+    tags: 'types.StringListUpdate'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class RuleUpdateManyMutationInput(TypedDict, total=False):
+    """Arguments for updating many records"""
+    id: _str
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+    configJson: 'fields.Json'
+    version: AtomicIntInput | _int
+    isActive: _bool
+    description: _str | None
+    tags: 'types.StringListUpdate'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class RuleUpdateManyWithoutRelationsInput(TypedDict, total=False):
+    create: list['RuleCreateWithoutRelationsInput']
+    connect: list['RuleWhereUniqueInput']
+    set: list['RuleWhereUniqueInput']
+    disconnect: list['RuleWhereUniqueInput']
+    delete: list['RuleWhereUniqueInput']
+
+    # TODO
+    # update: List['RuleUpdateWithWhereUniqueWithoutRelationsInput']
+    # updateMany: List['RuleUpdateManyWithWhereUniqueWithoutRelationsInput']
+    # deleteMany: List['RuleScalarWhereInput']
+    # upsert: List['RuleUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['RuleCreateOrConnectWithoutRelationsInput']
+
+
+class RuleUpdateOneWithoutRelationsInput(TypedDict, total=False):
+    create: 'RuleCreateWithoutRelationsInput'
+    connect: 'RuleWhereUniqueInput'
+    disconnect: bool
+    delete: bool
+
+    # TODO
+    # update: 'RuleUpdateInput'
+    # upsert: 'RuleUpsertWithoutRelationsInput'
+    # connectOrCreate: 'RuleCreateOrConnectWithoutRelationsInput'
+
+
+class RuleUpsertInput(TypedDict):
+    create: 'RuleCreateInput'
+    update: 'RuleUpdateInput'  # pyright: ignore[reportIncompatibleMethodOverride]
+
+
+class _Rule_id_OrderByInput(TypedDict, total=True):
+    id: 'SortOrder'
+
+class _Rule_code_OrderByInput(TypedDict, total=True):
+    code: 'SortOrder'
+
+class _Rule_name_OrderByInput(TypedDict, total=True):
+    name: 'SortOrder'
+
+class _Rule_type_OrderByInput(TypedDict, total=True):
+    type: 'SortOrder'
+
+class _Rule_severity_OrderByInput(TypedDict, total=True):
+    severity: 'SortOrder'
+
+class _Rule_configJson_OrderByInput(TypedDict, total=True):
+    configJson: 'SortOrder'
+
+class _Rule_version_OrderByInput(TypedDict, total=True):
+    version: 'SortOrder'
+
+class _Rule_isActive_OrderByInput(TypedDict, total=True):
+    isActive: 'SortOrder'
+
+class _Rule_description_OrderByInput(TypedDict, total=True):
+    description: 'SortOrder'
+
+class _Rule_tags_OrderByInput(TypedDict, total=True):
+    tags: 'SortOrder'
+
+class _Rule_createdAt_OrderByInput(TypedDict, total=True):
+    createdAt: 'SortOrder'
+
+class _Rule_updatedAt_OrderByInput(TypedDict, total=True):
+    updatedAt: 'SortOrder'
+
+RuleOrderByInput = Union[
+    '_Rule_id_OrderByInput',
+    '_Rule_code_OrderByInput',
+    '_Rule_name_OrderByInput',
+    '_Rule_type_OrderByInput',
+    '_Rule_severity_OrderByInput',
+    '_Rule_configJson_OrderByInput',
+    '_Rule_version_OrderByInput',
+    '_Rule_isActive_OrderByInput',
+    '_Rule_description_OrderByInput',
+    '_Rule_tags_OrderByInput',
+    '_Rule_createdAt_OrderByInput',
+    '_Rule_updatedAt_OrderByInput',
+]
+
+
+
+# recursive Rule types
+# TODO: cleanup these types
+
+
+# Dict[str, Any] is a mypy limitation
+# see https://github.com/RobertCraigie/prisma-client-py/issues/45
+# switch to pyright for improved types, see https://prisma-client-py.readthedocs.io/en/stable/reference/limitations/
+
+RuleRelationFilter = TypedDict(
+    'RuleRelationFilter',
+    {
+        'is': 'dict[str, Any]',
+        'is_not': 'dict[str, Any]',
+    },
+    total=False,
+)
+
+
+class RuleListRelationFilter(TypedDict, total=False):
+    some: 'dict[str, Any]'
+    none: 'dict[str, Any]'
+    every: 'dict[str, Any]'
+
+
+class RuleInclude(TypedDict, total=False):
+    """Rule relational arguments"""
+
+
+
+
+class UserIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    refreshTokens: Union[bool, 'FindManyRefreshTokenArgsFromRuleRecursive1']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive1']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive1']
+
+
+class UserIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    refreshTokens: Union[bool, 'FindManyRefreshTokenArgsFromRuleRecursive2']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive2']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive2']
+
+
+class UserIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    refreshTokens: Union[bool, 'FindManyRefreshTokenArgsFromRuleRecursive3']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive3']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive3']
+
+
+class UserIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    refreshTokens: Union[bool, 'FindManyRefreshTokenArgsFromRuleRecursive4']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive4']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive4']
+
+
+class UserIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class UserArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'UserIncludeFromUserRecursive1'
+
+
+class UserArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'UserIncludeFromUserRecursive2'
+
+
+class UserArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'UserIncludeFromUserRecursive3'
+
+
+class UserArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'UserIncludeFromUserRecursive4'
+
+
+class UserArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyUserArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', list['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: list['UserScalarFieldKeys']
+    include: 'UserIncludeFromUserRecursive1'
+
+
+class FindManyUserArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', list['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: list['UserScalarFieldKeys']
+    include: 'UserIncludeFromUserRecursive2'
+
+
+class FindManyUserArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', list['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: list['UserScalarFieldKeys']
+    include: 'UserIncludeFromUserRecursive3'
+
+
+class FindManyUserArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', list['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: list['UserScalarFieldKeys']
+    include: 'UserIncludeFromUserRecursive4'
+
+
+class FindManyUserArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', list['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: list['UserScalarFieldKeys']
+
+
+
+class RefreshTokenIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    user: Union[bool, 'UserArgsFromRuleRecursive1']
+
+
+class RefreshTokenIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    user: Union[bool, 'UserArgsFromRuleRecursive2']
+
+
+class RefreshTokenIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    user: Union[bool, 'UserArgsFromRuleRecursive3']
+
+
+class RefreshTokenIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    user: Union[bool, 'UserArgsFromRuleRecursive4']
+
+
+class RefreshTokenIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class RefreshTokenArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive1'
+
+
+class RefreshTokenArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive2'
+
+
+class RefreshTokenArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive3'
+
+
+class RefreshTokenArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive4'
+
+
+class RefreshTokenArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyRefreshTokenArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RefreshTokenOrderByInput', list['RefreshTokenOrderByInput']]
+    where: 'RefreshTokenWhereInput'
+    cursor: 'RefreshTokenWhereUniqueInput'
+    distinct: list['RefreshTokenScalarFieldKeys']
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive1'
+
+
+class FindManyRefreshTokenArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RefreshTokenOrderByInput', list['RefreshTokenOrderByInput']]
+    where: 'RefreshTokenWhereInput'
+    cursor: 'RefreshTokenWhereUniqueInput'
+    distinct: list['RefreshTokenScalarFieldKeys']
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive2'
+
+
+class FindManyRefreshTokenArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RefreshTokenOrderByInput', list['RefreshTokenOrderByInput']]
+    where: 'RefreshTokenWhereInput'
+    cursor: 'RefreshTokenWhereUniqueInput'
+    distinct: list['RefreshTokenScalarFieldKeys']
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive3'
+
+
+class FindManyRefreshTokenArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RefreshTokenOrderByInput', list['RefreshTokenOrderByInput']]
+    where: 'RefreshTokenWhereInput'
+    cursor: 'RefreshTokenWhereUniqueInput'
+    distinct: list['RefreshTokenScalarFieldKeys']
+    include: 'RefreshTokenIncludeFromRefreshTokenRecursive4'
+
+
+class FindManyRefreshTokenArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RefreshTokenOrderByInput', list['RefreshTokenOrderByInput']]
+    where: 'RefreshTokenWhereInput'
+    cursor: 'RefreshTokenWhereUniqueInput'
+    distinct: list['RefreshTokenScalarFieldKeys']
+
+
+
+class CompanyIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    users: Union[bool, 'FindManyUserArgsFromRuleRecursive1']
+    clients: Union[bool, 'FindManyClientArgsFromRuleRecursive1']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive1']
+    carriers: Union[bool, 'FindManyCarrierArgsFromRuleRecursive1']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive1']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive1']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive1']
+
+
+class CompanyIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    users: Union[bool, 'FindManyUserArgsFromRuleRecursive2']
+    clients: Union[bool, 'FindManyClientArgsFromRuleRecursive2']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive2']
+    carriers: Union[bool, 'FindManyCarrierArgsFromRuleRecursive2']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive2']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive2']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive2']
+
+
+class CompanyIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    users: Union[bool, 'FindManyUserArgsFromRuleRecursive3']
+    clients: Union[bool, 'FindManyClientArgsFromRuleRecursive3']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive3']
+    carriers: Union[bool, 'FindManyCarrierArgsFromRuleRecursive3']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive3']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive3']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive3']
+
+
+class CompanyIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    users: Union[bool, 'FindManyUserArgsFromRuleRecursive4']
+    clients: Union[bool, 'FindManyClientArgsFromRuleRecursive4']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive4']
+    carriers: Union[bool, 'FindManyCarrierArgsFromRuleRecursive4']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive4']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive4']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRuleRecursive4']
+
+
+class CompanyIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class CompanyArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CompanyIncludeFromCompanyRecursive1'
+
+
+class CompanyArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CompanyIncludeFromCompanyRecursive2'
+
+
+class CompanyArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CompanyIncludeFromCompanyRecursive3'
+
+
+class CompanyArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CompanyIncludeFromCompanyRecursive4'
+
+
+class CompanyArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyCompanyArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CompanyOrderByInput', list['CompanyOrderByInput']]
+    where: 'CompanyWhereInput'
+    cursor: 'CompanyWhereUniqueInput'
+    distinct: list['CompanyScalarFieldKeys']
+    include: 'CompanyIncludeFromCompanyRecursive1'
+
+
+class FindManyCompanyArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CompanyOrderByInput', list['CompanyOrderByInput']]
+    where: 'CompanyWhereInput'
+    cursor: 'CompanyWhereUniqueInput'
+    distinct: list['CompanyScalarFieldKeys']
+    include: 'CompanyIncludeFromCompanyRecursive2'
+
+
+class FindManyCompanyArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CompanyOrderByInput', list['CompanyOrderByInput']]
+    where: 'CompanyWhereInput'
+    cursor: 'CompanyWhereUniqueInput'
+    distinct: list['CompanyScalarFieldKeys']
+    include: 'CompanyIncludeFromCompanyRecursive3'
+
+
+class FindManyCompanyArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CompanyOrderByInput', list['CompanyOrderByInput']]
+    where: 'CompanyWhereInput'
+    cursor: 'CompanyWhereUniqueInput'
+    distinct: list['CompanyScalarFieldKeys']
+    include: 'CompanyIncludeFromCompanyRecursive4'
+
+
+class FindManyCompanyArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CompanyOrderByInput', list['CompanyOrderByInput']]
+    where: 'CompanyWhereInput'
+    cursor: 'CompanyWhereUniqueInput'
+    distinct: list['CompanyScalarFieldKeys']
+
+
+
+class ClientIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    user: Union[bool, 'UserArgsFromRuleRecursive1']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive1']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive1']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive1']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive1']
+
+
+class ClientIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    user: Union[bool, 'UserArgsFromRuleRecursive2']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive2']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive2']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive2']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive2']
+
+
+class ClientIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    user: Union[bool, 'UserArgsFromRuleRecursive3']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive3']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive3']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive3']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive3']
+
+
+class ClientIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    user: Union[bool, 'UserArgsFromRuleRecursive4']
+    branches: Union[bool, 'FindManyBranchArgsFromRuleRecursive4']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive4']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive4']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRuleRecursive4']
+
+
+class ClientIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class ClientArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ClientIncludeFromClientRecursive1'
+
+
+class ClientArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ClientIncludeFromClientRecursive2'
+
+
+class ClientArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ClientIncludeFromClientRecursive3'
+
+
+class ClientArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ClientIncludeFromClientRecursive4'
+
+
+class ClientArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyClientArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ClientOrderByInput', list['ClientOrderByInput']]
+    where: 'ClientWhereInput'
+    cursor: 'ClientWhereUniqueInput'
+    distinct: list['ClientScalarFieldKeys']
+    include: 'ClientIncludeFromClientRecursive1'
+
+
+class FindManyClientArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ClientOrderByInput', list['ClientOrderByInput']]
+    where: 'ClientWhereInput'
+    cursor: 'ClientWhereUniqueInput'
+    distinct: list['ClientScalarFieldKeys']
+    include: 'ClientIncludeFromClientRecursive2'
+
+
+class FindManyClientArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ClientOrderByInput', list['ClientOrderByInput']]
+    where: 'ClientWhereInput'
+    cursor: 'ClientWhereUniqueInput'
+    distinct: list['ClientScalarFieldKeys']
+    include: 'ClientIncludeFromClientRecursive3'
+
+
+class FindManyClientArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ClientOrderByInput', list['ClientOrderByInput']]
+    where: 'ClientWhereInput'
+    cursor: 'ClientWhereUniqueInput'
+    distinct: list['ClientScalarFieldKeys']
+    include: 'ClientIncludeFromClientRecursive4'
+
+
+class FindManyClientArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ClientOrderByInput', list['ClientOrderByInput']]
+    where: 'ClientWhereInput'
+    cursor: 'ClientWhereUniqueInput'
+    distinct: list['ClientScalarFieldKeys']
+
+
+
+class BranchIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+
+
+class BranchIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+
+
+class BranchIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+
+
+class BranchIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+
+
+class BranchIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class BranchArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'BranchIncludeFromBranchRecursive1'
+
+
+class BranchArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'BranchIncludeFromBranchRecursive2'
+
+
+class BranchArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'BranchIncludeFromBranchRecursive3'
+
+
+class BranchArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'BranchIncludeFromBranchRecursive4'
+
+
+class BranchArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyBranchArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', list['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: list['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranchRecursive1'
+
+
+class FindManyBranchArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', list['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: list['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranchRecursive2'
+
+
+class FindManyBranchArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', list['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: list['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranchRecursive3'
+
+
+class FindManyBranchArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', list['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: list['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranchRecursive4'
+
+
+class FindManyBranchArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', list['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: list['BranchScalarFieldKeys']
+
+
+
+class CarrierIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive1']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive1']
+
+
+class CarrierIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive2']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive2']
+
+
+class CarrierIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive3']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive3']
+
+
+class CarrierIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    contracts: Union[bool, 'FindManyContractArgsFromRuleRecursive4']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive4']
+
+
+class CarrierIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class CarrierArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CarrierIncludeFromCarrierRecursive1'
+
+
+class CarrierArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CarrierIncludeFromCarrierRecursive2'
+
+
+class CarrierArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CarrierIncludeFromCarrierRecursive3'
+
+
+class CarrierArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CarrierIncludeFromCarrierRecursive4'
+
+
+class CarrierArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyCarrierArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CarrierOrderByInput', list['CarrierOrderByInput']]
+    where: 'CarrierWhereInput'
+    cursor: 'CarrierWhereUniqueInput'
+    distinct: list['CarrierScalarFieldKeys']
+    include: 'CarrierIncludeFromCarrierRecursive1'
+
+
+class FindManyCarrierArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CarrierOrderByInput', list['CarrierOrderByInput']]
+    where: 'CarrierWhereInput'
+    cursor: 'CarrierWhereUniqueInput'
+    distinct: list['CarrierScalarFieldKeys']
+    include: 'CarrierIncludeFromCarrierRecursive2'
+
+
+class FindManyCarrierArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CarrierOrderByInput', list['CarrierOrderByInput']]
+    where: 'CarrierWhereInput'
+    cursor: 'CarrierWhereUniqueInput'
+    distinct: list['CarrierScalarFieldKeys']
+    include: 'CarrierIncludeFromCarrierRecursive3'
+
+
+class FindManyCarrierArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CarrierOrderByInput', list['CarrierOrderByInput']]
+    where: 'CarrierWhereInput'
+    cursor: 'CarrierWhereUniqueInput'
+    distinct: list['CarrierScalarFieldKeys']
+    include: 'CarrierIncludeFromCarrierRecursive4'
+
+
+class FindManyCarrierArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CarrierOrderByInput', list['CarrierOrderByInput']]
+    where: 'CarrierWhereInput'
+    cursor: 'CarrierWhereUniqueInput'
+    distinct: list['CarrierScalarFieldKeys']
+
+
+
+class ContractIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive1']
+    tables: Union[bool, 'FindManyFreightTableArgsFromRuleRecursive1']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive1']
+
+
+class ContractIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive2']
+    tables: Union[bool, 'FindManyFreightTableArgsFromRuleRecursive2']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive2']
+
+
+class ContractIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive3']
+    tables: Union[bool, 'FindManyFreightTableArgsFromRuleRecursive3']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive3']
+
+
+class ContractIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive4']
+    tables: Union[bool, 'FindManyFreightTableArgsFromRuleRecursive4']
+    documents: Union[bool, 'FindManyDocumentArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+    contests: Union[bool, 'FindManyContestArgsFromRuleRecursive4']
+
+
+class ContractIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class ContractArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContractIncludeFromContractRecursive1'
+
+
+class ContractArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContractIncludeFromContractRecursive2'
+
+
+class ContractArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContractIncludeFromContractRecursive3'
+
+
+class ContractArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContractIncludeFromContractRecursive4'
+
+
+class ContractArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyContractArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContractOrderByInput', list['ContractOrderByInput']]
+    where: 'ContractWhereInput'
+    cursor: 'ContractWhereUniqueInput'
+    distinct: list['ContractScalarFieldKeys']
+    include: 'ContractIncludeFromContractRecursive1'
+
+
+class FindManyContractArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContractOrderByInput', list['ContractOrderByInput']]
+    where: 'ContractWhereInput'
+    cursor: 'ContractWhereUniqueInput'
+    distinct: list['ContractScalarFieldKeys']
+    include: 'ContractIncludeFromContractRecursive2'
+
+
+class FindManyContractArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContractOrderByInput', list['ContractOrderByInput']]
+    where: 'ContractWhereInput'
+    cursor: 'ContractWhereUniqueInput'
+    distinct: list['ContractScalarFieldKeys']
+    include: 'ContractIncludeFromContractRecursive3'
+
+
+class FindManyContractArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContractOrderByInput', list['ContractOrderByInput']]
+    where: 'ContractWhereInput'
+    cursor: 'ContractWhereUniqueInput'
+    distinct: list['ContractScalarFieldKeys']
+    include: 'ContractIncludeFromContractRecursive4'
+
+
+class FindManyContractArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContractOrderByInput', list['ContractOrderByInput']]
+    where: 'ContractWhereInput'
+    cursor: 'ContractWhereUniqueInput'
+    distinct: list['ContractScalarFieldKeys']
+
+
+
+class FreightTableIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contract: Union[bool, 'ContractArgsFromRuleRecursive1']
+
+
+class FreightTableIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contract: Union[bool, 'ContractArgsFromRuleRecursive2']
+
+
+class FreightTableIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contract: Union[bool, 'ContractArgsFromRuleRecursive3']
+
+
+class FreightTableIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contract: Union[bool, 'ContractArgsFromRuleRecursive4']
+
+
+class FreightTableIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class FreightTableArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'FreightTableIncludeFromFreightTableRecursive1'
+
+
+class FreightTableArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'FreightTableIncludeFromFreightTableRecursive2'
+
+
+class FreightTableArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'FreightTableIncludeFromFreightTableRecursive3'
+
+
+class FreightTableArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'FreightTableIncludeFromFreightTableRecursive4'
+
+
+class FreightTableArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyFreightTableArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['FreightTableOrderByInput', list['FreightTableOrderByInput']]
+    where: 'FreightTableWhereInput'
+    cursor: 'FreightTableWhereUniqueInput'
+    distinct: list['FreightTableScalarFieldKeys']
+    include: 'FreightTableIncludeFromFreightTableRecursive1'
+
+
+class FindManyFreightTableArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['FreightTableOrderByInput', list['FreightTableOrderByInput']]
+    where: 'FreightTableWhereInput'
+    cursor: 'FreightTableWhereUniqueInput'
+    distinct: list['FreightTableScalarFieldKeys']
+    include: 'FreightTableIncludeFromFreightTableRecursive2'
+
+
+class FindManyFreightTableArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['FreightTableOrderByInput', list['FreightTableOrderByInput']]
+    where: 'FreightTableWhereInput'
+    cursor: 'FreightTableWhereUniqueInput'
+    distinct: list['FreightTableScalarFieldKeys']
+    include: 'FreightTableIncludeFromFreightTableRecursive3'
+
+
+class FindManyFreightTableArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['FreightTableOrderByInput', list['FreightTableOrderByInput']]
+    where: 'FreightTableWhereInput'
+    cursor: 'FreightTableWhereUniqueInput'
+    distinct: list['FreightTableScalarFieldKeys']
+    include: 'FreightTableIncludeFromFreightTableRecursive4'
+
+
+class FindManyFreightTableArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['FreightTableOrderByInput', list['FreightTableOrderByInput']]
+    where: 'FreightTableWhereInput'
+    cursor: 'FreightTableWhereUniqueInput'
+    distinct: list['FreightTableScalarFieldKeys']
+
+
+
+class DocumentIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive1']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive1']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive1']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive1']
+
+
+class DocumentIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive2']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive2']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive2']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive2']
+
+
+class DocumentIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive3']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive3']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive3']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive3']
+
+
+class DocumentIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive4']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive4']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive4']
+    discrepancies: Union[bool, 'FindManyDiscrepancyArgsFromRuleRecursive4']
+
+
+class DocumentIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class DocumentArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DocumentIncludeFromDocumentRecursive1'
+
+
+class DocumentArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DocumentIncludeFromDocumentRecursive2'
+
+
+class DocumentArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DocumentIncludeFromDocumentRecursive3'
+
+
+class DocumentArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DocumentIncludeFromDocumentRecursive4'
+
+
+class DocumentArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyDocumentArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DocumentOrderByInput', list['DocumentOrderByInput']]
+    where: 'DocumentWhereInput'
+    cursor: 'DocumentWhereUniqueInput'
+    distinct: list['DocumentScalarFieldKeys']
+    include: 'DocumentIncludeFromDocumentRecursive1'
+
+
+class FindManyDocumentArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DocumentOrderByInput', list['DocumentOrderByInput']]
+    where: 'DocumentWhereInput'
+    cursor: 'DocumentWhereUniqueInput'
+    distinct: list['DocumentScalarFieldKeys']
+    include: 'DocumentIncludeFromDocumentRecursive2'
+
+
+class FindManyDocumentArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DocumentOrderByInput', list['DocumentOrderByInput']]
+    where: 'DocumentWhereInput'
+    cursor: 'DocumentWhereUniqueInput'
+    distinct: list['DocumentScalarFieldKeys']
+    include: 'DocumentIncludeFromDocumentRecursive3'
+
+
+class FindManyDocumentArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DocumentOrderByInput', list['DocumentOrderByInput']]
+    where: 'DocumentWhereInput'
+    cursor: 'DocumentWhereUniqueInput'
+    distinct: list['DocumentScalarFieldKeys']
+    include: 'DocumentIncludeFromDocumentRecursive4'
+
+
+class FindManyDocumentArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DocumentOrderByInput', list['DocumentOrderByInput']]
+    where: 'DocumentWhereInput'
+    cursor: 'DocumentWhereUniqueInput'
+    distinct: list['DocumentScalarFieldKeys']
+
+
+
+class DiscrepancyIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive1']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive1']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive1']
+    document: Union[bool, 'DocumentArgsFromRuleRecursive1']
+    contestItems: Union[bool, 'FindManyContestItemArgsFromRuleRecursive1']
+
+
+class DiscrepancyIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive2']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive2']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive2']
+    document: Union[bool, 'DocumentArgsFromRuleRecursive2']
+    contestItems: Union[bool, 'FindManyContestItemArgsFromRuleRecursive2']
+
+
+class DiscrepancyIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive3']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive3']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive3']
+    document: Union[bool, 'DocumentArgsFromRuleRecursive3']
+    contestItems: Union[bool, 'FindManyContestItemArgsFromRuleRecursive3']
+
+
+class DiscrepancyIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    branch: Union[bool, 'BranchArgsFromRuleRecursive4']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive4']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive4']
+    document: Union[bool, 'DocumentArgsFromRuleRecursive4']
+    contestItems: Union[bool, 'FindManyContestItemArgsFromRuleRecursive4']
+
+
+class DiscrepancyIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class DiscrepancyArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive1'
+
+
+class DiscrepancyArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive2'
+
+
+class DiscrepancyArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive3'
+
+
+class DiscrepancyArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive4'
+
+
+class DiscrepancyArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyDiscrepancyArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DiscrepancyOrderByInput', list['DiscrepancyOrderByInput']]
+    where: 'DiscrepancyWhereInput'
+    cursor: 'DiscrepancyWhereUniqueInput'
+    distinct: list['DiscrepancyScalarFieldKeys']
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive1'
+
+
+class FindManyDiscrepancyArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DiscrepancyOrderByInput', list['DiscrepancyOrderByInput']]
+    where: 'DiscrepancyWhereInput'
+    cursor: 'DiscrepancyWhereUniqueInput'
+    distinct: list['DiscrepancyScalarFieldKeys']
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive2'
+
+
+class FindManyDiscrepancyArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DiscrepancyOrderByInput', list['DiscrepancyOrderByInput']]
+    where: 'DiscrepancyWhereInput'
+    cursor: 'DiscrepancyWhereUniqueInput'
+    distinct: list['DiscrepancyScalarFieldKeys']
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive3'
+
+
+class FindManyDiscrepancyArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DiscrepancyOrderByInput', list['DiscrepancyOrderByInput']]
+    where: 'DiscrepancyWhereInput'
+    cursor: 'DiscrepancyWhereUniqueInput'
+    distinct: list['DiscrepancyScalarFieldKeys']
+    include: 'DiscrepancyIncludeFromDiscrepancyRecursive4'
+
+
+class FindManyDiscrepancyArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['DiscrepancyOrderByInput', list['DiscrepancyOrderByInput']]
+    where: 'DiscrepancyWhereInput'
+    cursor: 'DiscrepancyWhereUniqueInput'
+    distinct: list['DiscrepancyScalarFieldKeys']
+
+
+
+class ContestIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive1']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive1']
+    items: Union[bool, 'FindManyContestItemArgsFromRuleRecursive1']
+    communications: Union[bool, 'FindManyCommunicationArgsFromRuleRecursive1']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive1']
+
+
+class ContestIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive2']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive2']
+    items: Union[bool, 'FindManyContestItemArgsFromRuleRecursive2']
+    communications: Union[bool, 'FindManyCommunicationArgsFromRuleRecursive2']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive2']
+
+
+class ContestIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive3']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive3']
+    items: Union[bool, 'FindManyContestItemArgsFromRuleRecursive3']
+    communications: Union[bool, 'FindManyCommunicationArgsFromRuleRecursive3']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive3']
+
+
+class ContestIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    carrier: Union[bool, 'CarrierArgsFromRuleRecursive4']
+    contract: Union[bool, 'ContractArgsFromRuleRecursive4']
+    items: Union[bool, 'FindManyContestItemArgsFromRuleRecursive4']
+    communications: Union[bool, 'FindManyCommunicationArgsFromRuleRecursive4']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive4']
+
+
+class ContestIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class ContestArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestIncludeFromContestRecursive1'
+
+
+class ContestArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestIncludeFromContestRecursive2'
+
+
+class ContestArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestIncludeFromContestRecursive3'
+
+
+class ContestArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestIncludeFromContestRecursive4'
+
+
+class ContestArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyContestArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestOrderByInput', list['ContestOrderByInput']]
+    where: 'ContestWhereInput'
+    cursor: 'ContestWhereUniqueInput'
+    distinct: list['ContestScalarFieldKeys']
+    include: 'ContestIncludeFromContestRecursive1'
+
+
+class FindManyContestArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestOrderByInput', list['ContestOrderByInput']]
+    where: 'ContestWhereInput'
+    cursor: 'ContestWhereUniqueInput'
+    distinct: list['ContestScalarFieldKeys']
+    include: 'ContestIncludeFromContestRecursive2'
+
+
+class FindManyContestArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestOrderByInput', list['ContestOrderByInput']]
+    where: 'ContestWhereInput'
+    cursor: 'ContestWhereUniqueInput'
+    distinct: list['ContestScalarFieldKeys']
+    include: 'ContestIncludeFromContestRecursive3'
+
+
+class FindManyContestArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestOrderByInput', list['ContestOrderByInput']]
+    where: 'ContestWhereInput'
+    cursor: 'ContestWhereUniqueInput'
+    distinct: list['ContestScalarFieldKeys']
+    include: 'ContestIncludeFromContestRecursive4'
+
+
+class FindManyContestArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestOrderByInput', list['ContestOrderByInput']]
+    where: 'ContestWhereInput'
+    cursor: 'ContestWhereUniqueInput'
+    distinct: list['ContestScalarFieldKeys']
+
+
+
+class ContestItemIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive1']
+    discrepancy: Union[bool, 'DiscrepancyArgsFromRuleRecursive1']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive1']
+
+
+class ContestItemIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive2']
+    discrepancy: Union[bool, 'DiscrepancyArgsFromRuleRecursive2']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive2']
+
+
+class ContestItemIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive3']
+    discrepancy: Union[bool, 'DiscrepancyArgsFromRuleRecursive3']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive3']
+
+
+class ContestItemIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive4']
+    discrepancy: Union[bool, 'DiscrepancyArgsFromRuleRecursive4']
+    payments: Union[bool, 'FindManyPaymentArgsFromRuleRecursive4']
+
+
+class ContestItemIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class ContestItemArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestItemIncludeFromContestItemRecursive1'
+
+
+class ContestItemArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestItemIncludeFromContestItemRecursive2'
+
+
+class ContestItemArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestItemIncludeFromContestItemRecursive3'
+
+
+class ContestItemArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'ContestItemIncludeFromContestItemRecursive4'
+
+
+class ContestItemArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyContestItemArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestItemOrderByInput', list['ContestItemOrderByInput']]
+    where: 'ContestItemWhereInput'
+    cursor: 'ContestItemWhereUniqueInput'
+    distinct: list['ContestItemScalarFieldKeys']
+    include: 'ContestItemIncludeFromContestItemRecursive1'
+
+
+class FindManyContestItemArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestItemOrderByInput', list['ContestItemOrderByInput']]
+    where: 'ContestItemWhereInput'
+    cursor: 'ContestItemWhereUniqueInput'
+    distinct: list['ContestItemScalarFieldKeys']
+    include: 'ContestItemIncludeFromContestItemRecursive2'
+
+
+class FindManyContestItemArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestItemOrderByInput', list['ContestItemOrderByInput']]
+    where: 'ContestItemWhereInput'
+    cursor: 'ContestItemWhereUniqueInput'
+    distinct: list['ContestItemScalarFieldKeys']
+    include: 'ContestItemIncludeFromContestItemRecursive3'
+
+
+class FindManyContestItemArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestItemOrderByInput', list['ContestItemOrderByInput']]
+    where: 'ContestItemWhereInput'
+    cursor: 'ContestItemWhereUniqueInput'
+    distinct: list['ContestItemScalarFieldKeys']
+    include: 'ContestItemIncludeFromContestItemRecursive4'
+
+
+class FindManyContestItemArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['ContestItemOrderByInput', list['ContestItemOrderByInput']]
+    where: 'ContestItemWhereInput'
+    cursor: 'ContestItemWhereUniqueInput'
+    distinct: list['ContestItemScalarFieldKeys']
+
+
+
+class CommunicationIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive1']
+
+
+class CommunicationIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive2']
+
+
+class CommunicationIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive3']
+
+
+class CommunicationIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive4']
+
+
+class CommunicationIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class CommunicationArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CommunicationIncludeFromCommunicationRecursive1'
+
+
+class CommunicationArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CommunicationIncludeFromCommunicationRecursive2'
+
+
+class CommunicationArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CommunicationIncludeFromCommunicationRecursive3'
+
+
+class CommunicationArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'CommunicationIncludeFromCommunicationRecursive4'
+
+
+class CommunicationArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyCommunicationArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CommunicationOrderByInput', list['CommunicationOrderByInput']]
+    where: 'CommunicationWhereInput'
+    cursor: 'CommunicationWhereUniqueInput'
+    distinct: list['CommunicationScalarFieldKeys']
+    include: 'CommunicationIncludeFromCommunicationRecursive1'
+
+
+class FindManyCommunicationArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CommunicationOrderByInput', list['CommunicationOrderByInput']]
+    where: 'CommunicationWhereInput'
+    cursor: 'CommunicationWhereUniqueInput'
+    distinct: list['CommunicationScalarFieldKeys']
+    include: 'CommunicationIncludeFromCommunicationRecursive2'
+
+
+class FindManyCommunicationArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CommunicationOrderByInput', list['CommunicationOrderByInput']]
+    where: 'CommunicationWhereInput'
+    cursor: 'CommunicationWhereUniqueInput'
+    distinct: list['CommunicationScalarFieldKeys']
+    include: 'CommunicationIncludeFromCommunicationRecursive3'
+
+
+class FindManyCommunicationArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CommunicationOrderByInput', list['CommunicationOrderByInput']]
+    where: 'CommunicationWhereInput'
+    cursor: 'CommunicationWhereUniqueInput'
+    distinct: list['CommunicationScalarFieldKeys']
+    include: 'CommunicationIncludeFromCommunicationRecursive4'
+
+
+class FindManyCommunicationArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['CommunicationOrderByInput', list['CommunicationOrderByInput']]
+    where: 'CommunicationWhereInput'
+    cursor: 'CommunicationWhereUniqueInput'
+    distinct: list['CommunicationScalarFieldKeys']
+
+
+
+class PaymentIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive1']
+    item: Union[bool, 'ContestItemArgsFromRuleRecursive1']
+
+
+class PaymentIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive2']
+    item: Union[bool, 'ContestItemArgsFromRuleRecursive2']
+
+
+class PaymentIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive3']
+    item: Union[bool, 'ContestItemArgsFromRuleRecursive3']
+
+
+class PaymentIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    contest: Union[bool, 'ContestArgsFromRuleRecursive4']
+    item: Union[bool, 'ContestItemArgsFromRuleRecursive4']
+
+
+class PaymentIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class PaymentArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'PaymentIncludeFromPaymentRecursive1'
+
+
+class PaymentArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'PaymentIncludeFromPaymentRecursive2'
+
+
+class PaymentArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'PaymentIncludeFromPaymentRecursive3'
+
+
+class PaymentArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'PaymentIncludeFromPaymentRecursive4'
+
+
+class PaymentArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyPaymentArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', list['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: list['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPaymentRecursive1'
+
+
+class FindManyPaymentArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', list['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: list['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPaymentRecursive2'
+
+
+class FindManyPaymentArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', list['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: list['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPaymentRecursive3'
+
+
+class FindManyPaymentArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', list['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: list['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPaymentRecursive4'
+
+
+class FindManyPaymentArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', list['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: list['PaymentScalarFieldKeys']
+
+
+
+class AuditLogIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive1']
+    user: Union[bool, 'UserArgsFromRuleRecursive1']
+
+
+class AuditLogIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive2']
+    user: Union[bool, 'UserArgsFromRuleRecursive2']
+
+
+class AuditLogIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive3']
+    user: Union[bool, 'UserArgsFromRuleRecursive3']
+
+
+class AuditLogIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    company: Union[bool, 'CompanyArgsFromRuleRecursive4']
+    user: Union[bool, 'UserArgsFromRuleRecursive4']
+
+
+class AuditLogIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class AuditLogArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'AuditLogIncludeFromAuditLogRecursive1'
+
+
+class AuditLogArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'AuditLogIncludeFromAuditLogRecursive2'
+
+
+class AuditLogArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'AuditLogIncludeFromAuditLogRecursive3'
+
+
+class AuditLogArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'AuditLogIncludeFromAuditLogRecursive4'
+
+
+class AuditLogArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyAuditLogArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', list['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: list['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLogRecursive1'
+
+
+class FindManyAuditLogArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', list['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: list['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLogRecursive2'
+
+
+class FindManyAuditLogArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', list['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: list['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLogRecursive3'
+
+
+class FindManyAuditLogArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', list['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: list['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLogRecursive4'
+
+
+class FindManyAuditLogArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', list['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: list['AuditLogScalarFieldKeys']
+
+
+
+class NotificationIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    client: Union[bool, 'ClientArgsFromRuleRecursive1']
+    user: Union[bool, 'UserArgsFromRuleRecursive1']
+
+
+class NotificationIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    client: Union[bool, 'ClientArgsFromRuleRecursive2']
+    user: Union[bool, 'UserArgsFromRuleRecursive2']
+
+
+class NotificationIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    client: Union[bool, 'ClientArgsFromRuleRecursive3']
+    user: Union[bool, 'UserArgsFromRuleRecursive3']
+
+
+class NotificationIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+    client: Union[bool, 'ClientArgsFromRuleRecursive4']
+    user: Union[bool, 'UserArgsFromRuleRecursive4']
+
+
+class NotificationIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class NotificationArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'NotificationIncludeFromNotificationRecursive1'
+
+
+class NotificationArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'NotificationIncludeFromNotificationRecursive2'
+
+
+class NotificationArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'NotificationIncludeFromNotificationRecursive3'
+
+
+class NotificationArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'NotificationIncludeFromNotificationRecursive4'
+
+
+class NotificationArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyNotificationArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', list['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: list['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotificationRecursive1'
+
+
+class FindManyNotificationArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', list['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: list['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotificationRecursive2'
+
+
+class FindManyNotificationArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', list['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: list['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotificationRecursive3'
+
+
+class FindManyNotificationArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', list['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: list['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotificationRecursive4'
+
+
+class FindManyNotificationArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', list['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: list['NotificationScalarFieldKeys']
+
+
+
+class SystemConfigIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class SystemConfigIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class SystemConfigIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class SystemConfigIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class SystemConfigIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class SystemConfigArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'SystemConfigIncludeFromSystemConfigRecursive1'
+
+
+class SystemConfigArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'SystemConfigIncludeFromSystemConfigRecursive2'
+
+
+class SystemConfigArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'SystemConfigIncludeFromSystemConfigRecursive3'
+
+
+class SystemConfigArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'SystemConfigIncludeFromSystemConfigRecursive4'
+
+
+class SystemConfigArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManySystemConfigArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['SystemConfigOrderByInput', list['SystemConfigOrderByInput']]
+    where: 'SystemConfigWhereInput'
+    cursor: 'SystemConfigWhereUniqueInput'
+    distinct: list['SystemConfigScalarFieldKeys']
+    include: 'SystemConfigIncludeFromSystemConfigRecursive1'
+
+
+class FindManySystemConfigArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['SystemConfigOrderByInput', list['SystemConfigOrderByInput']]
+    where: 'SystemConfigWhereInput'
+    cursor: 'SystemConfigWhereUniqueInput'
+    distinct: list['SystemConfigScalarFieldKeys']
+    include: 'SystemConfigIncludeFromSystemConfigRecursive2'
+
+
+class FindManySystemConfigArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['SystemConfigOrderByInput', list['SystemConfigOrderByInput']]
+    where: 'SystemConfigWhereInput'
+    cursor: 'SystemConfigWhereUniqueInput'
+    distinct: list['SystemConfigScalarFieldKeys']
+    include: 'SystemConfigIncludeFromSystemConfigRecursive3'
+
+
+class FindManySystemConfigArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['SystemConfigOrderByInput', list['SystemConfigOrderByInput']]
+    where: 'SystemConfigWhereInput'
+    cursor: 'SystemConfigWhereUniqueInput'
+    distinct: list['SystemConfigScalarFieldKeys']
+    include: 'SystemConfigIncludeFromSystemConfigRecursive4'
+
+
+class FindManySystemConfigArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['SystemConfigOrderByInput', list['SystemConfigOrderByInput']]
+    where: 'SystemConfigWhereInput'
+    cursor: 'SystemConfigWhereUniqueInput'
+    distinct: list['SystemConfigScalarFieldKeys']
+
+
+
+class RuleIncludeFromRule(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class RuleIncludeFromRuleRecursive1(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class RuleIncludeFromRuleRecursive2(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class RuleIncludeFromRuleRecursive3(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+class RuleIncludeFromRuleRecursive4(TypedDict, total=False):
+    """Relational arguments for Rule"""
+
+
+
+class RuleArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class RuleArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class RuleArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class RuleArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class RuleArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+
+
+
+class FindManyRuleArgsFromRule(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive1'
+
+
+class FindManyRuleArgsFromRuleRecursive1(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive2'
+
+
+class FindManyRuleArgsFromRuleRecursive2(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive3'
+
+
+class FindManyRuleArgsFromRuleRecursive3(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+    include: 'RuleIncludeFromRuleRecursive4'
+
+
+class FindManyRuleArgsFromRuleRecursive4(TypedDict, total=False):
+    """Arguments for Rule"""
+    take: int
+    skip: int
+    order_by: Union['RuleOrderByInput', list['RuleOrderByInput']]
+    where: 'RuleWhereInput'
+    cursor: 'RuleWhereUniqueInput'
+    distinct: list['RuleScalarFieldKeys']
+
+
+
+FindManyRuleArgs = FindManyRuleArgsFromRule
+FindFirstRuleArgs = FindManyRuleArgsFromRule
+
+
+
+
+class RuleWhereInput(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringFilter']
+    code: Union[_str, 'types.StringFilter']
+    name: Union[_str, 'types.StringFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringFilter']
+    configJson: Union['fields.Json', 'types.JsonFilter']
+    version: Union[_int, 'types.IntFilter']
+    isActive: Union[_bool, 'types.BooleanFilter']
+    description: Union[None, _str, 'types.StringFilter']
+    tags: 'types.StringListFilter'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['RuleWhereInputRecursive1', List['RuleWhereInputRecursive1']]
+    # but this causes mypy to hang :/
+    AND: list['RuleWhereInputRecursive1']
+    OR: list['RuleWhereInputRecursive1']
+    NOT: list['RuleWhereInputRecursive1']
+
+
+class RuleWhereInputRecursive1(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringFilter']
+    code: Union[_str, 'types.StringFilter']
+    name: Union[_str, 'types.StringFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringFilter']
+    configJson: Union['fields.Json', 'types.JsonFilter']
+    version: Union[_int, 'types.IntFilter']
+    isActive: Union[_bool, 'types.BooleanFilter']
+    description: Union[None, _str, 'types.StringFilter']
+    tags: 'types.StringListFilter'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['RuleWhereInputRecursive2', List['RuleWhereInputRecursive2']]
+    # but this causes mypy to hang :/
+    AND: list['RuleWhereInputRecursive2']
+    OR: list['RuleWhereInputRecursive2']
+    NOT: list['RuleWhereInputRecursive2']
+
+
+class RuleWhereInputRecursive2(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringFilter']
+    code: Union[_str, 'types.StringFilter']
+    name: Union[_str, 'types.StringFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringFilter']
+    configJson: Union['fields.Json', 'types.JsonFilter']
+    version: Union[_int, 'types.IntFilter']
+    isActive: Union[_bool, 'types.BooleanFilter']
+    description: Union[None, _str, 'types.StringFilter']
+    tags: 'types.StringListFilter'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['RuleWhereInputRecursive3', List['RuleWhereInputRecursive3']]
+    # but this causes mypy to hang :/
+    AND: list['RuleWhereInputRecursive3']
+    OR: list['RuleWhereInputRecursive3']
+    NOT: list['RuleWhereInputRecursive3']
+
+
+class RuleWhereInputRecursive3(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringFilter']
+    code: Union[_str, 'types.StringFilter']
+    name: Union[_str, 'types.StringFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringFilter']
+    configJson: Union['fields.Json', 'types.JsonFilter']
+    version: Union[_int, 'types.IntFilter']
+    isActive: Union[_bool, 'types.BooleanFilter']
+    description: Union[None, _str, 'types.StringFilter']
+    tags: 'types.StringListFilter'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['RuleWhereInputRecursive4', List['RuleWhereInputRecursive4']]
+    # but this causes mypy to hang :/
+    AND: list['RuleWhereInputRecursive4']
+    OR: list['RuleWhereInputRecursive4']
+    NOT: list['RuleWhereInputRecursive4']
+
+
+class RuleWhereInputRecursive4(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringFilter']
+    code: Union[_str, 'types.StringFilter']
+    name: Union[_str, 'types.StringFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringFilter']
+    configJson: Union['fields.Json', 'types.JsonFilter']
+    version: Union[_int, 'types.IntFilter']
+    isActive: Union[_bool, 'types.BooleanFilter']
+    description: Union[None, _str, 'types.StringFilter']
+    tags: 'types.StringListFilter'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+
+
+# aggregate Rule types
+
+
+
+
+class RuleScalarWhereWithAggregatesInput(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringWithAggregatesFilter']
+    code: Union[_str, 'types.StringWithAggregatesFilter']
+    name: Union[_str, 'types.StringWithAggregatesFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringWithAggregatesFilter']
+    configJson: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    version: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
+    description: Union[_str, 'types.StringWithAggregatesFilter']
+    tags: Union[_str, 'types.StringWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: list['RuleScalarWhereWithAggregatesInputRecursive1']
+    OR: list['RuleScalarWhereWithAggregatesInputRecursive1']
+    NOT: list['RuleScalarWhereWithAggregatesInputRecursive1']
+
+
+class RuleScalarWhereWithAggregatesInputRecursive1(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringWithAggregatesFilter']
+    code: Union[_str, 'types.StringWithAggregatesFilter']
+    name: Union[_str, 'types.StringWithAggregatesFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringWithAggregatesFilter']
+    configJson: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    version: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
+    description: Union[_str, 'types.StringWithAggregatesFilter']
+    tags: Union[_str, 'types.StringWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: list['RuleScalarWhereWithAggregatesInputRecursive2']
+    OR: list['RuleScalarWhereWithAggregatesInputRecursive2']
+    NOT: list['RuleScalarWhereWithAggregatesInputRecursive2']
+
+
+class RuleScalarWhereWithAggregatesInputRecursive2(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringWithAggregatesFilter']
+    code: Union[_str, 'types.StringWithAggregatesFilter']
+    name: Union[_str, 'types.StringWithAggregatesFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringWithAggregatesFilter']
+    configJson: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    version: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
+    description: Union[_str, 'types.StringWithAggregatesFilter']
+    tags: Union[_str, 'types.StringWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: list['RuleScalarWhereWithAggregatesInputRecursive3']
+    OR: list['RuleScalarWhereWithAggregatesInputRecursive3']
+    NOT: list['RuleScalarWhereWithAggregatesInputRecursive3']
+
+
+class RuleScalarWhereWithAggregatesInputRecursive3(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringWithAggregatesFilter']
+    code: Union[_str, 'types.StringWithAggregatesFilter']
+    name: Union[_str, 'types.StringWithAggregatesFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringWithAggregatesFilter']
+    configJson: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    version: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
+    description: Union[_str, 'types.StringWithAggregatesFilter']
+    tags: Union[_str, 'types.StringWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: list['RuleScalarWhereWithAggregatesInputRecursive4']
+    OR: list['RuleScalarWhereWithAggregatesInputRecursive4']
+    NOT: list['RuleScalarWhereWithAggregatesInputRecursive4']
+
+
+class RuleScalarWhereWithAggregatesInputRecursive4(TypedDict, total=False):
+    """Rule arguments for searching"""
+    id: Union[_str, 'types.StringWithAggregatesFilter']
+    code: Union[_str, 'types.StringWithAggregatesFilter']
+    name: Union[_str, 'types.StringWithAggregatesFilter']
+    type: 'enums.DiscrepancyType'
+    severity: Union[_str, 'types.StringWithAggregatesFilter']
+    configJson: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    version: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
+    description: Union[_str, 'types.StringWithAggregatesFilter']
+    tags: Union[_str, 'types.StringWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+
+
+class RuleGroupByOutput(TypedDict, total=False):
+    id: _str
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+    configJson: 'fields.Json'
+    version: _int
+    isActive: _bool
+    description: _str
+    tags: list[_str]
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+    _sum: 'RuleSumAggregateOutput'
+    _avg: 'RuleAvgAggregateOutput'
+    _min: 'RuleMinAggregateOutput'
+    _max: 'RuleMaxAggregateOutput'
+    _count: 'RuleCountAggregateOutput'
+
+
+class RuleAvgAggregateOutput(TypedDict, total=False):
+    """Rule output for aggregating averages"""
+    version: float
+
+
+class RuleSumAggregateOutput(TypedDict, total=False):
+    """Rule output for aggregating sums"""
+    version: _int
+
+
+class RuleScalarAggregateOutput(TypedDict, total=False):
+    """Rule output including scalar fields"""
+    id: _str
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+    configJson: 'fields.Json'
+    version: _int
+    isActive: _bool
+    description: _str
+    tags: list[_str]
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+RuleMinAggregateOutput = RuleScalarAggregateOutput
+RuleMaxAggregateOutput = RuleScalarAggregateOutput
+
+
+class RuleMaxAggregateInput(TypedDict, total=False):
+    """Rule input for aggregating by max"""
+    id: bool
+    code: bool
+    name: bool
+    type: bool
+    severity: bool
+    configJson: bool
+    version: bool
+    isActive: bool
+    description: bool
+    tags: bool
+    createdAt: bool
+    updatedAt: bool
+
+
+class RuleMinAggregateInput(TypedDict, total=False):
+    """Rule input for aggregating by min"""
+    id: bool
+    code: bool
+    name: bool
+    type: bool
+    severity: bool
+    configJson: bool
+    version: bool
+    isActive: bool
+    description: bool
+    tags: bool
+    createdAt: bool
+    updatedAt: bool
+
+
+class RuleNumberAggregateInput(TypedDict, total=False):
+    """Rule input for aggregating numbers"""
+    version: bool
+
+
+RuleAvgAggregateInput = RuleNumberAggregateInput
+RuleSumAggregateInput = RuleNumberAggregateInput
+
+
+class RuleCountAggregateInput(TypedDict, total=False):
+    id: bool
+    code: bool
+    name: bool
+    type: bool
+    severity: bool
+    configJson: bool
+    version: bool
+    isActive: bool
+    description: bool
+    tags: bool
+    createdAt: bool
+    updatedAt: bool
+    _all: bool
+
+class RuleCountAggregateOutput(TypedDict, total=False):
+    id: int
+    code: int
+    name: int
+    type: int
+    severity: int
+    configJson: int
+    version: int
+    isActive: int
+    description: int
+    tags: int
+    createdAt: int
+    updatedAt: int
+    _all: int
+
+
+RuleKeys = Literal[
+    'id',
+    'code',
+    'name',
+    'type',
+    'severity',
+    'configJson',
+    'version',
+    'isActive',
+    'description',
+    'tags',
+    'createdAt',
+    'updatedAt',
+]
+RuleScalarFieldKeys = Literal[
+    'id',
+    'code',
+    'name',
+    'type',
+    'severity',
+    'configJson',
+    'version',
+    'isActive',
+    'description',
+    'tags',
+    'createdAt',
+    'updatedAt',
+]
+RuleScalarFieldKeysT = TypeVar('RuleScalarFieldKeysT', bound=RuleScalarFieldKeys)
+
+RuleRelationalFieldKeys = _NoneType
 
 
 

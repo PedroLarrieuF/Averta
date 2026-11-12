@@ -6,7 +6,6 @@ from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 # ============================================================================
@@ -73,7 +72,6 @@ mock_config.Settings = MagicMock(return_value=mock_settings)
 sys.modules["app.core.config"] = mock_config
 
 # Mock app.core.security (for token creation)
-from unittest.mock import MagicMock as MM
 
 mock_security = MagicMock()
 # create_tokens returns a mock with access_token and refresh_token
@@ -83,16 +81,20 @@ mock_tokens.refresh_token = "mock-refresh-token"
 mock_tokens.expires_in = 900
 mock_security.create_tokens = MagicMock(return_value=mock_tokens)
 mock_security.create_password_reset_token = MagicMock(return_value="mock-reset-token")
-mock_security.decode_access_token = MagicMock(return_value=MagicMock(
-    sub="test-user-id",
-    email="test@test.com",
-    role="ADMIN",
-    company_id="test-company-id",
-    client_id=None,
-))
-mock_security.decode_refresh_token = MagicMock(return_value=MagicMock(
-    sub="test-user-id",
-))
+mock_security.decode_access_token = MagicMock(
+    return_value=MagicMock(
+        sub="test-user-id",
+        email="test@test.com",
+        role="ADMIN",
+        company_id="test-company-id",
+        client_id=None,
+    )
+)
+mock_security.decode_refresh_token = MagicMock(
+    return_value=MagicMock(
+        sub="test-user-id",
+    )
+)
 mock_security.verify_password_reset_token = MagicMock(return_value="test@test.com")
 mock_security.get_password_hash = MagicMock(return_value="$2b$12$hashedpassword")
 mock_security.verify_password = MagicMock(return_value=True)
@@ -175,6 +177,7 @@ def event_loop():
 # Integration Test Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """HTTPX async client for API testing against the FastAPI app."""
@@ -186,6 +189,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 # ============================================================================
 # Test Data Factories
 # ============================================================================
+
 
 class TestDataFactory:
     """Factory for creating test data"""
@@ -257,8 +261,15 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def contract_data(cls, company_id: str | None = None, client_id: str | None = None, carrier_id: str | None = None, **overrides) -> dict:
+    def contract_data(
+        cls,
+        company_id: str | None = None,
+        client_id: str | None = None,
+        carrier_id: str | None = None,
+        **overrides,
+    ) -> dict:
         from datetime import UTC, datetime, timedelta
+
         data = {
             "name": f"Test Contract {cls._next_id()}",
             "companyId": company_id or "test-company-id",
@@ -273,7 +284,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def document_data(cls, company_id: str | None = None, client_id: str | None = None, **overrides) -> dict:
+    def document_data(
+        cls, company_id: str | None = None, client_id: str | None = None, **overrides
+    ) -> dict:
         data = {
             "fileName": f"test_document_{cls._next_id()}.xml",
             "fileSize": 1024,
@@ -286,7 +299,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def discrepancy_data(cls, document_id: str | None = None, contract_id: str | None = None, **overrides) -> dict:
+    def discrepancy_data(
+        cls, document_id: str | None = None, contract_id: str | None = None, **overrides
+    ) -> dict:
         data = {
             "type": "ICMS_DIFFERENTIAL",
             "ruleCode": "ICMS_DIFAL",
@@ -303,7 +318,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def contest_data(cls, company_id: str | None = None, client_id: str | None = None, **overrides) -> dict:
+    def contest_data(
+        cls, company_id: str | None = None, client_id: str | None = None, **overrides
+    ) -> dict:
         data = {
             "number": f"CTST-{cls._next_id():06d}",
             "status": "DRAFT",
@@ -328,6 +345,7 @@ def test_factory() -> TestDataFactory:
 # Auth Fixtures (Mock)
 # ============================================================================
 
+
 @pytest.fixture
 async def test_company(async_client: AsyncClient, test_factory: TestDataFactory) -> dict:
     company_data = test_factory.company_data()
@@ -336,7 +354,9 @@ async def test_company(async_client: AsyncClient, test_factory: TestDataFactory)
 
 
 @pytest.fixture
-async def test_user(async_client: AsyncClient, test_company: dict, test_factory: TestDataFactory) -> dict:
+async def test_user(
+    async_client: AsyncClient, test_company: dict, test_factory: TestDataFactory
+) -> dict:
     user_data = test_factory.user_data(company_id=test_company["id"])
     user_data["id"] = "test-user-id"
     return user_data
@@ -355,6 +375,7 @@ async def admin_auth_headers(async_client: AsyncClient, test_company: dict) -> d
 # ============================================================================
 # Mock Data Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def mock_company() -> dict:
@@ -471,9 +492,11 @@ def mock_discrepancy(mock_document: dict, mock_contract: dict) -> dict:
 # Celery Test Configuration
 # ============================================================================
 
+
 @pytest.fixture(autouse=True)
 def celery_eager_mode():
     import os
+
     os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
     os.environ["CELERY_TASK_EAGER_PROPAGATES"] = "true"
     yield
@@ -487,10 +510,12 @@ def celery_eager_mode():
 # Redis Test Fixture (using fakeredis)
 # ============================================================================
 
+
 @pytest.fixture
 async def redis_client():
     try:
         import fakeredis.aioredis
+
         redis = fakeredis.aioredis.FakeRedis()
         yield redis
         await redis.close()
@@ -502,6 +527,7 @@ async def redis_client():
 # MinIO Test Fixture (mock)
 # ============================================================================
 
+
 @pytest.fixture
 def minio_client():
     return MagicMock()
@@ -510,6 +536,7 @@ def minio_client():
 # ============================================================================
 # SendGrid Test Fixture (mock)
 # ============================================================================
+
 
 @pytest.fixture
 def sendgrid_client():

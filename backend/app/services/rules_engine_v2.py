@@ -201,7 +201,9 @@ class RulesEngineV2:
         self._rule_index: dict[str, list[BaseRule]] = {}  # tag -> rules
         self._cache: redis.Redis | None = None
         self._cache_version = self._get_deploy_version()
-        self._local_cache: dict[str, tuple[DiscrepancyResult, float]] = {}  # fallback in-memory cache
+        self._local_cache: dict[
+            str, tuple[DiscrepancyResult, float]
+        ] = {}  # fallback in-memory cache
         self._local_cache_ttl = 300  # 5 minutes for local cache
 
     def _get_deploy_version(self) -> str:
@@ -683,9 +685,7 @@ class RulesEngineV2:
         # ICMS tags
         if self._safe_get(doc, "icms.cst") or self._safe_get(doc, "icms.csosn"):
             tags.add("nfe_icms")
-        if self._safe_get(doc, "emit.enderEmit.UF") and self._safe_get(
-            doc, "dest.enderDest.UF"
-        ):
+        if self._safe_get(doc, "emit.enderEmit.UF") and self._safe_get(doc, "dest.enderDest.UF"):
             tags.add("nfe_difal")
         if self._safe_get(doc, "icms.v_fcp") is not None:
             tags.add("nfe_fcp")
@@ -838,12 +838,12 @@ def _load_builtin_rules() -> dict[str, type]:
             ICMSDifferentialRule,
             ICMSSTRule,
             MLAnomalyRule,
-            NFECFOPFreteRule,
-            NFECFOPInterestadualRule,
-            NFECTECrossRule,
             NFECancelamentoRule,
             NFECartaCorrecaoRule,
+            NFECFOPFreteRule,
+            NFECFOPInterestadualRule,
             NFEComplementarRule,
+            NFECTECrossRule,
             NFEDestinatarioRule,
             NFEDIFALRule,
             NFEFCPRule,
@@ -863,45 +863,47 @@ def _load_builtin_rules() -> dict[str, type]:
             ValorMinimoFreteRule,
         )
 
-        _BUILTIN_RULES.update({
-            "ICMS_DIFAL": ICMSDifferentialRule,
-            "ICMS_FCP": FCPRule,
-            "ICMS_ST": ICMSSTRule,
-            "FRETE_PESO_VALOR": FreightWeightValueRule,
-            "FRETE_CUBAGE": FreightCubageRule,
-            "PESO_REAL_VS_FATURADO": PesoRealVsFaturadoRule,
-            "VALOR_MINIMO_FRETE": ValorMinimoFreteRule,
-            "REDESPACHO_VALIDACAO": RedespachoRule,
-            "PEDAGIO_CONFERENCIA": TollPlazaRule,
-            "AD_VALOREM": AdValoremRule,
-            "GRIS": GRISRule,
-            "SICOBAN_TABLE_REAL": SicobanTableRuleReal,
-            "CTE_ANULACAO": ComplementaryCTEAnulationRule,
-            "CTE_SUBSTITUICAO": ComplementaryCTESubstitutionRule,
-            "CTE_COMPLEMENTO_VALOR": ComplementaryCTEComplementRule,
-            "ML_ANOMALY": MLAnomalyRule,
-            # NF-e Critical Rules
-            "NFE_ICMS_CALCULO": NFEICMSCalculoRule,
-            "NFE_ICMS_ST": NFEICMSSTRule,
-            "NFE_DIFAL": NFEDIFALRule,
-            "NFE_FRETE_NA_BASE": NFEFreteNaBaseRule,
-            "NFE_CTE_CROSS": NFECTECrossRule,
-            # NF-e High Priority Rules
-            "NFE_FCP": NFEFCPRule,
-            "NFE_CFOP_FRETE": NFECFOPFreteRule,
-            "NFE_CFOP_INTERSTADUAL": NFECFOPInterestadualRule,
-            "NFE_NCM_CEST": NFENCMCESTRule,
-            "NFE_VALOR_TOTAL": NFEValorTotalRule,
-            "NFE_TRANSPORTADORA": NFETransportadoraRule,
-            "NFE_DESTINATARIO": NFEDestinatarioRule,
-            # NF-e Medium Priority Rules
-            "NFE_PESO_VOLUME": NFEPesoVolumeRule,
-            "NFE_COMPLEMENTAR": NFEComplementarRule,
-            "NFE_CARTA_CORRECAO": NFECartaCorrecaoRule,
-            "NFE_CANCELAMENTO": NFECancelamentoRule,
-            "NFE_INUTILIZACAO": NFEInutilizacaoRule,
-            "NFE_REGIME_ESPECIAL": NFERegimeEspecialRule,
-        })
+        _BUILTIN_RULES.update(
+            {
+                "ICMS_DIFAL": ICMSDifferentialRule,
+                "ICMS_FCP": FCPRule,
+                "ICMS_ST": ICMSSTRule,
+                "FRETE_PESO_VALOR": FreightWeightValueRule,
+                "FRETE_CUBAGE": FreightCubageRule,
+                "PESO_REAL_VS_FATURADO": PesoRealVsFaturadoRule,
+                "VALOR_MINIMO_FRETE": ValorMinimoFreteRule,
+                "REDESPACHO_VALIDACAO": RedespachoRule,
+                "PEDAGIO_CONFERENCIA": TollPlazaRule,
+                "AD_VALOREM": AdValoremRule,
+                "GRIS": GRISRule,
+                "SICOBAN_TABLE_REAL": SicobanTableRuleReal,
+                "CTE_ANULACAO": ComplementaryCTEAnulationRule,
+                "CTE_SUBSTITUICAO": ComplementaryCTESubstitutionRule,
+                "CTE_COMPLEMENTO_VALOR": ComplementaryCTEComplementRule,
+                "ML_ANOMALY": MLAnomalyRule,
+                # NF-e Critical Rules
+                "NFE_ICMS_CALCULO": NFEICMSCalculoRule,
+                "NFE_ICMS_ST": NFEICMSSTRule,
+                "NFE_DIFAL": NFEDIFALRule,
+                "NFE_FRETE_NA_BASE": NFEFreteNaBaseRule,
+                "NFE_CTE_CROSS": NFECTECrossRule,
+                # NF-e High Priority Rules
+                "NFE_FCP": NFEFCPRule,
+                "NFE_CFOP_FRETE": NFECFOPFreteRule,
+                "NFE_CFOP_INTERSTADUAL": NFECFOPInterestadualRule,
+                "NFE_NCM_CEST": NFENCMCESTRule,
+                "NFE_VALOR_TOTAL": NFEValorTotalRule,
+                "NFE_TRANSPORTADORA": NFETransportadoraRule,
+                "NFE_DESTINATARIO": NFEDestinatarioRule,
+                # NF-e Medium Priority Rules
+                "NFE_PESO_VOLUME": NFEPesoVolumeRule,
+                "NFE_COMPLEMENTAR": NFEComplementarRule,
+                "NFE_CARTA_CORRECAO": NFECartaCorrecaoRule,
+                "NFE_CANCELAMENTO": NFECancelamentoRule,
+                "NFE_INUTILIZACAO": NFEInutilizacaoRule,
+                "NFE_REGIME_ESPECIAL": NFERegimeEspecialRule,
+            }
+        )
         _builtin_rules_loaded[0] = True
     return _BUILTIN_RULES
 

@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from prisma.models import Discrepancy as DiscrepancyModel
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import NotFoundError
@@ -18,6 +17,7 @@ from app.modules.discrepancies.schemas import (
     DiscrepancyUpdate,
 )
 from prisma import Prisma
+from prisma.models import Discrepancy as DiscrepancyModel
 
 logger = structlog.get_logger()
 

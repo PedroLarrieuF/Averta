@@ -2,7 +2,7 @@ __title__ = "prisma"
 __author__ = "RobertCraigie"
 __license__ = "APACHE"
 __copyright__ = "Copyright 2020-2023 RobertCraigie"
-__version__ = "0.15.0"
+__version__ = "0.12.0"
 
 from typing import TYPE_CHECKING
 
@@ -21,19 +21,21 @@ from ._types import PrismaMethod as PrismaMethod
 from .utils import setup_logging
 from .validator import *
 
-# the import ordering is important here because
-# we rely on the fact that `prisma/client.py` is the
-# first piece of generated code that is loaded. This is
-# especially useful for `python -m prisma_cleanup`
 try:
-    from .client import *  # noqa: I001, TID251
-    from .fields import *  # noqa: TID251
     from . import (
-        bases as bases,  # noqa: TID251
-        types as types,  # noqa: TID251
-        models as models,  # noqa: TID251
-        partials as partials,  # noqa: TID251
+        bases as bases,
     )
+    from . import (
+        models as models,
+    )
+    from . import (
+        partials as partials,
+    )
+    from . import (
+        types as types,
+    )
+    from .client import *
+    from .fields import *
 except ModuleNotFoundError:
     # code has not been generated yet
     # TODO: this could swallow unexpected errors

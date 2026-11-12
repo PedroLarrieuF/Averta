@@ -8,7 +8,9 @@ from httpx import AsyncClient
 class TestContestsCreate:
     """Tests for POST /api/v1/contests"""
 
-    async def test_create_contest_valid(self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict):
+    async def test_create_contest_valid(
+        self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict
+    ):
         """Test creating contest from discrepancies"""
         response = await async_client.post(
             "/api/v1/contests",
@@ -21,7 +23,9 @@ class TestContestsCreate:
         )
         assert response.status_code in [201, 400, 401, 404, 500]
 
-    async def test_create_contest_empty_discrepancies(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_create_contest_empty_discrepancies(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test creating contest with empty discrepancies list"""
         response = await async_client.post(
             "/api/v1/contests",
@@ -34,7 +38,9 @@ class TestContestsCreate:
         )
         assert response.status_code in [400, 422, 500]
 
-    async def test_create_contest_invalid_discrepancies(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_create_contest_invalid_discrepancies(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test creating contest with invalid discrepancy IDs"""
         response = await async_client.post(
             "/api/v1/contests",
@@ -47,7 +53,9 @@ class TestContestsCreate:
         )
         assert response.status_code in [400, 404, 500]
 
-    async def test_create_contest_missing_fields(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_create_contest_missing_fields(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test creating contest with missing required fields"""
         response = await async_client.post(
             "/api/v1/contests",
@@ -139,7 +147,9 @@ class TestContestsSend:
 class TestContestsNegotiate:
     """Tests for PATCH /api/v1/contests/{id}/negotiate"""
 
-    async def test_negotiate_contest_acknowledged(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_negotiate_contest_acknowledged(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test negotiating contest - ACKNOWLEDGED"""
         response = await async_client.patch(
             "/api/v1/contests/test-contest-id/negotiate",
@@ -148,7 +158,9 @@ class TestContestsNegotiate:
         )
         assert response.status_code in [200, 401, 404, 500]
 
-    async def test_negotiate_contest_negotiating(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_negotiate_contest_negotiating(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test negotiating contest - NEGOTIATING"""
         response = await async_client.patch(
             "/api/v1/contests/test-contest-id/negotiate",
@@ -211,7 +223,9 @@ class TestContestsPayments:
         )
         assert response.status_code in [201, 400, 401, 404, 500]
 
-    async def test_register_payment_invalid_amount(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_register_payment_invalid_amount(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test registering payment with invalid amount"""
         response = await async_client.post(
             "/api/v1/contests/test-contest-id/payments",
@@ -220,7 +234,9 @@ class TestContestsPayments:
         )
         assert response.status_code in [400, 422, 500]
 
-    async def test_register_payment_missing_fields(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_register_payment_missing_fields(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test registering payment with missing fields"""
         response = await async_client.post(
             "/api/v1/contests/test-contest-id/payments",

@@ -4,7 +4,6 @@ from typing import Any
 
 import bcrypt
 import structlog
-from prisma.models import User as UserModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError
@@ -16,6 +15,7 @@ from app.modules.users.schemas import (
     UserUpdate,
 )
 from prisma import Prisma
+from prisma.models import User as UserModel
 
 logger = structlog.get_logger()
 

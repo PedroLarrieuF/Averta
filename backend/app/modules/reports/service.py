@@ -486,7 +486,9 @@ class ReportsService:
             expires_at=datetime.utcnow() + timedelta(hours=1),
         )
 
-    async def _export_recovery_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
+    async def _export_recovery_to_excel(
+        self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest
+    ) -> None:
         """Export recovery report to Excel"""
         ws: Worksheet = wb.active
         ws.title = "Recovery Report"
@@ -575,7 +577,9 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 9, 10])
         self._auto_width(ws)
 
-    async def _export_success_fee_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:  # noqa: PLR0915
+    async def _export_success_fee_to_excel(  # noqa: PLR0915
+        self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest
+    ) -> None:
         """Export success fee report to Excel"""
         ws: Worksheet = wb.active
         ws.title = "Success Fee Report"
@@ -669,7 +673,9 @@ class ReportsService:
         self._format_currency_columns(ws, [5, 6, 7])
         self._auto_width(ws)
 
-    async def _export_discrepancies_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
+    async def _export_discrepancies_to_excel(
+        self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest
+    ) -> None:
         """Export discrepancies to Excel"""
         ws: Worksheet = wb.active
         ws.title = "Discrepancies"
@@ -731,7 +737,9 @@ class ReportsService:
         self._format_currency_columns(ws, [6, 7, 8])
         self._auto_width(ws)
 
-    async def _export_contests_to_excel(self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest) -> None:
+    async def _export_contests_to_excel(
+        self, wb: openpyxl.Workbook, company_id: str, data: ExportRequest
+    ) -> None:
         """Export contests to Excel"""
         ws: Worksheet = wb.active
         ws.title = "Contests"

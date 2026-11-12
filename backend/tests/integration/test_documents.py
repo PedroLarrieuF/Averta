@@ -194,7 +194,9 @@ class TestDocumentsList:
 class TestDocumentsDetail:
     """Tests for GET /api/v1/documents/{id}"""
 
-    async def test_get_document_exists(self, async_client: AsyncClient, auth_headers: dict, mock_document: dict):
+    async def test_get_document_exists(
+        self, async_client: AsyncClient, auth_headers: dict, mock_document: dict
+    ):
         """Test getting existing document"""
         response = await async_client.get(
             f"/api/v1/documents/{mock_document['id']}",
@@ -220,7 +222,9 @@ class TestDocumentsDetail:
 class TestDocumentsReprocess:
     """Tests for POST /api/v1/documents/{id}/reprocess"""
 
-    async def test_reprocess_document(self, async_client: AsyncClient, auth_headers: dict, mock_document: dict):
+    async def test_reprocess_document(
+        self, async_client: AsyncClient, auth_headers: dict, mock_document: dict
+    ):
         """Test reprocessing a document"""
         response = await async_client.post(
             f"/api/v1/documents/{mock_document['id']}/reprocess",
@@ -249,6 +253,7 @@ class TestDocumentsImport:
     async def test_import_base64_xml(self, async_client: AsyncClient, auth_headers: dict):
         """Test importing base64 encoded XML"""
         import base64
+
         xml_content = b"<cteProc><CTe><infCte Id='test' versao='4.00'></infCte></CTe></cteProc>"
         base64_content = base64.b64encode(xml_content).decode()
 

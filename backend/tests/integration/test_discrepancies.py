@@ -8,7 +8,9 @@ from httpx import AsyncClient
 class TestDiscrepanciesList:
     """Tests for GET /api/v1/discrepancies"""
 
-    async def test_list_discrepancies_pagination(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_list_discrepancies_pagination(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test listing discrepancies with pagination"""
         response = await async_client.get(
             "/api/v1/discrepancies",
@@ -26,7 +28,9 @@ class TestDiscrepanciesList:
         )
         assert response.status_code in [200, 401, 500]
 
-    async def test_list_discrepancies_date_filters(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_list_discrepancies_date_filters(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test listing discrepancies with date filters"""
         response = await async_client.get(
             "/api/v1/discrepancies",
@@ -81,7 +85,9 @@ class TestDiscrepanciesSummary:
 class TestDiscrepanciesBulkStatus:
     """Tests for PATCH /api/v1/discrepancies/bulk-status"""
 
-    async def test_bulk_status_update_valid(self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict):
+    async def test_bulk_status_update_valid(
+        self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict
+    ):
         """Test bulk status update with valid IDs"""
         response = await async_client.patch(
             "/api/v1/discrepancies/bulk-status",
@@ -90,7 +96,9 @@ class TestDiscrepanciesBulkStatus:
         )
         assert response.status_code in [200, 400, 401, 500]
 
-    async def test_bulk_status_update_invalid_ids(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_bulk_status_update_invalid_ids(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test bulk status update with invalid IDs"""
         response = await async_client.patch(
             "/api/v1/discrepancies/bulk-status",
@@ -99,7 +107,9 @@ class TestDiscrepanciesBulkStatus:
         )
         assert response.status_code in [200, 400, 404, 500]
 
-    async def test_bulk_status_update_empty_ids(self, async_client: AsyncClient, auth_headers: dict):
+    async def test_bulk_status_update_empty_ids(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """Test bulk status update with empty IDs list"""
         response = await async_client.patch(
             "/api/v1/discrepancies/bulk-status",
@@ -108,7 +118,9 @@ class TestDiscrepanciesBulkStatus:
         )
         assert response.status_code in [400, 422, 500]
 
-    async def test_bulk_status_update_invalid_status(self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict):
+    async def test_bulk_status_update_invalid_status(
+        self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict
+    ):
         """Test bulk status update with invalid status"""
         response = await async_client.patch(
             "/api/v1/discrepancies/bulk-status",
@@ -130,7 +142,9 @@ class TestDiscrepanciesBulkStatus:
 class TestDiscrepanciesReview:
     """Tests for POST /api/v1/discrepancies/{id}/review"""
 
-    async def test_review_discrepancy(self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict):
+    async def test_review_discrepancy(
+        self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict
+    ):
         """Test marking discrepancy as reviewed"""
         response = await async_client.post(
             f"/api/v1/discrepancies/{mock_discrepancy['id']}/review",
@@ -156,7 +170,9 @@ class TestDiscrepanciesReview:
 class TestDiscrepanciesDetail:
     """Tests for GET /api/v1/discrepancies/{id}"""
 
-    async def test_get_discrepancy(self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict):
+    async def test_get_discrepancy(
+        self, async_client: AsyncClient, auth_headers: dict, mock_discrepancy: dict
+    ):
         """Test getting discrepancy detail"""
         response = await async_client.get(
             f"/api/v1/discrepancies/{mock_discrepancy['id']}",

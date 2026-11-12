@@ -1371,6 +1371,7 @@ class Discrepancy(bases.BaseDiscrepancy):
     type: 'enums.DiscrepancyType'
     status: 'enums.DiscrepancyStatus'
     ruleCode: _str
+    ruleVersion: _int
     ruleDescription: _str
     expectedValue: _float
     actualValue: _float
@@ -2480,6 +2481,134 @@ class SystemConfig(bases.BaseSystemConfig):
                 'name': name,
                 'fields': cast(Mapping[str, PartialModelField], fields),
                 'from_model': 'SystemConfig',
+            }
+        )
+        _created_partial_types.add(name)
+
+
+class Rule(bases.BaseRule):
+    """Represents a Rule record"""
+
+    id: _str
+    code: _str
+    name: _str
+    type: 'enums.DiscrepancyType'
+    severity: _str
+    configJson: 'fields.Json'
+    version: _int
+    isActive: _bool
+    description: _str | None = None
+    tags: list[_str]
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+    # take *args and **kwargs so that other metaclasses can define arguments
+    def __init_subclass__(
+        cls,
+        *args: Any,
+        warn_subclass: bool | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init_subclass__()
+        if warn_subclass is not None:
+            warnings.warn(
+                'The `warn_subclass` argument is deprecated as it is no longer necessary and will be removed in the next release',
+                DeprecationWarning,
+                stacklevel=3,
+            )
+
+    @field_validator('tags', pre=True, allow_reuse=True)
+    @classmethod
+    def _transform_required_list_fields(cls, value: object) -> object:
+        # When using raw queries, some databases will return `None` for an array field that has not been set yet.
+        #
+        # In our case we want to use an empty list instead as that is the internal Prisma behaviour and we want
+        # to use the same consistent structure between the core ORM and raw queries. For example, if we updated
+        # our type definitions to include `None` for `List` fields then it would be misleading as it will only
+        # ever be `None` in raw queries.
+        if value is None:
+            return []
+
+        return value
+
+    @staticmethod
+    def create_partial(
+        name: str,
+        include: Iterable['types.RuleKeys'] | None = None,
+        exclude: Iterable['types.RuleKeys'] | None = None,
+        required: Iterable['types.RuleKeys'] | None = None,
+        optional: Iterable['types.RuleKeys'] | None = None,
+        relations: Mapping['types.RuleRelationalFieldKeys', str] | None = None,
+        exclude_relational_fields: bool = False,
+    ) -> None:
+        if not os.environ.get('PRISMA_GENERATOR_INVOCATION'):
+            raise RuntimeError(
+                'Attempted to create a partial type outside of client generation.'
+            )
+
+        if name in _created_partial_types:
+            raise ValueError(f'Partial type "{name}" has already been created.')
+
+        if include is not None:
+            if exclude is not None:
+                raise TypeError('Exclude and include are mutually exclusive.')
+            if exclude_relational_fields is True:
+                raise TypeError('Include and exclude_relational_fields=True are mutually exclusive.')
+
+        if required and optional:
+            shared = set(required) & set(optional)
+            if shared:
+                raise ValueError(f'Cannot make the same field(s) required and optional {shared}')
+
+        if exclude_relational_fields and relations:
+            raise ValueError(
+                'exclude_relational_fields and relations are mutually exclusive'
+            )
+
+        fields: dict[types.RuleKeys, PartialModelField] = OrderedDict()
+
+        try:
+            if include:
+                for field in include:
+                    fields[field] = _Rule_fields[field].copy()
+            elif exclude:
+                for field in exclude:
+                    if field not in _Rule_fields:
+                        raise KeyError(field)
+
+                fields = {
+                    key: data.copy()
+                    for key, data in _Rule_fields.items()
+                    if key not in exclude
+                }
+            else:
+                fields = {
+                    key: data.copy()
+                    for key, data in _Rule_fields.items()
+                }
+
+            if required:
+                for field in required:
+                    fields[field]['optional'] = False
+
+            if optional:
+                for field in optional:
+                    fields[field]['optional'] = True
+
+
+            if relations:
+                raise ValueError('Model: "Rule" has no relational fields.')
+        except KeyError as exc:
+            raise ValueError(
+                f'{exc.args[0]} is not a valid Rule / {name} field.'
+            ) from None
+
+        models = partial_models_ctx.get()
+        models.append(
+            {
+                'name': name,
+                'fields': cast(Mapping[str, PartialModelField], fields),
+                'from_model': 'Rule',
             }
         )
         _created_partial_types.add(name)
@@ -4174,6 +4303,14 @@ _Discrepancy_fields: dict['types.DiscrepancyKeys', PartialModelField] = OrderedD
             'is_relational': False,
             'documentation': None,
         }),
+        ('ruleVersion', {
+            'name': 'ruleVersion',
+            'is_list': False,
+            'optional': False,
+            'type': '_int',
+            'is_relational': False,
+            'documentation': None,
+        }),
         ('ruleDescription', {
             'name': 'ruleDescription',
             'is_list': False,
@@ -5138,6 +5275,108 @@ _SystemConfig_fields: dict['types.SystemConfigKeys', PartialModelField] = Ordere
     ],
 )
 
+_Rule_relational_fields: set[str] = set()  # pyright: ignore[reportUnusedVariable]
+_Rule_fields: dict['types.RuleKeys', PartialModelField] = OrderedDict(
+    [
+        ('id', {
+            'name': 'id',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('code', {
+            'name': 'code',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('name', {
+            'name': 'name',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('type', {
+            'name': 'type',
+            'is_list': False,
+            'optional': False,
+            'type': 'enums.DiscrepancyType',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('severity', {
+            'name': 'severity',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('configJson', {
+            'name': 'configJson',
+            'is_list': False,
+            'optional': False,
+            'type': 'fields.Json',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('version', {
+            'name': 'version',
+            'is_list': False,
+            'optional': False,
+            'type': '_int',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('isActive', {
+            'name': 'isActive',
+            'is_list': False,
+            'optional': False,
+            'type': '_bool',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('description', {
+            'name': 'description',
+            'is_list': False,
+            'optional': True,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('tags', {
+            'name': 'tags',
+            'is_list': True,
+            'optional': False,
+            'type': 'List[_str]',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('createdAt', {
+            'name': 'createdAt',
+            'is_list': False,
+            'optional': False,
+            'type': 'datetime.datetime',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('updatedAt', {
+            'name': 'updatedAt',
+            'is_list': False,
+            'optional': False,
+            'type': 'datetime.datetime',
+            'is_relational': False,
+            'documentation': None,
+        }),
+    ],
+)
+
 
 
 # we have to import ourselves as relation types are namespaced to models
@@ -5162,3 +5401,4 @@ model_rebuild(Payment)
 model_rebuild(AuditLog)
 model_rebuild(Notification)
 model_rebuild(SystemConfig)
+model_rebuild(Rule)

@@ -11,12 +11,12 @@ from app.services.rules_critical import (
     GRISRule,
     ICMSDifferentialRule,
     ICMSSTRule,
-    NFECFOPFreteRule,
-    NFECFOPInterestadualRule,
-    NFECTECrossRule,
     NFECancelamentoRule,
     NFECartaCorrecaoRule,
+    NFECFOPFreteRule,
+    NFECFOPInterestadualRule,
     NFEComplementarRule,
+    NFECTECrossRule,
     NFEDestinatarioRule,
     NFEDIFALRule,
     NFEFCPRule,
@@ -1857,7 +1857,9 @@ class TestNFEMediumRules:
     async def test_nfe_cancelamento_triggered_after_24h(self, nfe_cancelamento_context):
         """Test Cancelamento triggers when > 24h from emission"""
         # Emit: 2024-01-15T09:00, Evento: 2024-01-16T10:30 (25.5h later)
-        nfe_cancelamento_context.document["evento"]["detEvento"]["dhEvento"] = "2024-01-16T10:30:00-03:00"
+        nfe_cancelamento_context.document["evento"]["detEvento"][
+            "dhEvento"
+        ] = "2024-01-16T10:30:00-03:00"
         rule = NFECancelamentoRule()
         result = await rule.evaluate(nfe_cancelamento_context)
 

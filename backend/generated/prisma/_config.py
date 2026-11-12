@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, override
+from typing import TYPE_CHECKING, ClassVar
 
 import pydantic
 import tomlkit
@@ -26,13 +26,13 @@ class DefaultConfig(BaseSettings):
     #       doesn't change then the CLI is incorrectly cached
     prisma_version: str = Field(
         env="PRISMA_VERSION",
-        default="5.17.0",
+        default="5.8.0",
     )
 
     # Engine binary versions can be found under https://github.com/prisma/prisma-engine/commits/main
     expected_engine_version: str = Field(
         env="PRISMA_EXPECTED_ENGINE_VERSION",
-        default="393aa359c9ad4a4bb28630fb5613f9c281cde053",
+        default="0a83d8541752d7582de2ebc1ece46519ce72a848",
     )
 
     # Home directory, used to build the `binary_cache_dir` option by default, useful in multi-user
@@ -118,7 +118,6 @@ class Config(DefaultConfig):
 
 
 class LazyConfigProxy(LazyProxy[Config]):
-    @override
     def __load__(self) -> Config:
         return Config.load()
 

@@ -80,7 +80,9 @@ class StorageService:
     def get_presigned_url(self, object_name: str, expires: int = 3600) -> str:
         """Generate presigned URL for download"""
         try:
-            return self.client.presigned_get_object(self.bucket, object_name, expires=timedelta(seconds=expires))
+            return self.client.presigned_get_object(
+                self.bucket, object_name, expires=timedelta(seconds=expires)
+            )
         except S3Error as e:
             logger.error("presigned_url_error", object_name=object_name, error=str(e))
             raise

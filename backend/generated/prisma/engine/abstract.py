@@ -4,11 +4,115 @@
 from __future__ import annotations
 
 # global imports for type checking
+from typing import (
+    Any,
+    Literal,
+    overload,
+)
 
 LiteralString = str
 # -- template engine/abstract.py.jinja --
+from abc import ABC, abstractmethod
+from datetime import timedelta
+
+from .._compat import get_running_loop
+from .._constants import DEFAULT_CONNECT_TIMEOUT
+from ..types import DatasourceOverride, MetricsFormat
+from ._types import TransactionId
+
+__all__ = (
+    'AbstractEngine',
+)
 
 
-from ._abstract import AsyncAbstractEngine as AbstractEngine
+class AbstractEngine(ABC):
+    dml: str
 
-__all__ = ('AbstractEngine',)
+    def stop(self, *, timeout: timedelta | None = None) -> None:
+        """Wrapper for synchronously calling close() and aclose()"""
+        self.close(timeout=timeout)
+        try:
+            loop = get_running_loop()
+        except RuntimeError:
+            # no event loop in the current thread, we cannot cleanup asynchronously
+            return
+        else:
+            if not loop.is_closed():
+                loop.create_task(self.aclose(timeout=timeout))
+
+    @abstractmethod
+    def close(self, *, timeout: timedelta | None = None) -> None:
+        """Synchronous method for closing the engine, useful if the underlying engine uses a subprocess"""
+        ...
+
+    @abstractmethod
+    async def aclose(self, *, timeout: timedelta | None = None) -> None:
+        """Asynchronous method for closing the engine, only used if an asynchronous client is generated"""
+        ...
+
+    @abstractmethod
+    async def connect(
+        self,
+        timeout: timedelta = DEFAULT_CONNECT_TIMEOUT,
+        datasources: list[DatasourceOverride] | None = None,
+    ) -> None:
+        """Connect to the engine"""
+        ...
+
+    @abstractmethod
+    async def query(self, content: str, *, tx_id: TransactionId | None) -> Any:
+        """Execute a GraphQL query.
+
+        This method expects a JSON object matching this structure:
+
+        {
+            'variables': {},
+            'operation_name': str,
+            'query': str,
+        }
+        """
+        ...
+
+    @abstractmethod
+    async def start_transaction(self, *, content: str) -> TransactionId:
+        """Start an interactive transaction, returns the transaction ID that can be used to perform subsequent operations"""
+        ...
+
+    @abstractmethod
+    async def commit_transaction(self, tx_id: TransactionId) -> None:
+        """Commit an interactive transaction, the given transaction will no longer be usable"""
+        ...
+
+    @abstractmethod
+    async def rollback_transaction(self, tx_id: TransactionId) -> None:
+        """Rollback an interactive transaction, the given transaction will no longer be usable"""
+        ...
+
+    @overload
+    @abstractmethod
+    async def metrics(
+        self,
+        *,
+        format: Literal['json'],
+        global_labels: dict[str, str] | None,
+    ) -> dict[str, Any]:
+        ...
+
+    @overload
+    @abstractmethod
+    async def metrics(
+        self,
+        *,
+        format: Literal['prometheus'],
+        global_labels: dict[str, str] | None,
+    ) -> str:
+        ...
+
+    @abstractmethod
+    async def metrics(
+        self,
+        *,
+        format: MetricsFormat,
+        global_labels: dict[str, str] | None,
+    ) -> str | dict[str, Any]:
+        ...

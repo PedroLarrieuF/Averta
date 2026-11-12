@@ -3,7 +3,6 @@
 from typing import Any
 
 import structlog
-from prisma.models import Carrier as CarrierModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import ConflictError
@@ -15,6 +14,7 @@ from app.modules.carriers.schemas import (
     CarrierUpdate,
 )
 from prisma import Prisma
+from prisma.models import Carrier as CarrierModel
 
 logger = structlog.get_logger()
 

@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import contextlib
 from collections.abc import Iterator
 
-from . import _registry
-from ._registry import RegisteredClient
+from . import client as _client
+from .client import RegisteredClient
 from .errors import ClientNotRegisteredError
 
 
@@ -16,20 +14,20 @@ def reset_client(
 
     Once the context manager exits, the registered client is set back to it's original state
     """
-    client = _registry._registered_client
+    client = _client._registered_client
     if client is None:
         raise ClientNotRegisteredError()
 
     try:
-        _registry._registered_client = new_client
+        _client._registered_client = new_client
         yield
     finally:
-        _registry._registered_client = client
+        _client._registered_client = client
 
 
 def unregister_client() -> None:
     """Unregister the current client."""
-    if _registry._registered_client is None:
+    if _client._registered_client is None:
         raise ClientNotRegisteredError()
 
-    _registry._registered_client = None
+    _client._registered_client = None

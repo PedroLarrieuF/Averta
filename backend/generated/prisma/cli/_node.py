@@ -9,7 +9,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from pathlib import Path
-from typing import IO, Any, Literal, Union, cast, override
+from typing import IO, Any, Literal, Union, cast
 
 from .. import config
 from .._compat import get_args, nodejs
@@ -22,7 +22,7 @@ File = Union[int, IO[Any]]
 Target = Literal["node", "npm"]
 
 # taken from https://github.com/prisma/prisma/blob/main/package.json
-MIN_NODE_VERSION = (16, 13)
+MIN_NODE_VERSION = (14, 17)
 
 # mapped the node version above from https://nodejs.org/en/download/releases/
 MIN_NPM_VERSION = (6, 14)
@@ -119,11 +119,9 @@ class NodeBinaryStrategy(Strategy):
         self.resolver = resolver
 
     @property
-    @override
     def target_bin(self) -> Path:
         return self.path.parent
 
-    @override
     def __run__(
         self,
         *args: str,
@@ -220,7 +218,6 @@ class NodeJSPythonStrategy(Strategy):
         self.target = target
         self.resolver = "nodejs-bin"
 
-    @override
     def __run__(
         self,
         *args: str,
@@ -262,7 +259,6 @@ class NodeJSPythonStrategy(Strategy):
         return Path(nodejs.node.path)
 
     @property
-    @override
     def target_bin(self) -> Path:
         return Path(self.node_path).parent
 
@@ -403,7 +399,6 @@ class LazyBinaryProxy(LazyProxy[Node]):
         super().__init__()
         self.target = target
 
-    @override
     def __load__(self) -> Node:
         return resolve(self.target)
 

@@ -1,12 +1,10 @@
 """Pytest configuration with integration test fixtures using httpx.AsyncClient"""
 
 import asyncio
-import sys
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 # Configure pytest-asyncio
@@ -25,6 +23,7 @@ def event_loop():
 # Integration Test Fixtures (using httpx.AsyncClient with ASGITransport)
 # ============================================================================
 
+
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """HTTPX async client for API testing against the FastAPI app.
@@ -42,6 +41,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 # ============================================================================
 # Test Data Factories
 # ============================================================================
+
 
 class TestDataFactory:
     """Factory for creating test data"""
@@ -118,7 +118,13 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def contract_data(cls, company_id: str | None = None, client_id: str | None = None, carrier_id: str | None = None, **overrides) -> dict:
+    def contract_data(
+        cls,
+        company_id: str | None = None,
+        client_id: str | None = None,
+        carrier_id: str | None = None,
+        **overrides,
+    ) -> dict:
         """Generate contract test data"""
         from datetime import UTC, datetime, timedelta
 
@@ -136,7 +142,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def document_data(cls, company_id: str | None = None, client_id: str | None = None, **overrides) -> dict:
+    def document_data(
+        cls, company_id: str | None = None, client_id: str | None = None, **overrides
+    ) -> dict:
         """Generate document test data"""
         data = {
             "fileName": f"test_document_{cls._next_id()}.xml",
@@ -150,7 +158,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def discrepancy_data(cls, document_id: str | None = None, contract_id: str | None = None, **overrides) -> dict:
+    def discrepancy_data(
+        cls, document_id: str | None = None, contract_id: str | None = None, **overrides
+    ) -> dict:
         """Generate discrepancy test data"""
         data = {
             "type": "ICMS_DIFFERENTIAL",
@@ -168,7 +178,9 @@ class TestDataFactory:
         return data
 
     @classmethod
-    def contest_data(cls, company_id: str | None = None, client_id: str | None = None, **overrides) -> dict:
+    def contest_data(
+        cls, company_id: str | None = None, client_id: str | None = None, **overrides
+    ) -> dict:
         """Generate contest test data"""
         data = {
             "number": f"CTST-{cls._next_id():06d}",
@@ -195,6 +207,7 @@ def test_factory() -> TestDataFactory:
 # Auth Fixtures (Mock - for testing endpoint behavior without real DB)
 # ============================================================================
 
+
 @pytest.fixture
 async def test_company(async_client: AsyncClient, test_factory: TestDataFactory) -> dict:
     """Create a test company via API (or return mock data)"""
@@ -204,7 +217,9 @@ async def test_company(async_client: AsyncClient, test_factory: TestDataFactory)
 
 
 @pytest.fixture
-async def test_user(async_client: AsyncClient, test_company: dict, test_factory: TestDataFactory) -> dict:
+async def test_user(
+    async_client: AsyncClient, test_company: dict, test_factory: TestDataFactory
+) -> dict:
     """Create a test user"""
     user_data = test_factory.user_data(company_id=test_company["id"])
     user_data["id"] = "test-user-id"
@@ -243,6 +258,7 @@ async def admin_auth_headers(async_client: AsyncClient, test_company: dict) -> d
 # ============================================================================
 # Mock Data Fixtures (for tests that don't need real DB)
 # ============================================================================
+
 
 @pytest.fixture
 def mock_company() -> dict:
@@ -366,10 +382,12 @@ def mock_discrepancy(mock_document: dict, mock_contract: dict) -> dict:
 # Celery Test Configuration
 # ============================================================================
 
+
 @pytest.fixture(autouse=True)
 def celery_eager_mode():
     """Set Celery to eager mode for testing"""
     import os
+
     os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
     os.environ["CELERY_TASK_EAGER_PROPAGATES"] = "true"
     yield
@@ -384,11 +402,13 @@ def celery_eager_mode():
 # Redis Test Fixture (using fakeredis)
 # ============================================================================
 
+
 @pytest.fixture
 async def redis_client():
     """Fake Redis client for testing"""
     try:
         import fakeredis.aioredis
+
         redis = fakeredis.aioredis.FakeRedis()
         yield redis
         await redis.close()
@@ -401,6 +421,7 @@ async def redis_client():
 # MinIO Test Fixture (mock)
 # ============================================================================
 
+
 @pytest.fixture
 def minio_client():
     """Mock MinIO client for testing"""
@@ -410,6 +431,7 @@ def minio_client():
 # ============================================================================
 # SendGrid Test Fixture (mock)
 # ============================================================================
+
 
 @pytest.fixture
 def sendgrid_client():

@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 from jose import JWTError
-from prisma.errors import PrismaError
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
@@ -45,6 +44,7 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.reports.router import router as reports_router
 from app.modules.rules.router import router as rules_router
 from app.modules.users.router import router as users_router
+from prisma.errors import PrismaError
 
 # Configure structlog
 structlog.configure(

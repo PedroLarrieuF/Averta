@@ -109,7 +109,9 @@ def _extract_cte_data_lxml(inf_cte: etree._Element, cte_elem: etree._Element) ->
         except ValueError:
             return None
 
-    def find_all(elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP) -> list[etree._Element]:
+    def find_all(
+        elem: etree._Element, xpath: str, ns: dict[str, str] = NS_MAP
+    ) -> list[etree._Element]:
         return elem.findall(xpath, ns)  # type: ignore[no-any-return]
 
     ide = inf_cte.find("cte:ide", namespaces=NS_MAP)

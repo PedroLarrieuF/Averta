@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
-from prisma.models import Notification as NotificationModel
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import NotFoundError
@@ -19,6 +18,7 @@ from app.modules.notifications.schemas import (
 )
 from app.services.email_service import email_service
 from prisma import Prisma
+from prisma.models import Notification as NotificationModel
 
 logger = structlog.get_logger()
 

@@ -1,6 +1,7 @@
 """Critical Rules Implementation - 6 critical + complementary CT-e rules + ML Anomaly Detection"""
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,10 @@ NFE_ICMS_TOLERANCE: float = 0.05  # 5 centavos tolerance for ICMS
 NFE_FRETE_BASE_TOLERANCE: float = 0.10  # 10 centavos for freight in base
 NFE_CTE_CROSS_TOLERANCE_PCT: float = 2.0  # 2% tolerance for cross-validation
 
+# NF-e Cancellation/Inutilizacao Constants
+MIN_JUSTIFICATION_LENGTH: int = 15
+CANCELLATION_TIME_LIMIT_HOURS: int = 24
+
 # UF region mapping for DIFAL (from icms_rules.json)
 UF_REGIONS = {
     "Norte": ["AC", "AP", "AM", "PA", "RO", "RR", "TO"],
@@ -44,24 +49,64 @@ UF_REGIONS = {
 
 # Internal ICMS aliquots (from icms_rules.json)
 ICMS_ALIQUOTAS_INTERNAS = {
-    "AC": 0.17, "AL": 0.18, "AP": 0.18, "AM": 0.18,
-    "BA": 0.205, "CE": 0.18, "DF": 0.18, "ES": 0.17,
-    "GO": 0.19, "MA": 0.20, "MT": 0.17, "MS": 0.17,
-    "MG": 0.18, "PA": 0.17, "PB": 0.18, "PR": 0.18,
-    "PE": 0.18, "PI": 0.18, "RJ": 0.20, "RN": 0.18,
-    "RS": 0.18, "RO": 0.175, "RR": 0.17, "SC": 0.17,
-    "SP": 0.18, "SE": 0.18, "TO": 0.18,
+    "AC": 0.17,
+    "AL": 0.18,
+    "AP": 0.18,
+    "AM": 0.18,
+    "BA": 0.205,
+    "CE": 0.18,
+    "DF": 0.18,
+    "ES": 0.17,
+    "GO": 0.19,
+    "MA": 0.20,
+    "MT": 0.17,
+    "MS": 0.17,
+    "MG": 0.18,
+    "PA": 0.17,
+    "PB": 0.18,
+    "PR": 0.18,
+    "PE": 0.18,
+    "PI": 0.18,
+    "RJ": 0.20,
+    "RN": 0.18,
+    "RS": 0.18,
+    "RO": 0.175,
+    "RR": 0.17,
+    "SC": 0.17,
+    "SP": 0.18,
+    "SE": 0.18,
+    "TO": 0.18,
 }
 
 # FCP aliquots (from icms_rules.json)
 FCP_ALIQUOTAS = {
-    "AC": 0.00, "AL": 0.02, "AP": 0.02, "AM": 0.02,
-    "BA": 0.02, "CE": 0.02, "DF": 0.00, "ES": 0.02,
-    "GO": 0.00, "MA": 0.02, "MT": 0.00, "MS": 0.00,
-    "MG": 0.02, "PA": 0.02, "PB": 0.02, "PR": 0.02,
-    "PE": 0.02, "PI": 0.02, "RJ": 0.02, "RN": 0.02,
-    "RS": 0.02, "RO": 0.00, "RR": 0.02, "SC": 0.02,
-    "SP": 0.02, "SE": 0.02, "TO": 0.00,
+    "AC": 0.00,
+    "AL": 0.02,
+    "AP": 0.02,
+    "AM": 0.02,
+    "BA": 0.02,
+    "CE": 0.02,
+    "DF": 0.00,
+    "ES": 0.02,
+    "GO": 0.00,
+    "MA": 0.02,
+    "MT": 0.00,
+    "MS": 0.00,
+    "MG": 0.02,
+    "PA": 0.02,
+    "PB": 0.02,
+    "PR": 0.02,
+    "PE": 0.02,
+    "PI": 0.02,
+    "RJ": 0.02,
+    "RN": 0.02,
+    "RS": 0.02,
+    "RO": 0.00,
+    "RR": 0.02,
+    "SC": 0.02,
+    "SP": 0.02,
+    "SE": 0.02,
+    "TO": 0.00,
 }
 
 # Inter-state aliquots by region
@@ -334,7 +379,9 @@ class ICMSDifferentialRule(BaseRule):
             evidence={"table_rule": difal_rule},
         )
 
-    def _lookup_difal(self, rules: dict[str, Any], uf_origem: str, uf_destino: str) -> dict[str, Any] | None:
+    def _lookup_difal(
+        self, rules: dict[str, Any], uf_origem: str, uf_destino: str
+    ) -> dict[str, Any] | None:
         for rule in rules.get("difal", []):
             if isinstance(rule, dict):
                 if rule.get("uf_origem") == uf_origem and rule.get("uf_destino") == uf_destino:
@@ -431,9 +478,7 @@ class ICMSSTRule(BaseRule):
                 # Verificar UF
                 uf_origem_rule = rule.get("uf_origem", "*")
                 uf_destino_rule = rule.get("uf_destino", "*")
-                if (uf_origem_rule in ("*", uf_origem)) and (
-                    uf_destino_rule in ("*", uf_destino)
-                ):
+                if (uf_origem_rule in ("*", uf_origem)) and (uf_destino_rule in ("*", uf_destino)):
                     st_rule = rule
                     break
 
@@ -769,7 +814,12 @@ class SicobanTableRuleReal(BaseRule):
         )
 
     def _find_sicoban_match(
-        self, rules: list[dict[str, Any]], cep_origem: str, cep_destino: str, tipo_carga: str, modalidade: str
+        self,
+        rules: list[dict[str, Any]],
+        cep_origem: str,
+        cep_destino: str,
+        tipo_carga: str,
+        modalidade: str,
     ) -> dict[str, Any] | None:
         """Find matching Sicoban rule"""
         cep_o = int("".join(filter(str.isdigit, cep_origem))[:5])
@@ -1261,7 +1311,9 @@ class NFEICMSCalculoRule(BaseRule):
         is_sn_csosn = csosn in sn_csosns
 
         if not is_st_cst and not is_sn_csosn:
-            return self._create_result(False, details={"reason": f"CST {cst} / CSOSN {csosn} not validated"})
+            return self._create_result(
+                False, details={"reason": f"CST {cst} / CSOSN {csosn} not validated"}
+            )
 
         if v_bc <= 0 or p_icms <= 0:
             return self._create_result(False, details={"reason": "Missing base or aliquot"})
@@ -1289,7 +1341,15 @@ class NFEICMSCalculoRule(BaseRule):
                 "uf_destino": uf_destino,
                 "tolerancia": NFE_ICMS_TOLERANCE,
             },
-            evidence={"icms_data": {"cst": cst, "csosn": csosn, "vBC": v_bc, "pICMS": p_icms, "vICMS": v_icms}},
+            evidence={
+                "icms_data": {
+                    "cst": cst,
+                    "csosn": csosn,
+                    "vBC": v_bc,
+                    "pICMS": p_icms,
+                    "vICMS": v_icms,
+                }
+            },
         )
 
     def _is_nfe(self, doc: dict) -> bool:
@@ -1334,12 +1394,16 @@ class NFEICMSSTRule(BaseRule):
         uf_origem = self._safe_get(doc, "emit.enderEmit.UF")
         uf_destino = self._safe_get(doc, "dest.enderDest.UF")
         if not ncm or not uf_origem or not uf_destino:
-            return self._create_result(False, details={"reason": "Missing required fields (NCM/UF)"})
+            return self._create_result(
+                False, details={"reason": "Missing required fields (NCM/UF)"}
+            )
 
         # Look up ST rule from reference data
         st_config = self._get_st_config(ncm, uf_destino)
         if not st_config:
-            return self._create_result(False, details={"reason": f"No ST config for NCM {ncm} in {uf_destino}"})
+            return self._create_result(
+                False, details={"reason": f"No ST config for NCM {ncm} in {uf_destino}"}
+            )
 
         # Calculate expected ST
         # Use v_bc_st from document if available (pre-calculated base)
@@ -1356,7 +1420,9 @@ class NFEICMSSTRule(BaseRule):
             v_prod = self._safe_get(doc, "det.prod.vProd", 0)
             base_calculo = v_prod * (1 + st_config["iva"] / 100)
         else:
-            return self._create_result(False, details={"reason": f"Unknown ST method: {st_config['metodo']}"})
+            return self._create_result(
+                False, details={"reason": f"Unknown ST method: {st_config['metodo']}"}
+            )
 
         expected_st = round(base_calculo * st_config["aliquota_interna"], 2)
         triggered = abs(v_icms_st - expected_st) > NFE_ICMS_TOLERANCE
@@ -1377,7 +1443,15 @@ class NFEICMSSTRule(BaseRule):
                 "p_mva_st": p_mva_st,
                 "p_icms_st": p_icms_st,
             },
-            evidence={"st_config": st_config, "icms_st_data": {"vBCST": v_bc_st, "pMVAST": p_mva_st, "pICMSST": p_icms_st, "vICMSST": v_icms_st}},
+            evidence={
+                "st_config": st_config,
+                "icms_st_data": {
+                    "vBCST": v_bc_st,
+                    "pMVAST": p_mva_st,
+                    "pICMSST": p_icms_st,
+                    "vICMSST": v_icms_st,
+                },
+            },
         )
 
     def _get_st_config(self, ncm: str, uf: str) -> dict | None:
@@ -1476,7 +1550,9 @@ class NFEDIFALRule(BaseRule):
             # Check if actually Simples - CRT 1
             crt = self._safe_get(doc, "emit.CRT")
             if crt in {1, "1"}:
-                return self._create_result(False, details={"reason": "Destinatário Simples Nacional - DIFAL não aplica"})
+                return self._create_result(
+                    False, details={"reason": "Destinatário Simples Nacional - DIFAL não aplica"}
+                )
 
         # Get ICMS data
         v_bc = self._safe_get(doc, "icms.v_bc", 0)
@@ -1500,7 +1576,9 @@ class NFEDIFALRule(BaseRule):
         expected_fcp = round(v_bc * aliquota_fcp, 2)
 
         # Total ICMS should include DIFAL + FCP + ICMS Interestadual
-        expected_total_icms = round(v_bc * aliquota_interestadual + expected_difal + expected_fcp, 2)
+        expected_total_icms = round(
+            v_bc * aliquota_interestadual + expected_difal + expected_fcp, 2
+        )
 
         triggered = abs(v_icms - expected_total_icms) > NFE_ICMS_TOLERANCE
 
@@ -1522,7 +1600,15 @@ class NFEDIFALRule(BaseRule):
                 "ind_ie_dest": ind_ie_dest,
                 "crt_emitente": self._safe_get(doc, "emit.CRT"),
             },
-            evidence={"difal_calc": {"vBC": v_bc, "pICMS": p_icms, "vICMS": v_icms, "vFCP": v_fcp, "pFCP": p_fcp}},
+            evidence={
+                "difal_calc": {
+                    "vBC": v_bc,
+                    "pICMS": p_icms,
+                    "vICMS": v_icms,
+                    "vFCP": v_fcp,
+                    "pFCP": p_fcp,
+                }
+            },
         )
 
     def _is_nfe(self, doc: dict) -> bool:
@@ -1557,7 +1643,9 @@ class NFEFreteNaBaseRule(BaseRule):
 
         # modFrete: 0=Por conta do emitente, 1=Por conta do destinatário, 2=Por conta de terceiros, 3=Próprio por conta do emitente, 9=Sem frete
         if mod_frete not in ["0", "1", "2", "3"] or v_frete <= 0:
-            return self._create_result(False, details={"reason": "No freight or modFrete not applicable"})
+            return self._create_result(
+                False, details={"reason": "No freight or modFrete not applicable"}
+            )
 
         # Get ICMS base
         v_bc = self._safe_get(doc, "icms.v_bc", 0)
@@ -1599,7 +1687,16 @@ class NFEFreteNaBaseRule(BaseRule):
                 "frete_in_base": freight_in_base,
                 "cst_requires_frete_base": cst in csts_with_frete_base,
             },
-            evidence={"icms_tot": {"vBC": v_bc, "vProd": v_prod, "vFrete": v_frete, "vSeg": v_seg, "vOutro": v_outro, "vIPI": v_ipi}},
+            evidence={
+                "icms_tot": {
+                    "vBC": v_bc,
+                    "vProd": v_prod,
+                    "vFrete": v_frete,
+                    "vSeg": v_seg,
+                    "vOutro": v_outro,
+                    "vIPI": v_ipi,
+                }
+            },
         )
 
     def _is_nfe(self, doc: dict) -> bool:
@@ -1637,7 +1734,9 @@ class NFECTECrossRule(BaseRule):
             cte_ref = await self._find_matching_cte(context)
 
         if not cte_ref:
-            return self._create_result(False, details={"reason": "No matching CT-e found for cross-validation"})
+            return self._create_result(
+                False, details={"reason": "No matching CT-e found for cross-validation"}
+            )
 
         discrepancies = []
 
@@ -1647,12 +1746,14 @@ class NFECTECrossRule(BaseRule):
         if v_nf > 0 and v_carga_cte > 0:
             diff_pct = abs(v_nf - v_carga_cte) / v_nf * 100
             if diff_pct > NFE_CTE_CROSS_TOLERANCE_PCT:
-                discrepancies.append({
-                    "field": "valor",
-                    "nfe_value": v_nf,
-                    "cte_value": v_carga_cte,
-                    "diff_pct": round(diff_pct, 2),
-                })
+                discrepancies.append(
+                    {
+                        "field": "valor",
+                        "nfe_value": v_nf,
+                        "cte_value": v_carga_cte,
+                        "diff_pct": round(diff_pct, 2),
+                    }
+                )
 
         # 2. Compare weights
         peso_nfe = self._safe_get(doc, "transp.vol.pesoB", 0)
@@ -1660,12 +1761,14 @@ class NFECTECrossRule(BaseRule):
         if peso_nfe > 0 and peso_cte > 0:
             diff_pct = abs(peso_nfe - peso_cte) / peso_nfe * 100
             if diff_pct > NFE_CTE_CROSS_TOLERANCE_PCT:
-                discrepancies.append({
-                    "field": "peso",
-                    "nfe_value": peso_nfe,
-                    "cte_value": peso_cte,
-                    "diff_pct": round(diff_pct, 2),
-                })
+                discrepancies.append(
+                    {
+                        "field": "peso",
+                        "nfe_value": peso_nfe,
+                        "cte_value": peso_cte,
+                        "diff_pct": round(diff_pct, 2),
+                    }
+                )
 
         # 3. Compare CFOP consistency with modFrete
         cfop = self._safe_get(doc, "det.prod.CFOP")
@@ -1675,11 +1778,13 @@ class NFECTECrossRule(BaseRule):
             # modFrete: 0=Emitente, 1=Destinatário
             cte_mod_frete = self._safe_get(cte_ref, "modal_rodoviario.frete_tipo", "")
             if mod_frete != cte_mod_frete:
-                discrepancies.append({
-                    "field": "mod_frete",
-                    "nfe_mod_frete": mod_frete,
-                    "cte_mod_frete": cte_mod_frete,
-                })
+                discrepancies.append(
+                    {
+                        "field": "mod_frete",
+                        "nfe_mod_frete": mod_frete,
+                        "cte_mod_frete": cte_mod_frete,
+                    }
+                )
 
         # 4. Check access key reference
         ch_nfe = self._safe_get(doc, "protNFe.infProt.chNFe") or self._safe_get(doc, "ide.cNF")
@@ -1699,7 +1804,10 @@ class NFECTECrossRule(BaseRule):
                 "cte_chave": self._safe_get(cte_ref, "accessKey", ""),
                 "checks_performed": ["valor", "peso", "mod_frete", "chave_acesso"],
             },
-            evidence={"nfe_data": {"vNF": v_nf, "peso": peso_nfe, "CFOP": cfop, "modFrete": mod_frete}, "cte_data": {"vCarga": v_carga_cte, "peso": peso_cte, "modFrete": cte_mod_frete}},
+            evidence={
+                "nfe_data": {"vNF": v_nf, "peso": peso_nfe, "CFOP": cfop, "modFrete": mod_frete},
+                "cte_data": {"vCarga": v_carga_cte, "peso": peso_cte, "modFrete": cte_mod_frete},
+            },
         )
 
     async def _find_matching_cte(self, context: RuleContext) -> dict | None:
@@ -1747,7 +1855,9 @@ class NFEFCPRule(BaseRule):
         # Check if destinatário is Simples Nacional (CRT 1) - FCP doesn't apply
         crt = self._safe_get(doc, "emit.CRT")
         if crt in {1, "1"}:
-            return self._create_result(False, details={"reason": "Simples Nacional - FCP não aplica"})
+            return self._create_result(
+                False, details={"reason": "Simples Nacional - FCP não aplica"}
+            )
 
         # Check if destination UF has FCP aliquot
         aliquota_fcp = FCP_ALIQUOTAS.get(uf_destino, 0)
@@ -1839,7 +1949,9 @@ class NFECFOPFreteRule(BaseRule):
         elif mod_frete in fob_mod_fretes:
             expected_cfops = self.CFOP_FOB.get(scope, [])
         else:
-            return self._create_result(False, details={"reason": f"modFrete {mod_frete} not validated"})
+            return self._create_result(
+                False, details={"reason": f"modFrete {mod_frete} not validated"}
+            )
 
         triggered = cfop_str not in expected_cfops
 
@@ -1911,7 +2023,9 @@ class NFECFOPInterestadualRule(BaseRule):
                 "uf_destino": uf_destino,
                 "is_interstate": is_interstate,
             },
-            evidence={"cfop_data": {"CFOP": cfop_str, "UF_origem": uf_origem, "UF_destino": uf_destino}},
+            evidence={
+                "cfop_data": {"CFOP": cfop_str, "UF_origem": uf_origem, "UF_destino": uf_destino}
+            },
         )
 
     def _is_nfe(self, doc: dict) -> bool:
@@ -1968,7 +2082,9 @@ class NFENCMCESTRule(BaseRule):
         # If product has no CEST in reference data, skip (not subject to ST)
         valid_cests = self.NCM_CEST_MAP.get(ncm)
         if not valid_cests:
-            return self._create_result(False, details={"reason": f"NCM {ncm} not subject to CEST validation"})
+            return self._create_result(
+                False, details={"reason": f"NCM {ncm} not subject to CEST validation"}
+            )
 
         # If CEST is required but not informed
         if not cest:
@@ -2042,7 +2158,18 @@ class NFEValorTotalRule(BaseRule):
 
         # Expected total: sum of all components
         expected_total = round(
-            v_prod + v_frete + v_seg - v_desc + v_ii + v_ipi + v_pis + v_cofins + v_icms + v_st + v_fcp + v_outro,
+            v_prod
+            + v_frete
+            + v_seg
+            - v_desc
+            + v_ii
+            + v_ipi
+            + v_pis
+            + v_cofins
+            + v_icms
+            + v_st
+            + v_fcp
+            + v_outro,
             2,
         )
 
@@ -2140,7 +2267,9 @@ class NFETransportadoraRule(BaseRule):
 
         # Validate CNPJ or CPF
         if not cnpj and not cpf:
-            discrepancies.append({"field": "cnpj_cpf", "message": "CNPJ ou CPF da transportadora obrigatório"})
+            discrepancies.append(
+                {"field": "cnpj_cpf", "message": "CNPJ ou CPF da transportadora obrigatório"}
+            )
 
         # Validate IE (required for interstate or when carrier is taxpayer)
         if not ie:
@@ -2152,16 +2281,25 @@ class NFETransportadoraRule(BaseRule):
 
         # Validate xNome
         if not x_nome:
-            discrepancies.append({"field": "xNome", "message": "Nome da transportadora obrigatório"})
+            discrepancies.append(
+                {"field": "xNome", "message": "Nome da transportadora obrigatório"}
+            )
 
         # For modal rodoviário (modFrete 0,1,2,3), validate vehicle data
         if mod_frete in ["0", "1", "2", "3"]:
             if not placa:
-                discrepancies.append({"field": "placa", "message": "Placa do veículo obrigatória para modal rodoviário"})
+                discrepancies.append(
+                    {
+                        "field": "placa",
+                        "message": "Placa do veículo obrigatória para modal rodoviário",
+                    }
+                )
             if not uf_veic:
                 discrepancies.append({"field": "uf_veic", "message": "UF do veículo obrigatória"})
             if not rntrc:
-                discrepancies.append({"field": "rntrc", "message": "RNTRC obrigatório para modal rodoviário"})
+                discrepancies.append(
+                    {"field": "rntrc", "message": "RNTRC obrigatório para modal rodoviário"}
+                )
 
         triggered = len(discrepancies) > 0
 
@@ -2238,12 +2376,16 @@ class NFEDestinatarioRule(BaseRule):
 
         # Validate CNPJ or CPF
         if not cnpj and not cpf:
-            discrepancies.append({"field": "cnpj_cpf", "message": "CNPJ ou CPF do destinatário obrigatório"})
+            discrepancies.append(
+                {"field": "cnpj_cpf", "message": "CNPJ ou CPF do destinatário obrigatório"}
+            )
 
         # Validate IE based on indIEDest
         # 1=Contribuinte ICMS, 2=Contribuinte isento, 9=Não contribuinte
         if ind_ie_dest in ["1", "2"] and not ie:
-            discrepancies.append({"field": "ie", "message": "IE obrigatória para contribuinte/isentos"})
+            discrepancies.append(
+                {"field": "ie", "message": "IE obrigatória para contribuinte/isentos"}
+            )
 
         # Validate xNome
         if not x_nome:
@@ -2261,7 +2403,9 @@ class NFEDestinatarioRule(BaseRule):
         }
         for field, value in address_fields.items():
             if not value:
-                discrepancies.append({"field": field.lower(), "message": f"{field} do endereço obrigatório"})
+                discrepancies.append(
+                    {"field": field.lower(), "message": f"{field} do endereço obrigatório"}
+                )
 
         # Validate UF consistency
         uf_emit = self._safe_get(doc, "emit.enderEmit.UF")
@@ -2342,25 +2486,29 @@ class NFEPesoVolumeRule(BaseRule):
 
         # Check if peso bruto >= peso liquido
         if peso_bruto > 0 and peso_liquido > 0 and peso_bruto < peso_liquido:
-            discrepancies.append({
-                "field": "peso_bruto_vs_liquido",
-                "message": "Peso bruto não pode ser menor que peso líquido",
-                "peso_bruto": peso_bruto,
-                "peso_liquido": peso_liquido,
-            })
+            discrepancies.append(
+                {
+                    "field": "peso_bruto_vs_liquido",
+                    "message": "Peso bruto não pode ser menor que peso líquido",
+                    "peso_bruto": peso_bruto,
+                    "peso_liquido": peso_liquido,
+                }
+            )
 
         # Check if volume is consistent with declared volumes
         if q_vol > 0 and total_volume > 0:
             # Allow some tolerance for packaging
             expected_min_volume = (peso_bruto / 1000) * 0.5  # rough density estimate
             if total_volume < expected_min_volume * 0.5:
-                discrepancies.append({
-                    "field": "volume_consistency",
-                    "message": "Volume total inconsistente com peso bruto",
-                    "q_vol": q_vol,
-                    "total_volume_m3": round(total_volume, 3),
-                    "peso_bruto_kg": peso_bruto,
-                })
+                discrepancies.append(
+                    {
+                        "field": "volume_consistency",
+                        "message": "Volume total inconsistente com peso bruto",
+                        "q_vol": q_vol,
+                        "total_volume_m3": round(total_volume, 3),
+                        "peso_bruto_kg": peso_bruto,
+                    }
+                )
 
         triggered = len(discrepancies) > 0
 
@@ -2375,7 +2523,9 @@ class NFEPesoVolumeRule(BaseRule):
                 "q_vol": q_vol,
                 "total_volume_m3": round(total_volume, 3),
             },
-            evidence={"peso_volume_data": {"pesoB": peso_bruto, "pesoL": peso_liquido, "qVol": q_vol}},
+            evidence={
+                "peso_volume_data": {"pesoB": peso_bruto, "pesoL": peso_liquido, "qVol": q_vol}
+            },
         )
 
     def _is_nfe(self, doc: dict) -> bool:
@@ -2414,7 +2564,9 @@ class NFEComplementarRule(BaseRule):
         # Check referenced NF-e key
         ref_nfe = self._safe_get(inf_nfe_supl, "refNFe")
         if not ref_nfe:
-            discrepancies.append({"field": "refNFe", "message": "Chave da NF-e referenciada obrigatória"})
+            discrepancies.append(
+                {"field": "refNFe", "message": "Chave da NF-e referenciada obrigatória"}
+            )
 
         # Check correction reason
         x_correcao = self._safe_get(doc, "ide.xCorrecao")
@@ -2492,7 +2644,9 @@ class NFECartaCorrecaoRule(BaseRule):
         # Check reference to original NF-e
         ch_nfe = self._safe_get(evento, "detEvento.chNFe")
         if not ch_nfe:
-            discrepancies.append({"field": "chNFe", "message": "Chave da NF-e original obrigatória"})
+            discrepancies.append(
+                {"field": "chNFe", "message": "Chave da NF-e original obrigatória"}
+            )
 
         triggered = len(discrepancies) > 0
 
@@ -2553,30 +2707,39 @@ class NFECancelamentoRule(BaseRule):
         # Check protocol
         n_prot = self._safe_get(evento, "detEvento.nProt")
         if not n_prot:
-            discrepancies.append({"field": "nProt", "message": "Protocolo de autorização obrigatório"})
+            discrepancies.append(
+                {"field": "nProt", "message": "Protocolo de autorização obrigatório"}
+            )
 
         # Check justification
         x_just = self._safe_get(evento, "detEvento.xJust")
         if not x_just:
-            discrepancies.append({"field": "xJust", "message": "Justificativa do cancelamento obrigatória"})
-        elif len(x_just) < 15:
-            discrepancies.append({"field": "xJust", "message": "Justificativa deve ter no mínimo 15 caracteres"})
+            discrepancies.append(
+                {"field": "xJust", "message": "Justificativa do cancelamento obrigatória"}
+            )
+        elif len(x_just) < MIN_JUSTIFICATION_LENGTH:
+            discrepancies.append(
+                {
+                    "field": "xJust",
+                    "message": f"Justificativa deve ter no mínimo {MIN_JUSTIFICATION_LENGTH} caracteres",
+                }
+            )
 
         # Check time limit (24 hours from authorization)
         dh_evento = self._safe_get(evento, "detEvento.dhEvento")
         dh_emi = self._safe_get(doc, "ide.dhEmi")
         if dh_evento and dh_emi:
-            # Parse datetime and check 24h difference
-            from datetime import datetime
             try:
                 dt_evento = datetime.fromisoformat(dh_evento.replace("Z", "+00:00"))
                 dt_emi = datetime.fromisoformat(dh_emi.replace("Z", "+00:00"))
                 diff_hours = (dt_evento - dt_emi).total_seconds() / 3600
-                if diff_hours > 24:
-                    discrepancies.append({
-                        "field": "dhEvento",
-                        "message": f"Cancelamento fora do prazo (24h): {diff_hours:.1f}h",
-                    })
+                if diff_hours > CANCELLATION_TIME_LIMIT_HOURS:
+                    discrepancies.append(
+                        {
+                            "field": "dhEvento",
+                            "message": f"Cancelamento fora do prazo ({CANCELLATION_TIME_LIMIT_HOURS}h): {diff_hours:.1f}h",
+                        }
+                    )
             except Exception:
                 pass
 
@@ -2647,16 +2810,30 @@ class NFEInutilizacaoRule(BaseRule):
         n_nf_ini = self._safe_get(inutilizacao, "infInut.nNFIni")
         n_nf_fin = self._safe_get(inutilizacao, "infInut.nNFFin")
         if not n_nf_ini or not n_nf_fin:
-            discrepancies.append({"field": "nNFIni_nNFFin", "message": "Intervalo de numeração obrigatório"})
+            discrepancies.append(
+                {"field": "nNFIni_nNFFin", "message": "Intervalo de numeração obrigatório"}
+            )
         elif n_nf_ini > n_nf_fin:
-            discrepancies.append({"field": "nNFIni_nNFFin", "message": "Início da numeração não pode ser maior que fim"})
+            discrepancies.append(
+                {
+                    "field": "nNFIni_nNFFin",
+                    "message": "Início da numeração não pode ser maior que fim",
+                }
+            )
 
         # Check justification
         x_just = self._safe_get(inutilizacao, "infInut.xJust")
         if not x_just:
-            discrepancies.append({"field": "xJust", "message": "Justificativa da inutilização obrigatória"})
-        elif len(x_just) < 15:
-            discrepancies.append({"field": "xJust", "message": "Justificativa deve ter no mínimo 15 caracteres"})
+            discrepancies.append(
+                {"field": "xJust", "message": "Justificativa da inutilização obrigatória"}
+            )
+        elif len(x_just) < MIN_JUSTIFICATION_LENGTH:
+            discrepancies.append(
+                {
+                    "field": "xJust",
+                    "message": f"Justificativa deve ter no mínimo {MIN_JUSTIFICATION_LENGTH} caracteres",
+                }
+            )
 
         # Check year
         ano = self._safe_get(inutilizacao, "infInut.ano")
@@ -2722,10 +2899,12 @@ class NFERegimeEspecialRule(BaseRule):
         # Valid CRT values
         valid_crt = {"1", "2", "3", "4"}
         if crt not in valid_crt:
-            discrepancies.append({
-                "field": "CRT",
-                "message": f"CRT inválido: {crt}. Valores válidos: 1, 2, 3, 4",
-            })
+            discrepancies.append(
+                {
+                    "field": "CRT",
+                    "message": f"CRT inválido: {crt}. Valores válidos: 1, 2, 3, 4",
+                }
+            )
 
         # Check consistency with indIEDest
         if crt in {"1", "2"} and ind_ie_dest == "9":
@@ -2738,20 +2917,24 @@ class NFERegimeEspecialRule(BaseRule):
             csosn = self._safe_get(doc, "icms.csosn")
             valid_csosn = {"101", "102", "103", "201", "202", "203", "300", "400", "500", "900"}
             if csosn and csosn not in valid_csosn:
-                discrepancies.append({
-                    "field": "CSOSN",
-                    "message": f"CSOSN {csosn} inválido para Simples Nacional (CRT={crt})",
-                })
+                discrepancies.append(
+                    {
+                        "field": "CSOSN",
+                        "message": f"CSOSN {csosn} inválido para Simples Nacional (CRT={crt})",
+                    }
+                )
 
         # Check if Normal regime (CRT=3) has correct CST
         if crt == "3":
             cst = self._safe_get(doc, "icms.cst")
             valid_cst = {"00", "10", "20", "30", "40", "41", "50", "51", "60", "70", "90"}
             if cst and cst not in valid_cst:
-                discrepancies.append({
-                    "field": "CST",
-                    "message": f"CST {cst} inválido para regime normal (CRT=3)",
-                })
+                discrepancies.append(
+                    {
+                        "field": "CST",
+                        "message": f"CST {cst} inválido para regime normal (CRT=3)",
+                    }
+                )
 
         triggered = len(discrepancies) > 0
 

@@ -1,12 +1,13 @@
 import json
 import logging
 import os
+import shutil
 import sys
 import traceback
 from abc import ABC, abstractmethod
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any, Generic, cast, override
+from typing import Any, Generic, cast
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ValidationError
@@ -210,11 +211,9 @@ class BaseGenerator(GenericGenerator[DefaultData]):
 
 
 class Generator(GenericGenerator[PythonData]):
-    @override
     def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
         raise TypeError(f"{Generator} cannot be subclassed, maybe you meant {BaseGenerator}?")
 
-    @override
     def get_manifest(self) -> Manifest:
         return Manifest(
             name=f"Prisma Client Python (v{__version__})",
@@ -224,7 +223,6 @@ class Generator(GenericGenerator[PythonData]):
             ],
         )
 
-    @override
     def generate(self, data: PythonData) -> None:
         config = data.generator.config
         rootdir = Path(data.generator.output.value)
@@ -238,7 +236,7 @@ class Generator(GenericGenerator[PythonData]):
         # package so we can use it to instantiate the query engine
         packaged_schema = rootdir / "schema.prisma"
         if not is_same_path(data.schema_path, packaged_schema):
-            packaged_schema.write_text(data.datamodel)
+            shutil.copy(data.schema_path, packaged_schema)
 
         params = data.to_params()
 

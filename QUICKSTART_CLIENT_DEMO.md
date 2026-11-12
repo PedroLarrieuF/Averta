@@ -7,14 +7,11 @@
 ## ⚡ TL;DR — Comandos Rápidos
 
 ```bash
-# 1. Backend (Terminal 1)
-cd D:/Averta/backend
+# 1. Backend + Infra (Terminal 1) - Use root docker-compose.yml
+cd D:/Averta
 cp .env.example .env
 # Edite .env: JWT_SECRET_KEY=$(openssl rand -base64 32)
-docker compose up -d --build
-docker compose exec backend poetry run prisma generate
-docker compose exec backend poetry run prisma migrate deploy
-docker compose exec backend poetry run db-seed
+docker compose --env-file .env.docker up -d --build
 
 # 2. Frontend (Terminal 2)
 cd D:/Averta/frontend
@@ -26,6 +23,8 @@ pnpm dev
 # Login:        admin@admin / admin
 # API Docs:     http://localhost:8000/docs
 # MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
+# Flower:       http://localhost:5555 (admin/admin)
+# Mailhog:      http://localhost:8025
 ```
 
 ---
@@ -185,26 +184,22 @@ docker compose logs backend
 # Verificar se pgbouncer subiu após postgres
 docker compose logs pgbouncer
 
-# Prisma Client erro?
-docker compose exec backend poetry run prisma generate
-
 # Banco vazio / seed não rodou?
-docker compose exec backend poetry run db-seed
+# O init-db.sh roda automaticamente no container backend
+# Verifique os logs: docker compose logs backend
 
 # Frontend não conecta na API?
 # Verificar vite.config.ts proxy /api → localhost:8000
-# Verificar CORS_ORIGINS no backend .env inclui http://localhost:3000
+# Verificar CORS_ORIGINS no .env inclui http://localhost:3000
 
 # Porta ocupada?
 netstat -ano | findstr :3000  # Windows
 kill -9 <PID>                 # Linux/Mac
 
 # Reset total (apaga tudo!):
-cd D:/Averta/backend
+cd D:/Averta
 docker compose down -v
-docker compose up -d --build
-docker compose exec backend poetry run prisma migrate deploy
-docker compose exec backend poetry run db-seed
+docker compose --env-file .env.docker up -d --build
 ```
 
 ---
@@ -241,11 +236,8 @@ docker compose exec backend poetry run db-seed
 
 ```bash
 # Script único para gravar demo
-cd D:/Averta/backend && docker compose up -d && \
-docker compose exec backend poetry run prisma generate && \
-docker compose exec backend poetry run prisma migrate deploy && \
-docker compose exec backend poetry run db-seed && \
-echo "✅ Backend pronto! Inicie frontend em outro terminal: cd ../frontend && pnpm dev"
+cd D:/Averta && docker compose --env-file .env.docker up -d --build && \
+echo "✅ Backend + Infra prontos! Inicie frontend em outro terminal: cd ../frontend && pnpm dev"
 ```
 
 ---

@@ -241,21 +241,15 @@ def model_json(
 def model_dict(
     model: BaseModel,
     *,
-    by_alias: bool = False,
     exclude: set[str] | None = None,
     exclude_unset: bool = False,
 ) -> dict[str, Any]:
     if PYDANTIC_V2:
-        return model.model_dump(
-            exclude_unset=exclude_unset,
-            exclude=exclude,
-            by_alias=by_alias,
-        )
+        return model.model_dump(exclude_unset=exclude_unset, exclude=exclude)
 
     return model.dict(  # pyright: ignore[reportDeprecated]
         exclude=exclude,
         exclude_unset=exclude_unset,
-        by_alias=by_alias,
     )
 
 
@@ -313,14 +307,15 @@ else:
         nodejs = None
 
 
-# Note: this shim is due to an inconsistency with string enums
-# that was fixed in Python3.11, for reference see:
-# - https://blog.pecar.me/python-enum#there-be-dragons
-# - https://github.com/python/cpython/issues/100458
 if TYPE_CHECKING:
-    pass
+    from enum import Enum
+
+    StrEnum = Enum
 else:
-    pass
+    try:
+        from enum import StrEnum
+    except ImportError:
+        pass
 
 
 def removeprefix(string: str, prefix: str) -> str:

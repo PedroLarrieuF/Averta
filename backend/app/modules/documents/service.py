@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from prisma.models import Document as DocumentModel
 
 from app.core.dependencies import PaginationParams
 from app.core.exceptions import NotFoundError, ValidationError_
@@ -25,6 +24,7 @@ from app.services.rules_engine_v2 import RuleContext, create_engine_v2
 from app.services.storage import upload_file
 from app.services.xml_parser import parse_cte_xml, parse_nfe_xml
 from prisma import Prisma
+from prisma.models import Document as DocumentModel
 
 logger = structlog.get_logger()
 
@@ -278,7 +278,9 @@ class DocumentsService:
             order={"validFrom": "desc"},
         )
 
-    async def _run_audit(self, document: DocumentResponse, company_id: str) -> list[DiscrepancyResponse]:
+    async def _run_audit(
+        self, document: DocumentResponse, company_id: str
+    ) -> list[DiscrepancyResponse]:
         """Run rules engine on document"""
         engine = await self._get_rules_engine()
 

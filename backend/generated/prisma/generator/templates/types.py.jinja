@@ -4,7 +4,6 @@
 from typing import TypeVar
 
 import httpx
-from . import _types
 from .utils import _NoneType
 
 
@@ -49,8 +48,8 @@ from .utils import _NoneType
 {{ type.name }} = {{ type.to }}
 {% elif type.kind == 'union' %}
 {{ type.name }} = Union[
-    {% for variant in type.variants %}
-    '{{ variant.name }}',
+    {% for subtype in type.subtypes %}
+    '{{ subtype.name }}',
     {% endfor %}
 ]
 {% elif type.kind == 'typeddict' %}
@@ -65,23 +64,36 @@ from .utils import _NoneType
     },
     total={{ type.total }}
 )
-{% elif type.kind == 'enum' %}
-class {{ type.name }}(StrEnum):
-    {% for name, value in type.members %}
-    {{ name }} = "{{ value }}"
-    {% endfor %}
 {% else %}
 {{ raise_err('Unhandled type kind: %s' % type.kind) }}
 {% endif %}
 {% endmacro %}
 
-SortMode = _types.SortMode
-SortOrder = _types.SortOrder
+SortMode = Literal['default', 'insensitive']
+SortOrder = Literal['asc', 'desc']
 
-MetricsFormat = _types.MetricsFormat
+MetricsFormat = Literal['json', 'prometheus']
 
-DatasourceOverride = _types.DatasourceOverride
-HttpConfig = _types.HttpConfig
+
+class _DatasourceOverrideOptional(TypedDict, total=False):
+    env: str
+    name: str
+
+
+class DatasourceOverride(_DatasourceOverrideOptional):
+    url: str
+
+
+# NOTE: we don't support some options as their type hints are not publicly exposed
+# https://github.com/encode/httpx/discussions/1977
+class HttpConfig(TypedDict, total=False):
+    app: Callable[[Mapping[str, Any], Any], Any]
+    http1: bool
+    http2: bool
+    limits: httpx.Limits
+    timeout: Union[None, float, httpx.Timeout]
+    trust_env: bool
+    max_redirects: int
 
 
 # types that can be serialized to json by our query builder
@@ -137,9 +149,6 @@ Serializable = Union[
         {% endif %}
         {%+ if active_provider in ['postgresql', 'cockroachdb', 'mongodb'] -%}
             'mode': SortMode,
-        {% endif %}
-        {%+ if active_provider in ['postgresql', 'mysql'] -%}
-            'search': str,
         {% endif %}
     },
     total=False,
@@ -482,20 +491,16 @@ class {{ model.name }}CreateWithoutRelationsInput({{ model.name }}OptionalCreate
         {% endif %}
     {% endfor %}
 
-class {{ model.name }}ConnectOrCreateWithoutRelationsInput(TypedDict):
-    create: '{{ model.name }}CreateWithoutRelationsInput'
-    where: '{{ model.name }}WhereUniqueInput'
 
 class {{ model.name }}CreateNestedWithoutRelationsInput(TypedDict, total=False):
     create: '{{ model.name }}CreateWithoutRelationsInput'
     connect: '{{ model.name }}WhereUniqueInput'
-    connect_or_create: '{{ model.name }}ConnectOrCreateWithoutRelationsInput'
 
 
 class {{ model.name }}CreateManyNestedWithoutRelationsInput(TypedDict, total=False):
     create: Union['{{ model.name }}CreateWithoutRelationsInput', List['{{ model.name }}CreateWithoutRelationsInput']]
     connect: Union['{{ model.name }}WhereUniqueInput', List['{{ model.name }}WhereUniqueInput']]
-    connect_or_create: Union['{{ model.name }}ConnectOrCreateWithoutRelationsInput', List['{{ model.name }}ConnectOrCreateWithoutRelationsInput']]
+
 
 {{ render_type(model_schema.where_unique) }}
 
@@ -520,7 +525,6 @@ class {{ model.name }}UpdateManyMutationInput(TypedDict, total=False):
 class {{ model.name }}UpdateManyWithoutRelationsInput(TypedDict, total=False):
     create: List['{{ model.name }}CreateWithoutRelationsInput']
     connect: List['{{ model.name }}WhereUniqueInput']
-    connect_or_create: List['{{ model.name }}ConnectOrCreateWithoutRelationsInput']
     set: List['{{ model.name }}WhereUniqueInput']
     disconnect: List['{{ model.name }}WhereUniqueInput']
     delete: List['{{ model.name }}WhereUniqueInput']
@@ -530,18 +534,19 @@ class {{ model.name }}UpdateManyWithoutRelationsInput(TypedDict, total=False):
     # updateMany: List['{{ model.name }}UpdateManyWithWhereUniqueWithoutRelationsInput']
     # deleteMany: List['{{ model.name }}ScalarWhereInput']
     # upsert: List['{{ model.name }}UpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['{{ model.name }}CreateOrConnectWithoutRelationsInput']
 
 
 class {{ model.name }}UpdateOneWithoutRelationsInput(TypedDict, total=False):
     create: '{{ model.name }}CreateWithoutRelationsInput'
     connect: '{{ model.name }}WhereUniqueInput'
-    connect_or_create: '{{ model.name }}ConnectOrCreateWithoutRelationsInput'
     disconnect: bool
     delete: bool
 
     # TODO
     # update: '{{ model.name }}UpdateInput'
     # upsert: '{{ model.name }}UpsertWithoutRelationsInput'
+    # connectOrCreate: '{{ model.name }}CreateOrConnectWithoutRelationsInput'
 
 
 class {{ model.name }}UpsertInput(TypedDict):

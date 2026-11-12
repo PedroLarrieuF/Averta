@@ -1,17 +1,20 @@
 """Database connection using Prisma Client Python with Connection Pooling, Read Replica & Query Logging"""
 
+import asyncio
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import structlog
-from prisma import Prisma
-from prisma.types import QueryEvent
 
 from app.core.config import settings
+from generated.prisma import Prisma
+from prisma.types import QueryEvent
 
 logger = structlog.get_logger()
+
+# Constants
+SLOW_QUERY_THRESHOLD_MS: int = 500
 
 # Global Prisma client instances
 _prisma_primary: Prisma | None = None
@@ -64,8 +67,8 @@ async def _query_middleware(event: QueryEvent) -> None:
             duration_ms=round(duration_ms, 2),
         )
 
-    # Log slow queries (>500ms) in all environments
-    if duration_ms > 500:
+    # Log slow queries in all environments
+    if duration_ms > SLOW_QUERY_THRESHOLD_MS:
         logger.warning(
             "slow_query_detected",
             query=event.query,
@@ -159,7 +162,6 @@ def get_db_client(read_only: bool = False) -> Prisma:
     Get appropriate DB client based on operation type.
     Usage: db = get_db_client(read_only=True)
     """
-    import asyncio
     if read_only:
         return asyncio.get_event_loop().run_until_complete(get_prisma_replica())
     return asyncio.get_event_loop().run_until_complete(get_prisma_primary())
