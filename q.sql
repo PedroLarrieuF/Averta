@@ -1,0 +1,1 @@
+SELECT count(*) FROM "Company"; SELECT count(*) FROM "User"; SELECT count(*) FROM "Client"; SELECT count(*) FROM "Carrier"; SELECT count(*) FROM "Document"; SELECT count(*) FROM "Discrepancy"; SELECT count(*) FROM "Contest"; SELECT count(*) FROM "Rule";

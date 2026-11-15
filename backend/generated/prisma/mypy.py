@@ -1,56 +1,61 @@
-import builtins
+import re
 import copy
 import logging
+import builtins
 import operator
-import re
-from collections.abc import Callable
 from configparser import ConfigParser
 from typing import (
+    Optional,
+    Callable,
+    Dict,
     Any,
+    Union,
+    Type as TypingType,
     cast,
 )
 
-from mypy.errorcodes import ErrorCode
-from mypy.nodes import (
-    BytesExpr,
-    CallExpr,
-    Context,
-    DictExpr,
-    Expression,
-    IntExpr,
-    NameExpr,
-    Node,
-    StrExpr,
-    SymbolTable,
-    SymbolTableNode,
-    TypeInfo,
-    Var,
-)
 from mypy.options import Options
-from mypy.plugin import CheckerPluginInterface, MethodContext, Plugin
+from mypy.errorcodes import ErrorCode
 from mypy.types import (
-    Instance,
+    UnionType,
     NoneType,
     Type,
-    UnionType,
+    Instance,
 )
+from mypy.nodes import (
+    Node,
+    Expression,
+    DictExpr,
+    StrExpr,
+    NameExpr,
+    Var,
+    BytesExpr,
+    CallExpr,
+    IntExpr,
+    Context,
+    TypeInfo,
+    SymbolTable,
+    SymbolTableNode,
+)
+from mypy.plugin import Plugin, MethodContext, CheckerPluginInterface
+
 
 # match any direct children of an actions class
-CLIENT_ACTION_CHILD = re.compile(r"prisma\.actions\.(.*)Actions\.(?P<name>(((?!\.).)*$))")
+CLIENT_ACTION_CHILD = re.compile(r'prisma\.actions\.(.*)Actions\.(?P<name>(((?!\.).)*$))')
 ACTIONS = [
-    "create",
-    "find_unique",
-    "delete",
-    "update",
-    "find_first",
-    "find_many",
-    "upsert",
-    "update_many",
-    "delete_many",
-    "count",
+    'create',
+    'find_unique',
+    'delete',
+    'update',
+    'find_first',
+    'find_many',
+    'upsert',
+    'update_many',
+    'delete_many',
+    'count',
 ]
 
-CONFIGFILE_KEY = "prisma-mypy"
+CONFIGFILE_KEY = 'prisma-mypy'
 
 log: logging.Logger = logging.getLogger(__name__)
 
@@ -61,12 +66,12 @@ log: logging.Logger = logging.getLogger(__name__)
 # pyright: reportGeneralTypeIssues=false, reportUnnecessaryComparison=false
 
 
-def plugin(version: str) -> type[Plugin]:  # noqa: ARG001
+def plugin(version: str) -> TypingType[Plugin]:  # noqa: ARG001
     return PrismaPlugin
 
 
 class PrismaPluginConfig:
-    __slots__ = ("warn_parsing_errors",)
+    __slots__ = ('warn_parsing_errors',)
     warn_parsing_errors: bool
 
     def __init__(self, options: Options) -> None:
@@ -87,12 +92,12 @@ class PrismaPlugin(Plugin):
         self.config = PrismaPluginConfig(options)
         super().__init__(options)
 
-    def get_method_hook(self, fullname: str) -> Callable[[MethodContext], Type] | None:
+    def get_method_hook(self, fullname: str) -> Optional[Callable[[MethodContext], Type]]:
         match = CLIENT_ACTION_CHILD.match(fullname)
         if not match:
             return None
 
-        if match.group("name") in ACTIONS:
+        if match.group('name') in ACTIONS:
             return self.handle_action_invocation
 
         return None
@@ -115,7 +120,7 @@ class PrismaPlugin(Plugin):
         user = await client.user.find_unique(where={'id': user_id})
         print('\n'.join(p.title for p in user.posts))
         """
-        include_expr = self.get_arg_named("include", ctx)
+        include_expr = self.get_arg_named('include', ctx)
         if include_expr is None:
             return ctx.default_return_type
 
@@ -144,7 +149,7 @@ class PrismaPlugin(Plugin):
             new_model = self.modify_model_from_include(model_type, include)
         except Exception as exc:
             log.debug(
-                "Ignoring %s exception while parsing include: %s",
+                'Ignoring %s exception while parsing include: %s',
                 type(exc).__name__,
                 exc,
             )
@@ -178,7 +183,7 @@ class PrismaPlugin(Plugin):
 
         return modified_ret
 
-    def modify_model_from_include(self, model: Instance, data: dict[Any, Any]) -> Instance:
+    def modify_model_from_include(self, model: Instance, data: Dict[Any, Any]) -> Instance:
         names = model.type.names.copy()
         for key, node in model.type.names.items():
             names[key] = self.maybe_modify_included_field(key, node, data)
@@ -187,9 +192,9 @@ class PrismaPlugin(Plugin):
 
     def maybe_modify_included_field(
         self,
-        key: str | Expression | Node,
+        key: Union[str, Expression, Node],
         node: SymbolTableNode,
-        data: dict[Any, Any],
+        data: Dict[Any, Any],
     ) -> SymbolTableNode:
         value = data.get(key)
         if value is False or value is None:
@@ -208,7 +213,7 @@ class PrismaPlugin(Plugin):
             or not self.is_list_type(node.node.type.items[0])
         ):
             log.debug(
-                "Not modifying included field: %s",
+                'Not modifying included field: %s',
                 key,
             )
             return node
@@ -221,16 +226,16 @@ class PrismaPlugin(Plugin):
 
         if (
             isinstance(value, dict)
-            and "include" in value
+            and 'include' in value
             and isinstance(new.node.type, Instance)
             and isinstance(new.node.type.args[0], Instance)
         ):
-            model = self.modify_model_from_include(new.node.type.args[0], value["include"])
+            model = self.modify_model_from_include(new.node.type.args[0], value['include'])
             new.node.type.args = (model, *new.node.type.args)
 
         return new
 
-    def get_arg_named(self, name: str, ctx: MethodContext) -> Expression | None:
+    def get_arg_named(self, name: str, ctx: MethodContext) -> Optional[Expression]:
         """Return the expression for an argument."""
         # keyword arguments
         for i, names in enumerate(ctx.arg_names):
@@ -254,20 +259,20 @@ class PrismaPlugin(Plugin):
     # TODO: why is fullname Any?
 
     def is_coroutine_type(self, typ: Instance) -> bool:
-        return bool(typ.type.fullname == "typing.Coroutine")
+        return bool(typ.type.fullname == 'typing.Coroutine')
 
     def is_list_type(self, typ: Type) -> bool:
-        return isinstance(typ, Instance) and typ.type.fullname == "builtins.list"
+        return isinstance(typ, Instance) and typ.type.fullname == 'builtins.list'
 
     def is_dict_call_type(self, expr: NameExpr) -> bool:
         # statically wise, TypedDicts do not inherit from dict
         # so we cannot check that, just checking if the expression
         # inherits from a class that ends with dict is good enough
         # for our use case
-        return bool(expr.fullname == "builtins.dict") or bool(
+        return bool(expr.fullname == 'builtins.dict') or bool(
             isinstance(expr.node, TypeInfo)
             and expr.node.bases
-            and expr.node.bases[0].type.fullname.lower().endswith("dict")
+            and expr.node.bases[0].type.fullname.lower().endswith('dict')
         )
 
     def copy_modified_instance(self, instance: Instance, names: SymbolTable) -> Instance:
@@ -284,18 +289,16 @@ class PrismaPlugin(Plugin):
         new.items[0] = typ
         return new
 
-    def parse_expression_to_dict(self, expression: Expression) -> dict[Any, Any]:
+    def parse_expression_to_dict(self, expression: Expression) -> Dict[Any, Any]:
         if isinstance(expression, DictExpr):
             return self._dictexpr_to_dict(expression)
 
         if isinstance(expression, CallExpr):
             return self._callexpr_to_dict(expression)
 
-        raise TypeError(
-            f"Cannot parse expression of type={type(expression).__name__} to a dictionary."
-        )
+        raise TypeError(f'Cannot parse expression of type={type(expression).__name__} to a dictionary.')
 
-    def _dictexpr_to_dict(self, expr: DictExpr) -> dict[Any, Any]:
+    def _dictexpr_to_dict(self, expr: DictExpr) -> Dict[Any, Any]:
         parsed = {}
         for key_expr, value_expr in expr.items:
             if key_expr is None:
@@ -308,19 +311,15 @@ class PrismaPlugin(Plugin):
 
         return parsed
 
-    def _callexpr_to_dict(self, expr: CallExpr, strict: bool = True) -> dict[str, Any]:
+    def _callexpr_to_dict(self, expr: CallExpr, strict: bool = True) -> Dict[str, Any]:
         if not isinstance(expr.callee, NameExpr):
-            raise TypeError(
-                f"Expected CallExpr.callee to be a NameExpr but got {type(expr.callee)} instead."
-            )
+            raise TypeError(f'Expected CallExpr.callee to be a NameExpr but got {type(expr.callee)} instead.')
 
         if strict and not self.is_dict_call_type(expr.callee):
-            raise TypeError(
-                f"Expected builtins.dict to be called but got {expr.callee.fullname} instead"
-            )
+            raise TypeError(f'Expected builtins.dict to be called but got {expr.callee.fullname} instead')
 
         parsed = {}
-        for arg_name, value_expr in zip(expr.arg_names, expr.args, strict=False):
+        for arg_name, value_expr in zip(expr.arg_names, expr.args):
             if arg_name is None:
                 continue
 
@@ -354,30 +353,28 @@ class PrismaPlugin(Plugin):
         if node.is_final:
             return node.final_value
 
-        if node.fullname.startswith("builtins."):
+        if node.fullname.startswith('builtins.'):
             return self._resolve_builtin(node.fullname)
 
         return node
 
     def _resolve_builtin(self, fullname: str) -> Any:
-        return operator.attrgetter(*fullname.split(".")[1:])(builtins)
+        return operator.attrgetter(*fullname.split('.')[1:])(builtins)
 
 
 class UnparsedExpression(Exception):
-    context: Expression | Node
+    context: Union[Expression, Node]
 
-    def __init__(self, context: Expression | Node) -> None:
+    def __init__(self, context: Union[Expression, Node]) -> None:
         self.context = context
-        super().__init__(
-            f"Tried to access a ({type(context).__name__}) expression that was not parsed."
-        )
+        super().__init__(f'Tried to access a ({type(context).__name__}) expression that was not parsed.')
 
 
-ERROR_PARSING = ErrorCode("prisma-parsing", "Unable to parse", "Prisma")
+ERROR_PARSING = ErrorCode('prisma-parsing', 'Unable to parse', 'Prisma')
 
 
 def error_unable_to_parse(api: CheckerPluginInterface, context: Context, detail: str) -> None:
-    link = "https://github.com/RobertCraigie/prisma-client-py/issues/new/choose"
-    full_message = f"The prisma mypy plugin was unable to parse: {detail}\n"
-    full_message += f"Please consider reporting this bug at {link} so we can try to fix it!"
+    link = 'https://github.com/RobertCraigie/prisma-client-py/issues/new/choose'
+    full_message = f'The prisma mypy plugin was unable to parse: {detail}\n'
+    full_message += f'Please consider reporting this bug at {link} so we can try to fix it!'
     api.fail(full_message, context, code=ERROR_PARSING)

@@ -1,42 +1,43 @@
 # copied from https://github.com/prisma/prisma/blob/23d5ef0672372035a84552b6b457197ca19f486d/packages/client/src/runtime/core/engines/common/types/Metrics.ts
 from __future__ import annotations
 
-from typing import NamedTuple, TypeVar
+from typing import Generic, List, TypeVar, Dict, NamedTuple
 
 from pydantic import BaseModel
 
 from ._compat import GenericModel, model_rebuild
 
+
 __all__ = (
-    "Metrics",
-    "Metric",
-    "MetricHistogram",
+    'Metrics',
+    'Metric',
+    'MetricHistogram',
 )
 
 
-_T = TypeVar("_T")
+_T = TypeVar('_T')
 
 
 # TODO: check if int / float is right
 
 
 class Metrics(BaseModel):
-    counters: list[Metric[int]]
-    gauges: list[Metric[float]]
-    histograms: list[Metric[MetricHistogram]]
+    counters: List[Metric[int]]
+    gauges: List[Metric[float]]
+    histograms: List[Metric[MetricHistogram]]
 
 
-class Metric[T](GenericModel):
+class Metric(GenericModel, Generic[_T]):
     key: str
     value: _T
-    labels: dict[str, str]
+    labels: Dict[str, str]
     description: str
 
 
 class MetricHistogram(BaseModel):
     sum: float
     count: int
-    buckets: list[HistogramBucket]
+    buckets: List[HistogramBucket]
 
 
 class HistogramBucket(NamedTuple):

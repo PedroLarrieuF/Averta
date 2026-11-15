@@ -1,17 +1,18 @@
 import sys
-from functools import cache
 from types import ModuleType
-from typing import Any, TypeVar, cast
+from functools import lru_cache
+from typing import Type, TypeVar, Any, cast
 
 from pydantic import BaseModel
 
 from ._compat import PYDANTIC_V2, Extra, is_typeddict
 from ._types import Protocol, runtime_checkable
 
-__all__ = ("validate",)
+
+__all__ = ('validate',)
 
 # NOTE: we should use bound=TypedDict but mypy does not support this
-T = TypeVar("T")
+T = TypeVar('T')
 
 
 class Config:
@@ -23,11 +24,11 @@ class CachedModel(Protocol):
     __pydantic_model__: BaseModel
 
 
-def _get_module(typ: type[Any]) -> ModuleType:
+def _get_module(typ: Type[Any]) -> ModuleType:
     return sys.modules[typ.__module__]
 
 
-@cache
+@lru_cache(maxsize=None)
 def patch_pydantic() -> None:
     """Pydantic does not resolve forward references for TypedDict types properly yet
 
@@ -42,8 +43,8 @@ def patch_pydantic() -> None:
 
     create_model = annotated_types.create_model_from_typeddict
 
-    def patched_create_model(typeddict_cls: Any, **kwargs: Any) -> type[BaseModel]:
-        kwargs.setdefault("__module__", typeddict_cls.__module__)
+    def patched_create_model(typeddict_cls: Any, **kwargs: Any) -> Type[BaseModel]:
+        kwargs.setdefault('__module__', typeddict_cls.__module__)
         return create_model(typeddict_cls, **kwargs)  # type: ignore[no-any-return]
 
     annotated_types.create_model_from_typeddict = patched_create_model
@@ -53,7 +54,7 @@ def patch_pydantic() -> None:
 # https://github.com/pydantic/pydantic/issues/7111
 
 
-def validate[T](type: type[T], data: Any) -> T:
+def validate(type: Type[T], data: Any) -> T:
     """Validate untrusted data matches a given TypedDict
 
     For example:
@@ -76,7 +77,7 @@ def validate[T](type: type[T], data: Any) -> T:
     patch_pydantic()
 
     if not is_typeddict(type):
-        raise TypeError(f"Only TypedDict types are supported, got: {type} instead.")
+        raise TypeError(f'Only TypedDict types are supported, got: {type} instead.')
 
     # we cannot use pydantic's builtin type -> model resolver
     # as we need to be able to update forward references

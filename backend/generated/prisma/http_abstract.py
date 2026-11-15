@@ -1,35 +1,40 @@
-from abc import ABC, abstractmethod
-from collections.abc import Coroutine
+from abc import abstractmethod, ABC
 from typing import (
     Any,
-    TypeVar,
     Union,
+    Coroutine,
+    Type,
+    Dict,
+    TypeVar,
+    Generic,
+    Optional,
     cast,
 )
 
 from httpx import Headers, Limits, Timeout
 
 from ._types import Method
-from .errors import HTTPClientClosedError
 from .utils import _NoneType
+from .errors import HTTPClientClosedError
 
-Session = TypeVar("Session")
-Response = TypeVar("Response")
-ReturnType = TypeVar("ReturnType")
+
+Session = TypeVar('Session')
+Response = TypeVar('Response')
+ReturnType = TypeVar('ReturnType')
 MaybeCoroutine = Union[Coroutine[Any, Any, ReturnType], ReturnType]
 
-DEFAULT_CONFIG: dict[str, Any] = {
-    "limits": Limits(max_connections=1000),
-    "timeout": Timeout(30),
+DEFAULT_CONFIG: Dict[str, Any] = {
+    'limits': Limits(max_connections=1000),
+    'timeout': Timeout(30),
 }
 
 
-class AbstractHTTP[Session, Response](ABC):
-    session_kwargs: dict[str, Any]
+class AbstractHTTP(ABC, Generic[Session, Response]):
+    session_kwargs: Dict[str, Any]
 
     __slots__ = (
-        "_session",
-        "session_kwargs",
+        '_session',
+        'session_kwargs',
     )
 
     # NOTE: ParamSpec wouldn't be valid here:
@@ -38,25 +43,27 @@ class AbstractHTTP[Session, Response](ABC):
         # NoneType = not used yet
         # None = closed
         # Session = open
-        self._session: Session | type[_NoneType] | None = _NoneType
+        self._session: Optional[Union[Session, Type[_NoneType]]] = _NoneType
         self.session_kwargs = {
             **DEFAULT_CONFIG,
             **kwargs,
         }
 
     @abstractmethod
-    def download(self, url: str, dest: str) -> MaybeCoroutine[None]: ...
+    def download(self, url: str, dest: str) -> MaybeCoroutine[None]:
+        ...
 
     @abstractmethod
-    def request(
-        self, method: Method, url: str, **kwargs: Any
-    ) -> MaybeCoroutine["AbstractResponse[Response]"]: ...
+    def request(self, method: Method, url: str, **kwargs: Any) -> MaybeCoroutine['AbstractResponse[Response]']:
+        ...
 
     @abstractmethod
-    def open(self) -> None: ...
+    def open(self) -> None:
+        ...
 
     @abstractmethod
-    def close(self) -> MaybeCoroutine[None]: ...
+    def close(self) -> MaybeCoroutine[None]:
+        ...
 
     @property
     def closed(self) -> bool:
@@ -76,7 +83,7 @@ class AbstractHTTP[Session, Response](ABC):
         return cast(Session, session)
 
     @session.setter
-    def session(self, value: Session | None) -> None:  # pyright: ignore[reportPropertyTypeMismatch]
+    def session(self, value: Optional[Session]) -> None:  # pyright: ignore[reportPropertyTypeMismatch]
         self._session = value
 
     def should_close(self) -> bool:
@@ -86,33 +93,37 @@ class AbstractHTTP[Session, Response](ABC):
         return str(self)
 
     def __str__(self) -> str:
-        return f"<HTTP closed={self.closed}>"
+        return f'<HTTP closed={self.closed}>'
 
 
-class AbstractResponse[Response](ABC):
+class AbstractResponse(ABC, Generic[Response]):
     original: Response
 
-    __slots__ = ("original",)
+    __slots__ = ('original',)
 
     def __init__(self, original: Response) -> None:
         self.original = original
 
     @property
     @abstractmethod
-    def status(self) -> int: ...
+    def status(self) -> int:
+        ...
 
     @property
     @abstractmethod
-    def headers(self) -> Headers: ...
+    def headers(self) -> Headers:
+        ...
 
     @abstractmethod
-    def json(self) -> MaybeCoroutine[Any]: ...
+    def json(self) -> MaybeCoroutine[Any]:
+        ...
 
     @abstractmethod
-    def text(self) -> MaybeCoroutine[str]: ...
+    def text(self) -> MaybeCoroutine[str]:
+        ...
 
     def __repr__(self) -> str:
         return str(self)
 
     def __str__(self) -> str:
-        return f"<Response wrapped={self.original} >"
+        return f'<Response wrapped={self.original} >'

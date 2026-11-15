@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from typing import (
     Any,
+    Callable,
     overload,
 )
 
-from ._compat import model_parse
 from ._types import BaseModelT
+from ._compat import model_parse
+
 
 # From: https://github.com/prisma/prisma/blob/main/packages/client/src/runtime/utils/deserializeRawResults.ts
 # Last checked: 2022-12-04
@@ -36,14 +37,16 @@ type PrismaType =
 
 
 @overload
-def deserialize_raw_results(raw_list: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
+def deserialize_raw_results(raw_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ...
 
 
 @overload
 def deserialize_raw_results(
     raw_list: list[dict[str, object]],
     model: type[BaseModelT],
-) -> list[BaseModelT]: ...
+) -> list[BaseModelT]:
+    ...
 
 
 def deserialize_raw_results(
@@ -72,7 +75,8 @@ def _deserialize_prisma_object(
     raw_obj: dict[str, Any],
     *,
     for_model: bool,
-) -> dict[str, Any]: ...
+) -> dict[str, Any]:
+    ...
 
 
 @overload
@@ -81,7 +85,8 @@ def _deserialize_prisma_object(
     *,
     for_model: bool,
     model: type[BaseModelT],
-) -> BaseModelT: ...
+) -> BaseModelT:
+    ...
 
 
 def _deserialize_prisma_object(
@@ -96,14 +101,10 @@ def _deserialize_prisma_object(
 
     new_obj = {}
     for key, raw_value in raw_obj.items():
-        value = raw_value["prisma__value"]
-        prisma_type = raw_value["prisma__type"]
+        value = raw_value['prisma__value']
+        prisma_type = raw_value['prisma__type']
 
-        new_obj[key] = (
-            _deserializers[prisma_type](value, for_model)
-            if prisma_type in _deserializers
-            else value
-        )
+        new_obj[key] = _deserializers[prisma_type](value, for_model) if prisma_type in _deserializers else value
 
     if model is not None:
         return model_parse(model, new_obj)
@@ -126,12 +127,10 @@ def _deserialize_array(value: list[Any], for_model: bool) -> list[Any]:
 
     arr = []
     for entry in value:
-        prisma_type = entry["prisma__type"]
-        prisma_value = entry["prisma__value"]
+        prisma_type = entry['prisma__type']
+        prisma_value = entry['prisma__value']
         arr.append(
-            _deserializers[prisma_type](prisma_value, for_model)
-            if prisma_type in _deserializers
-            else prisma_value
+            (_deserializers[prisma_type](prisma_value, for_model) if prisma_type in _deserializers else prisma_value)
         )
 
     return arr
@@ -152,8 +151,8 @@ def _deserialize_json(value: object, for_model: bool) -> object:
 
 
 DESERIALIZERS: dict[str, Callable[[Any, bool], object]] = {
-    "bigint": _deserialize_bigint,
-    "decimal": _deserialize_decimal,
-    "array": _deserialize_array,
-    "json": _deserialize_json,
+    'bigint': _deserialize_bigint,
+    'decimal': _deserialize_decimal,
+    'array': _deserialize_array,
+    'json': _deserialize_json,
 }

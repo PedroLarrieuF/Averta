@@ -1,20 +1,21 @@
-import contextlib
-import logging
 import os
 import sys
-from collections.abc import Iterator
-from typing import NoReturn
+import logging
+import contextlib
+from typing import List, Iterator, Optional, NoReturn
 
 import click
 
-from .. import _sync_http as http
-from ..generator import Generator
-from ..utils import DEBUG
 from . import prisma
-from .custom import cli
 from .utils import error
+from .custom import cli
 
-__all__ = ("main", "setup_logging")
+from .. import _sync_http as http
+from ..utils import DEBUG
+from ..generator import Generator
+
+
+__all__ = ('main', 'setup_logging')
 
 log: logging.Logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ log: logging.Logger = logging.getLogger(__name__)
 
 
 def main(
-    args: list[str] | None = None,
+    args: Optional[List[str]] = None,
     use_handler: bool = True,
     do_cleanup: bool = True,
 ) -> NoReturn:
@@ -32,20 +33,19 @@ def main(
 
     with setup_logging(use_handler), cleanup(do_cleanup):
         if len(args) > 1:
-            if args[1] == "py":
-                cli.main(args[2:], prog_name="prisma py")
+            if args[1] == 'py':
+                cli.main(args[2:], prog_name='prisma py')
             else:
                 sys.exit(prisma.run(args[1:]))
         else:
-            if not os.environ.get("PRISMA_GENERATOR_INVOCATION"):
+            if not os.environ.get('PRISMA_GENERATOR_INVOCATION'):
                 error(
-                    "This command is only intended to be invoked internally. "
-                    "Please run the following instead:",
+                    'This command is only intended to be invoked internally. ' 'Please run the following instead:',
                     exit_=False,
                 )
-                click.echo("prisma <command>")
-                click.echo("e.g.")
-                click.echo("prisma generate")
+                click.echo('prisma <command>')
+                click.echo('e.g.')
+                click.echo('prisma generate')
                 sys.exit(1)
             Generator.invoke()
 
@@ -63,17 +63,17 @@ def setup_logging(use_handler: bool = True) -> Iterator[None]:
             logger.setLevel(logging.DEBUG)
 
             # the prisma CLI binary uses the DEBUG environment variable
-            if os.environ.get("DEBUG") is None:
-                os.environ["DEBUG"] = "prisma:GeneratorProcess"
+            if os.environ.get('DEBUG') is None:
+                os.environ['DEBUG'] = 'prisma:GeneratorProcess'
             else:
-                log.debug("Not overriding the DEBUG environment variable.")
+                log.debug('Not overriding the DEBUG environment variable.')
         else:
             logger.setLevel(logging.INFO)
 
         if use_handler:
             fmt = logging.Formatter(
-                "[{levelname:<7}] {name}: {message}",
-                style="{",
+                '[{levelname:<7}] {name}: {message}',
+                style='{',
             )
             handler = logging.StreamHandler()
             handler.setFormatter(fmt)
@@ -95,5 +95,5 @@ def cleanup(do_cleanup: bool = True) -> Iterator[None]:
             http.client.close()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

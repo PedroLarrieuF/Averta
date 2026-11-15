@@ -1,27 +1,27 @@
 from __future__ import annotations
 
-import asyncio
-import contextlib
-import inspect
-import logging
 import os
 import time
+import asyncio
+import inspect
+import logging
 import warnings
-from collections.abc import Coroutine, Iterator
+import contextlib
 from importlib.util import find_spec
-from typing import Any, NoReturn, TypeVar
+from typing import Any, TypeVar, Union, Dict, Iterator, Coroutine, NoReturn
 
-from ._types import CoroType, FuncType, TypeGuard
+from ._types import FuncType, CoroType, TypeGuard
 
-_T = TypeVar("_T")
+
+_T = TypeVar('_T')
 
 
 def _env_bool(key: str) -> bool:
-    return os.environ.get(key, "").lower() in {"1", "t", "true"}
+    return os.environ.get(key, '').lower() in {'1', 't', 'true'}
 
 
-DEBUG = _env_bool("PRISMA_PY_DEBUG")
-DEBUG_GENERATOR = _env_bool("PRISMA_PY_DEBUG_GENERATOR")
+DEBUG = _env_bool('PRISMA_PY_DEBUG')
+DEBUG_GENERATOR = _env_bool('PRISMA_PY_DEBUG_GENERATOR')
 
 
 class _NoneType:  # pyright: ignore[reportUnusedClass]
@@ -32,16 +32,16 @@ class _NoneType:  # pyright: ignore[reportUnusedClass]
 def time_since(start: float, precision: int = 4) -> str:
     # TODO: prettier output
     delta = round(time.monotonic() - start, precision)
-    return f"{delta}s"
+    return f'{delta}s'
 
 
 def setup_logging() -> None:
     if DEBUG:
-        logging.getLogger("prisma").setLevel(logging.DEBUG)
+        logging.getLogger('prisma').setLevel(logging.DEBUG)
 
 
 def maybe_async_run(
-    func: FuncType | CoroType,
+    func: Union[FuncType, CoroType],
     *args: Any,
     **kwargs: Any,
 ) -> object:
@@ -50,7 +50,7 @@ def maybe_async_run(
     return func(*args, **kwargs)
 
 
-def async_run[T](coro: Coroutine[Any, Any, _T]) -> _T:
+def async_run(coro: Coroutine[Any, Any, _T]) -> _T:
     """Execute the coroutine and return the result."""
     return get_or_create_event_loop().run_until_complete(coro)
 
@@ -64,7 +64,7 @@ def module_exists(name: str) -> bool:
 
 
 @contextlib.contextmanager
-def temp_env_update(env: dict[str, str]) -> Iterator[None]:
+def temp_env_update(env: Dict[str, str]) -> Iterator[None]:
     old = os.environ.copy()
 
     try:
@@ -108,7 +108,7 @@ def get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     that preserves the old behaviour.
     """
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings('ignore', category=DeprecationWarning)
 
         try:
             return asyncio.get_event_loop()
@@ -123,10 +123,10 @@ def assert_never(value: NoReturn) -> NoReturn:
 
     https://github.com/microsoft/pyright/issues/767
     """
-    raise AssertionError(f"Unhandled type: {type(value).__name__}")  # pragma: no cover
+    raise AssertionError('Unhandled type: {}'.format(type(value).__name__))  # pragma: no cover
 
 
-def make_optional[T](value: _T) -> _T | None:
+def make_optional(value: _T) -> _T | None:
     """Helper function for type checkers to change the given type to include None.
 
     This is useful in cases where you do not have an explicit type for a symbol (e.g. modules)

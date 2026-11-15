@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from typing import Generic, TypeVar, cast
+from typing import Generic, Iterable, TypeVar, cast
 
-T = TypeVar("T")
+
+T = TypeVar('T')
 
 
 # NOTE: this is not an exhaustive list of supported data methods.
@@ -43,4 +43,5 @@ class LazyProxy(Generic[T], ABC):
         return cast(T, self)
 
     @abstractmethod
-    def __load__(self) -> T: ...
+    def __load__(self) -> T:
+        ...

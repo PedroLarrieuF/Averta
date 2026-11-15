@@ -3,7 +3,7 @@
 AvertaSaaS - Comprehensive Database Seed Script
 
 Populates database with:
-1. Admin user (admin@admin / admin)
+1. Admin user (admin@admin.com / admin123)
 2. Test companies, clients, carriers, branches
 4. Contracts with freight tables
 5. Documents (CTe, NFe) with discrepancies
@@ -17,46 +17,51 @@ Usage:
     poetry run python prisma/seed.py
 """
 
+# Load environment variables FIRST, before any other imports
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+env_path = Path(__file__).parent.parent.parent / ".env"
+print(f"Loading .env from: {env_path}")
+print(f"File exists: {env_path.exists()}")
+load_dotenv(env_path)
+
+# Get DATABASE_URL from environment
+DATABASE_URL = os.getenv("DATABASE_URL")
+print(f"DATABASE_URL: {DATABASE_URL}")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL not found in environment. Check .env file.")
+
+# Now import the rest
 import asyncio
 import random
 from datetime import datetime, timedelta
 
-from passlib.context import CryptContext
-
 from generated.prisma import Prisma
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from generated.prisma.fields import Json
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
 # Scale multipliers - adjust for performance testing
-# DOUBLED for performance testing (original values in comments)
+# 1x escala original (valores de teste)
 SCALE = {
-    "companies": 10,              # was 5
-    "clients_per_company": 20,    # was 10
-    "carriers_per_company": 16,   # was 8
-    "branches_per_client": 6,     # was 3
-    "contracts_per_client": 4,    # was 2
-    "documents_per_client": 100,  # was 50 - 100 docs per client = 20,000 total at scale
-    "discrepancies_per_document": 6,  # was 3
-    "contests_per_client": 10,    # was 5
-    "contest_items_per_contest": 8,   # was 4
+    "companies": 5,
+    "clients_per_company": 10,
+    "carriers_per_company": 8,
+    "branches_per_client": 3,
+    "contracts_per_client": 2,
+    "documents_per_client": 50,
+    "discrepancies_per_document": 3,
+    "contests_per_client": 5,
+    "contest_items_per_contest": 4,
 }
 
-# Password for all test users (including admin)
-DEFAULT_PASSWORD = "Incorreta1@"
-
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+# Pre-computed bcrypt hash for "admin123" (cost=12)
+# Generated with: bcrypt.hashpw(b'admin123', bcrypt.gensalt())
+DEFAULT_PASSWORD_HASH = "$2b$12$ghp8uJeH.wWibLU7WNk86OTPNnelyUiV01WZTeIFKzbeMWJYSoJwi"
 
 
 def random_date(start: datetime, end: datetime) -> datetime:
@@ -139,6 +144,16 @@ CITIES_BY_STATE = {
     "GO": ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Águas Lindas"],
     "PE": ["Recife", "Jaboatão dos Guararapes", "Olinda", "Caruaru", "Petrolina"],
     "CE": ["Fortaleza", "Caucaia", "Juazeiro do Norte", "Maracanaú", "Sobral"],
+    "PA": ["Belém", "Ananindeua", "Santarém", "Marabá", "Parauapebas"],
+    "MA": ["São Luís", "Imperatriz", "Timon", "Caxias", "Codó"],
+    "MT": ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra"],
+    "MS": ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã"],
+    "ES": ["Vitória", "Vila Velha", "Serra", "Cariacica", "Guarapari"],
+    "PB": ["João Pessoa", "Campina Grande", "Santa Rita", "Patos", "Bayeux"],
+    "RN": ["Natal", "Mossoró", "Parnamirim", "São Gonçalo do Amarante", "Macaíba"],
+    "AL": ["Maceió", "Arapiraca", "Rio Largo", "Palmeira dos Índios", "União dos Palmares"],
+    "PI": ["Teresina", "Parnaíba", "Picos", "Piripiri", "Floriano"],
+    "SE": ["Aracaju", "Nossa Senhora do Socorro", "Lagarto", "Itabaiana", "São Cristóvão"],
 }
 
 # Document types and statuses
@@ -208,7 +223,7 @@ NOTIFICATION_TYPES = [
 async def seed_database():
     """Main seeding function."""
 
-    prisma = Prisma()
+    prisma = Prisma(datasource={"url": DATABASE_URL})
     await prisma.connect()
 
     try:
@@ -260,7 +275,7 @@ async def clear_database(prisma: Prisma):
 
 
 async def create_admin_user(prisma: Prisma):
-    """Create the admin@admin user."""
+    """Create the admin@admin.com user."""
     # Create a default company for admin if needed
     admin_company = await prisma.company.create(
         data={
@@ -269,14 +284,14 @@ async def create_admin_user(prisma: Prisma):
             "cnpj": "00.000.000/0001-00",
             "email": "admin@averta.com.br",
             "isActive": True,
-            "settings": {"is_admin_company": True},
+            "settings": Json({"is_admin_company": True}),
         }
     )
 
     admin_user = await prisma.user.create(
         data={
-            "email": "admin@admin",
-            "passwordHash": hash_password(DEFAULT_PASSWORD),
+            "email": "admin@admin.com",
+            "passwordHash": DEFAULT_PASSWORD_HASH,
             "fullName": "Admin User",
             "role": "ADMIN",
             "status": "ACTIVE",
@@ -303,7 +318,7 @@ async def create_companies(prisma: Prisma, admin_user) -> list:
                 "cnpj": random_cnpj(),
                 "stateReg": f"{random.randint(100000000, 999999999)}",
                 "municipalReg": f"{random.randint(100000, 999999)}",
-                "address": {
+                "address": Json({
                     "street": f"Rua {random.randint(1, 999)}",
                     "number": str(random.randint(1, 9999)),
                     "complement": f"Sala {random.randint(1, 50)}",
@@ -312,16 +327,16 @@ async def create_companies(prisma: Prisma, admin_user) -> list:
                     "state": state,
                     "zipCode": f"{random.randint(10000, 99999)}-{random.randint(100, 999)}",
                     "country": "Brasil",
-                },
+                }),
                 "phone": f"(11) {random.randint(2000, 9999)}-{random.randint(1000, 9999)}",
                 "email": f"contato@empresa{i + 1:03d}.com.br",
                 "website": f"https://empresa{i + 1:03d}.com.br",
                 "isActive": True,
-                "settings": {
+                "settings": Json({
                     "notificationEmail": f"notificacoes@empresa{i + 1:03d}.com.br",
                     "currency": "BRL",
                     "timezone": "America/Sao_Paulo",
-                },
+                }),
             }
         )
         companies.append(company)
@@ -363,7 +378,7 @@ async def create_company_users(prisma: Prisma, company, admin_user):
         await prisma.user.create(
             data={
                 "email": f"user{i + 1}@{company.cnpj.replace('.', '').replace('/', '').replace('-', '')}.com.br",
-                "passwordHash": hash_password(DEFAULT_PASSWORD),
+                "passwordHash": DEFAULT_PASSWORD_HASH,
                 "fullName": f"User {i + 1} - {role}",
                 "role": role,
                 "status": "ACTIVE",
@@ -390,7 +405,7 @@ async def create_clients(prisma: Prisma, company) -> list:
                 "stateReg": f"{random.randint(100000000, 999999999)}",
                 "email": f"financeiro@cliente{i + 1:03d}.com.br",
                 "phone": f"(11) {random.randint(2000, 9999)}-{random.randint(1000, 9999)}",
-                "address": {
+                "address": Json({
                     "street": f"Av. {random.randint(1, 999)}",
                     "number": str(random.randint(1, 9999)),
                     "neighborhood": "Comercial",
@@ -398,15 +413,15 @@ async def create_clients(prisma: Prisma, company) -> list:
                     "state": state,
                     "zipCode": f"{random.randint(10000, 99999)}-{random.randint(100, 999)}",
                     "country": "Brasil",
-                },
+                }),
                 "contactPerson": f"Contato {i + 1}",
                 "contactEmail": f"contato@cliente{i + 1:03d}.com.br",
                 "contactPhone": f"(11) 9{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
                 "isActive": True,
-                "settings": {
+                "settings": Json({
                     "paymentTerms": random.randint(15, 60),
                     "preferredCarrier": None,
-                },
+                }),
             }
         )
         clients.append(client)
@@ -445,7 +460,7 @@ async def create_carriers(prisma: Prisma, company) -> list:
                 "tradeName": f"{name} {i + 1}",
                 "cnpj": random_cnpj(),
                 "stateReg": f"{random.randint(100000000, 999999999)}",
-                "address": {
+                "address": Json({
                     "street": f"Rodovia {random.randint(1, 999)}",
                     "number": str(random.randint(1, 9999)),
                     "neighborhood": "Industrial",
@@ -453,24 +468,24 @@ async def create_carriers(prisma: Prisma, company) -> list:
                     "state": state,
                     "zipCode": f"{random.randint(10000, 99999)}-{random.randint(100, 999)}",
                     "country": "Brasil",
-                },
+                }),
                 "contactPerson": f"Gerente {i + 1}",
                 "contactEmail": f"contato@carrier{i + 1:03d}.com.br",
                 "contactPhone": f"(11) {random.randint(2000, 9999)}-{random.randint(1000, 9999)}",
-                "bankInfo": {
+                "bankInfo": Json({
                     "bank": random.choice(["001", "237", "341", "104", "033"]),
                     "agency": f"{random.randint(1000, 9999)}",
                     "account": f"{random.randint(10000, 99999)}-{random.randint(0, 9)}",
                     "pix": f"carrier{i + 1:03d}@carrier.com.br",
-                },
-                "settings": {
+                }),
+                "settings": Json({
                     "fleetSize": random.randint(10, 200),
                     "coverageStates": random.sample(STATES, random.randint(3, 10)),
                     "specializations": random.sample(
                         ["Carga Seca", "Carga Fria", "Carga Perigosa", "Granéis", "Containers"],
                         random.randint(1, 3),
                     ),
-                },
+                }),
                 "isActive": True,
             }
         )
@@ -483,8 +498,8 @@ async def create_branches(prisma: Prisma, company, clients) -> list:
     """Create branches for a company."""
     branches = []
 
-    for client in clients:
-        for _i in range(SCALE["branches_per_client"]):
+    for client_idx, client in enumerate(clients):
+        for branch_idx in range(SCALE["branches_per_client"]):
             state = random.choice(STATES)
             city = random.choice(CITIES_BY_STATE[state])
 
@@ -493,9 +508,9 @@ async def create_branches(prisma: Prisma, company, clients) -> list:
                     "companyId": company.id,
                     "clientId": client.id,
                     "name": f"Filial {client.name} - {city}",
-                    "code": f"FL{random.randint(100, 999)}",
+                    "code": f"FL{client_idx:03d}{branch_idx:03d}",
                     "cnpj": random_cnpj() if random.random() > 0.3 else None,
-                    "address": {
+                    "address": Json({
                         "street": f"Rua {random.randint(1, 999)}",
                         "number": str(random.randint(1, 9999)),
                         "neighborhood": random.choice(
@@ -505,7 +520,7 @@ async def create_branches(prisma: Prisma, company, clients) -> list:
                         "state": state,
                         "zipCode": f"{random.randint(10000, 99999)}-{random.randint(100, 999)}",
                         "country": "Brasil",
-                    },
+                    }),
                     "isActive": True,
                 }
             )
@@ -529,7 +544,7 @@ async def create_contracts(prisma: Prisma, company, clients, carriers) -> list:
                     "companyId": company.id,
                     "clientId": client.id,
                     "carrierId": carrier.id,
-                    "number": f"CTR-{company.id[:8]}-{client.id[:8]}-{i + 1:03d}",
+                    "number": f"CTR-{company.id[:8]}-{client.id[:8]}-{i + 1:03d}-{random.randint(1000, 9999)}",
                     "description": f"Contrato de transporte {client.name} x {carrier.name}",
                     "status": random.choice(["ACTIVE", "ACTIVE", "ACTIVE", "PENDING", "EXPIRED"]),
                     "startDate": start_date,
@@ -539,11 +554,11 @@ async def create_contracts(prisma: Prisma, company, clients, carriers) -> list:
                     if random.random() > 0.5
                     else None,
                     "currency": "BRL",
-                    "terms": {
+                    "terms": Json({
                         "paymentTerms": random.randint(15, 60),
                         "slaDays": random.randint(1, 5),
                         "penaltyPct": round(random.uniform(0.5, 2.0), 2),
-                    },
+                    }),
                     "pricingModel": random.choice(["FIXED", "PROGRESSIVE"]),
                     "progressiveStartDate": start_date if random.random() > 0.7 else None,
                     "progressiveMonth1Pct": round(random.uniform(5.0, 15.0), 2)
@@ -557,19 +572,19 @@ async def create_contracts(prisma: Prisma, company, clients, carriers) -> list:
             contracts.append(contract)
 
             # Create freight tables for this contract
-            await create_freight_tables(prisma, contract)
+            await create_freighttables(prisma, contract)
 
     return contracts
 
 
-async def create_freight_tables(prisma: Prisma, contract):
+async def create_freighttables(prisma: Prisma, contract):
     """Create freight tables for a contract."""
     num_tables = random.randint(1, 3)
 
     for i in range(num_tables):
         effective_from = contract.startDate + timedelta(days=random.randint(0, 30))
 
-        await prisma.freight_table.create(
+        await prisma.freighttable.create(
             data={
                 "contractId": contract.id,
                 "name": f"Tabela {i + 1} - {contract.number}",
@@ -577,14 +592,14 @@ async def create_freight_tables(prisma: Prisma, contract):
                 "effectiveFrom": effective_from,
                 "effectiveTo": contract.endDate,
                 "description": f"Tabela de frete para contrato {contract.number}",
-                "rules": {
+                "rules": Json({
                     "baseRate": round(random.uniform(1.5, 5.0), 2),
                     "perKm": round(random.uniform(0.5, 2.0), 2),
                     "perKg": round(random.uniform(0.05, 0.50), 2),
                     "minCharge": round(random.uniform(50.0, 200.0), 2),
                     "icmsIncluded": random.choice([True, False]),
                     "tollsIncluded": random.choice([True, False]),
-                },
+                }),
                 "isActive": True,
             }
         )
@@ -712,15 +727,15 @@ async def create_discrepancy(prisma: Prisma, document, company, client, carrier,
             "difference": difference,
             "differencePct": difference_pct,
             "currency": "BRL",
-            "details": {
+            "details": Json({
                 "calculationMethod": "Automated",
                 "referenceTable": f"Tabela {random.randint(1, 5)}",
                 "notes": "Gerado automaticamente pelo seed",
-            },
-            "evidence": {
+            }),
+            "evidence": Json({
                 "xmlFields": ["vBC", "vICMS", "vFrete"],
                 "comparison": "Sistema vs Documento",
-            },
+            }),
             "notes": f"Discrepância detectada automaticamente - {disc_type}",
             "createdAt": document.createdAt + timedelta(hours=random.randint(1, 48)),
         }
@@ -770,17 +785,17 @@ async def create_contests(prisma: Prisma, company, clients, carriers, contracts)
                     "successFeeValue": round(total_expected * success_fee_pct / 100, 2),
                     "netRecovery": round(total_expected * (1 - success_fee_pct / 100), 2),
                     "notes": f"Contestação automática para {client.name} vs {carrier.name}",
-                    "metadata": {
+                    "metadata": Json({
                         "createdBy": "seed",
                         "priority": random.choice(["NORMAL", "HIGH", "URGENT"]),
-                    },
+                    }),
                     "createdAt": datetime.now() - timedelta(days=random.randint(0, 90)),
                 }
             )
 
             # Create contest items
             for disc in selected_discs:
-                await prisma.contest_item.create(
+                await prisma.contestitem.create(
                     data={
                         "contestId": contest.id,
                         "discrepancyId": disc.id,
@@ -815,7 +830,7 @@ async def create_communications(prisma: Prisma, contest):
                 "subject": f"Comunicação {i + 1} - Contestação {contest.number}",
                 "content": f"Conteúdo da comunicação {i + 1} referente à contestação {contest.number}. "
                 f"Status atual: {contest.status}.",
-                "attachments": [f"doc_{i + 1}.pdf"] if random.random() > 0.5 else [],
+                "attachments": Json([f"doc_{i + 1}.pdf"] if random.random() > 0.5 else []),
                 "sentById": None,
                 "sentAt": contest.createdAt + timedelta(days=random.randint(1, 30)),
                 "readAt": contest.createdAt + timedelta(days=random.randint(1, 30))
@@ -827,7 +842,7 @@ async def create_communications(prisma: Prisma, contest):
 
 async def create_payments(prisma: Prisma, contest):
     """Create payments for a contest."""
-    items = await prisma.contest_item.find_many(where={"contestId": contest.id})
+    items = await prisma.contestitem.find_many(where={"contestId": contest.id})
 
     if contest.status == "ACCEPTED":
         # Full payment
@@ -843,13 +858,13 @@ async def create_payments(prisma: Prisma, contest):
                 or (contest.createdAt + timedelta(days=random.randint(30, 60))),
                 "confirmedAt": contest.resolvedAt
                 or (contest.createdAt + timedelta(days=random.randint(30, 60))),
-                "metadata": {"paymentMethod": "PIX", "items": [i.id for i in items]},
+                "metadata": Json({"paymentMethod": "PIX", "items": [i.id for i in items]}),
             }
         )
 
         # Update items
         for item in items:
-            await prisma.contest_item.update(
+            await prisma.contestitem.update(
                 where={"id": item.id},
                 data={"recoveredValue": item.contestedValue, "status": "ACCEPTED"},
             )
@@ -869,7 +884,7 @@ async def create_payments(prisma: Prisma, contest):
                 or (contest.createdAt + timedelta(days=random.randint(15, 45))),
                 "confirmedAt": contest.respondedAt
                 or (contest.createdAt + timedelta(days=random.randint(15, 45))),
-                "metadata": {"paymentMethod": "TED", "partial": True},
+                "metadata": Json({"paymentMethod": "TED", "partial": True}),
             }
         )
 
@@ -890,7 +905,7 @@ async def create_notifications(prisma: Prisma, company, clients):
                     "type": notif_type,
                     "title": f"{notif_type.replace('_', ' ').title()}",
                     "message": f"Notificação de {notif_type.lower()} para {client.name}",
-                    "data": {"referenceId": f"ref_{random.randint(1000, 9999)}"},
+                    "data": Json({"referenceId": f"ref_{random.randint(1000, 9999)}"}),
                     "readAt": datetime.now() - timedelta(days=random.randint(0, 30))
                     if random.random() > 0.4
                     else None,
@@ -908,15 +923,17 @@ async def create_audit_logs(prisma: Prisma, company, admin_user):
     entities = ["Document", "Discrepancy", "Contest", "Contract", "Client", "Carrier", "User"]
 
     for _ in range(random.randint(50, 200)):
-        await prisma.audit_log.create(
+        has_old = random.random() > 0.5
+        has_new = random.random() > 0.5
+        await prisma.auditlog.create(
             data={
                 "companyId": company.id,
                 "userId": admin_user.id if random.random() > 0.5 else None,
                 "action": random.choice(actions),
                 "entityType": random.choice(entities),
                 "entityId": f"ent_{random.randint(1000, 9999)}",
-                "oldData": {"field": "old_value"} if random.random() > 0.5 else None,
-                "newData": {"field": "new_value"} if random.random() > 0.5 else None,
+                "oldData": Json({"field": "old_value"}) if has_old else Json({}),
+                "newData": Json({"field": "new_value"}) if has_new else Json({}),
                 "ipAddress": f"192.168.{random.randint(1, 255)}.{random.randint(1, 255)}",
                 "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "createdAt": datetime.now() - timedelta(days=random.randint(0, 90)),
@@ -1107,7 +1124,7 @@ async def create_rules(prisma: Prisma):
                 "name": rule_data["name"],
                 "type": rule_data["type"],
                 "severity": rule_data["severity"],
-                "configJson": rule_data["configJson"],
+                "configJson": Json(rule_data["configJson"]),
                 "version": 1,
                 "isActive": True,
                 "description": rule_data["description"],
