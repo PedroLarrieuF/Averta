@@ -17,7 +17,7 @@ from app.modules.companies.schemas import (
     CompanyUpdate,
 )
 from app.modules.companies.service import CompaniesService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 

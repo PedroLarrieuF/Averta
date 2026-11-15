@@ -1,8 +1,8 @@
-"""Documents module router"""
+﻿"""Documents module router"""
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile, status
 
 from app.core.dependencies import (
     ClientIdDep,
@@ -26,7 +26,7 @@ from app.modules.documents.schemas import (
     DocumentUpdate,
 )
 from app.modules.documents.service import DocumentsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -103,6 +103,7 @@ async def import_documents(
 )
 @upload_limiter
 async def upload_documents(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
     files: list[UploadFile] = File(...),
@@ -220,3 +221,4 @@ async def delete_document(
 ) -> None:
     """Delete document"""
     await documents_service.delete_document(document_id, company_id)
+

@@ -23,8 +23,8 @@ from app.modules.notifications.service import NotificationsService
 from app.services.rules_engine_v2 import RuleContext, create_engine_v2
 from app.services.storage import upload_file
 from app.services.xml_parser import parse_cte_xml, parse_nfe_xml
-from prisma import Prisma
-from prisma.models import Document as DocumentModel
+from generated.prisma import Prisma
+from generated.prisma.models import Document as DocumentModel
 
 logger = structlog.get_logger()
 

@@ -13,8 +13,8 @@ from app.modules.branches.schemas import (
     BranchResponse,
     BranchUpdate,
 )
-from prisma import Prisma
-from prisma.models import Branch as BranchModel
+from generated.prisma import Prisma
+from generated.prisma.models import Branch as BranchModel
 
 logger = structlog.get_logger()
 

@@ -13,8 +13,8 @@ from app.modules.carriers.schemas import (
     CarrierResponse,
     CarrierUpdate,
 )
-from prisma import Prisma
-from prisma.models import Carrier as CarrierModel
+from generated.prisma import Prisma
+from generated.prisma.models import Carrier as CarrierModel
 
 logger = structlog.get_logger()
 

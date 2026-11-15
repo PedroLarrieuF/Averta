@@ -1,4 +1,4 @@
-"""Application configuration using Pydantic Settings with AWS Secrets Manager support"""
+﻿"""Application configuration using Pydantic Settings with AWS Secrets Manager support"""
 
 import json
 import os
@@ -285,6 +285,9 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ALLOW_CREDENTIALS: bool = True
+    CORS_ALLOW_METHODS: list[str] = ["*"]
+    CORS_ALLOW_HEADERS: list[str] = ["*"]
 
     # S3/MinIO
     S3_ENDPOINT: str = "http://localhost:9000"

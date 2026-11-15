@@ -337,12 +337,12 @@ pnpm test:coverage
 
 ## 📦 Build de Produção
 
-### Backend (Docker Multi-stage + Distroless - Apenas Produção)
+### Backend (Docker Multi-stage + Hardened python:3.12-slim - Produção)
 
 ```bash
 cd D:/Averta/backend
 
-# Build da imagem production (distroless, non-root, <200MB)
+# Build da imagem production (hardened python:3.12-slim, non-root, <250MB)
 docker build -t averta/backend:latest .
 
 # Build multi-arch (amd64 + arm64)
@@ -752,7 +752,7 @@ D:/Averta/
 │   │   ├── migrations/         # 15+ migrations
 │   │   └── seed.ts             # Seed TypeScript
 │   ├── tests/                  # pytest + pytest-asyncio (~78% coverage)
-│   ├── Dockerfile              # Para produção apenas (multi-stage distroless)
+│   ├── Dockerfile              # Para produção apenas (multi-stage hardened python:3.12-slim)
 │   ├── docker-compose.yml      # [LEGACY] Dev stack completo - NÃO USE para dev
 │   ├── docker-compose.prod.yml # [LEGACY] Production - NÃO USE para dev
 │   ├── pyproject.toml          # Poetry deps + scripts

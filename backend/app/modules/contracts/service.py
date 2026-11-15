@@ -18,8 +18,8 @@ from app.modules.contracts.schemas import (
     FreightTableUpdate,
 )
 from app.services.rules_engine_v2 import get_engine_instance
-from prisma import Prisma
-from prisma.models import Contract as ContractModel
+from generated.prisma import Prisma
+from generated.prisma.models import Contract as ContractModel
 
 logger = structlog.get_logger()
 

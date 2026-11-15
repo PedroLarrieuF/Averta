@@ -25,8 +25,8 @@ from app.modules.contests.schemas import (
 from app.modules.contracts.service import ContractsService
 from app.services.pdf_generator import generate_contest_letter
 from app.services.storage import upload_file
-from prisma import Prisma
-from prisma.models import Contest as ContestModel
+from generated.prisma import Prisma
+from generated.prisma.models import Contest as ContestModel
 
 logger = structlog.get_logger()
 
@@ -425,8 +425,8 @@ class ContestsService(BaseService[ContestModel, ContestCreate, ContestUpdate, Co
                 "contestId": contest_id,
                 "type": "LETTER",
                 "direction": "OUTBOUND",
-                "subject": f"Carta de Contestação {contest.number}",
-                "content": f"Carta de contestação gerada para {carrier.name}",
+                "subject": f"Carta de ContestaÃ§Ã£o {contest.number}",
+                "content": f"Carta de contestaÃ§Ã£o gerada para {carrier.name}",
                 "attachments": [object_name],
             }
         )
@@ -467,8 +467,8 @@ class ContestsService(BaseService[ContestModel, ContestCreate, ContestUpdate, Co
                 "contestId": contest_id,
                 "type": "EMAIL" if send_via in ["EMAIL", "BOTH"] else "PORTAL",
                 "direction": "OUTBOUND",
-                "subject": f"Contestação {contest.number} - {carrier.name}",
-                "content": f"Contestação enviada via {send_via}",
+                "subject": f"ContestaÃ§Ã£o {contest.number} - {carrier.name}",
+                "content": f"ContestaÃ§Ã£o enviada via {send_via}",
             }
         )
 

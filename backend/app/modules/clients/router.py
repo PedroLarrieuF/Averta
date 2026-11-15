@@ -17,7 +17,7 @@ from app.modules.clients.schemas import (
     ClientUpdate,
 )
 from app.modules.clients.service import ClientsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 

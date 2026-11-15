@@ -25,10 +25,10 @@ echo "✅ PgBouncer is ready!"
 # Run Prisma migrations
 echo "🔄 Running Prisma migrations..."
 cd /app
-npx prisma migrate deploy
+prisma migrate deploy
 
 # Check if database needs seeding (count companies)
-COMPANY_COUNT=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM \"Company\";" 2>/dev/null | grep -oE '[0-9]+' | head -1 || echo "0")
+COMPANY_COUNT=$(prisma db execute --stdin <<< "SELECT COUNT(*) FROM \"Company\";" 2>/dev/null | grep -oE '[0-9]+' | head -1 || echo "0")
 
 if [ "$COMPANY_COUNT" -eq 0 ]; then
   echo "🌱 Database is empty. Running seed script..."

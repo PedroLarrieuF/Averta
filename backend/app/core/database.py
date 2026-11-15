@@ -1,4 +1,4 @@
-"""Database connection using Prisma Client Python with Connection Pooling, Read Replica & Query Logging"""
+﻿"""Database connection using Prisma Client Python with Connection Pooling, Read Replica & Query Logging"""
 
 import asyncio
 import time
@@ -9,7 +9,6 @@ import structlog
 
 from app.core.config import settings
 from generated.prisma import Prisma
-from prisma.types import QueryEvent
 
 logger = structlog.get_logger()
 
@@ -33,7 +32,6 @@ def _get_prisma_primary() -> Prisma:
             # pool_size = (cpu_cores * 4) + 1, but we use env var
             connect_timeout=settings.DATABASE_CONNECT_TIMEOUT,
             # Engine settings
-            engine_type="binary",  # Better performance than 'node'
         )
     return _prisma_primary
 
@@ -47,36 +45,10 @@ def _get_prisma_replica() -> Prisma:
                 "url": settings.DATABASE_READ_REPLICA_URL,
             },
             connect_timeout=settings.DATABASE_CONNECT_TIMEOUT,
-            engine_type="binary",
         )
     return _prisma_replica
 
 
-async def _query_middleware(event: QueryEvent) -> None:
-    """Middleware for query logging and slow query detection."""
-    start_time = time.perf_counter()
-    yield
-    duration_ms = (time.perf_counter() - start_time) * 1000
-
-    # Log all queries in development
-    if settings.ENVIRONMENT == "development":
-        logger.debug(
-            "prisma_query",
-            query=event.query,
-            params=event.params,
-            duration_ms=round(duration_ms, 2),
-        )
-
-    # Log slow queries in all environments
-    if duration_ms > SLOW_QUERY_THRESHOLD_MS:
-        logger.warning(
-            "slow_query_detected",
-            query=event.query,
-            params=event.params,
-            duration_ms=round(duration_ms, 2),
-            model=event.model,
-            action=event.action,
-        )
 
 
 async def get_prisma(use_replica: bool = False) -> Prisma:

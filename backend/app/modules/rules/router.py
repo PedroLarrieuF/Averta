@@ -1,8 +1,8 @@
-"""Rules module router"""
+﻿"""Rules module router"""
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.core.dependencies import (
     CompanyIdDep,
@@ -23,7 +23,7 @@ from app.modules.rules.schemas import (
 )
 from app.modules.rules.service import RulesService
 from app.services.rules_engine_v2 import get_engine_instance, reload_engine_rules
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/rules", tags=["Rules"])
 
@@ -67,6 +67,7 @@ async def create_rule(
 )
 @api_limiter
 async def list_rules(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -143,6 +144,7 @@ async def reload_rules(
 )
 @api_limiter
 async def get_rule(
+    request: Request,
     rule_id: str,
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
@@ -233,3 +235,4 @@ async def hard_delete_rule(
     await reload_engine_rules()
 
     return rule  # type: ignore[no-any-return]
+

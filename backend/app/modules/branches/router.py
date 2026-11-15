@@ -17,7 +17,7 @@ from app.modules.branches.schemas import (
     BranchUpdate,
 )
 from app.modules.branches.service import BranchesService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/branches", tags=["Branches"])
 

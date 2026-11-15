@@ -1,6 +1,6 @@
 """Auth module router"""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.core.dependencies import (
     CurrentUserDep,
@@ -20,7 +20,7 @@ from app.modules.auth.schemas import (
     UserResponse,
 )
 from app.modules.auth.service import AuthService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -37,6 +37,7 @@ def get_auth_service(db: Prisma = Depends(get_database)) -> AuthService:
 )
 @auth_limiter
 async def login(
+    request: Request,
     data: LoginRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> AuthResponse:
@@ -52,6 +53,7 @@ async def login(
 )
 @auth_limiter
 async def register(
+    request: Request,
     data: RegisterRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> AuthResponse:
@@ -67,6 +69,7 @@ async def register(
 )
 @auth_limiter
 async def refresh(
+    request: Request,
     data: RefreshRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:
@@ -113,6 +116,7 @@ async def change_password(
 )
 @auth_limiter
 async def forgot_password(
+    request: Request,
     data: ForgotPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> MessageResponse:
@@ -132,6 +136,7 @@ async def forgot_password(
 )
 @auth_limiter
 async def reset_password(
+    request: Request,
     data: ResetPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> MessageResponse:

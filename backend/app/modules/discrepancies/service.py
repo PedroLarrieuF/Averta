@@ -16,8 +16,8 @@ from app.modules.discrepancies.schemas import (
     DiscrepancySummary,
     DiscrepancyUpdate,
 )
-from prisma import Prisma
-from prisma.models import Discrepancy as DiscrepancyModel
+from generated.prisma import Prisma
+from generated.prisma.models import Discrepancy as DiscrepancyModel
 
 logger = structlog.get_logger()
 

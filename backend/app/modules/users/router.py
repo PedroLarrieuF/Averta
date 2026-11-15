@@ -17,7 +17,7 @@ from app.modules.users.schemas import (
     UserUpdate,
 )
 from app.modules.users.service import UsersService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

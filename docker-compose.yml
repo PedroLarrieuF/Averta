@@ -41,29 +41,40 @@ services:
     image: edoburu/pgbouncer:latest
     container_name: averta-pgbouncer
     environment:
-      DATABASES_HOST: postgres
-      DATABASES_PORT: "5432"
-      DATABASES_DBNAME: ${POSTGRES_DB:-averta}
-      DATABASES_USER: ${POSTGRES_USER:-postgres}
-      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-averta}
+
+      LISTEN_ADDR: "0.0.0.0"
+      LISTEN_PORT: "6432"
+      AUTH_TYPE: scram-sha-256
+
       POOL_MODE: transaction
       MAX_CLIENT_CONN: "1000"
       DEFAULT_POOL_SIZE: "25"
       RESERVE_POOL_SIZE: "5"
       RESERVE_POOL_TIMEOUT: "5"
       SERVER_RESET_QUERY: "DISCARD ALL"
+
       ADMIN_USERS: ${POSTGRES_USER:-postgres}
       STATS_USERS: ${POSTGRES_USER:-postgres}
+
     ports:
       - "6432:6432"
+
     depends_on:
       postgres:
         condition: service_healthy
+
     healthcheck:
-      test: ["CMD", "pg_isready", "-p", "6432", "-U", "${POSTGRES_USER:-postgres}"]
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "6432", "-U", "${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
     restart: unless-stopped
     networks:
       - averta-network
@@ -86,7 +97,7 @@ services:
       - averta-network
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     container_name: averta-minio
     command: server /data --console-address ":9001"
     environment:
@@ -175,6 +186,7 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/prisma:/app/prisma
+      - ./backend/scripts:/app/scripts
       - ./backend/pyproject.toml:/app/pyproject.toml
       - ./backend/poetry.lock:/app/poetry.lock
     command: >
@@ -228,6 +240,7 @@ services:
       - ./backend/prisma:/app/prisma
       - ./backend/pyproject.toml:/app/pyproject.toml
       - ./backend/poetry.lock:/app/poetry.lock
+      - ./backend/scripts:/app/scripts
     command: >
       sh -c "
         echo 'Waiting for backend to initialize database...' &&

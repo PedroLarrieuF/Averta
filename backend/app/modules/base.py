@@ -1,15 +1,14 @@
-"""Base module classes for consistent CRUD patterns"""
+﻿"""Base module classes for consistent CRUD patterns"""
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import structlog
 from pydantic import BaseModel
 
 from app.core.dependencies import PaginationParams, SortParams
 from app.core.exceptions import NotFoundError
-from prisma import Prisma
-from prisma.types import OrderByInput, WhereInput
+from generated.prisma import Prisma
 
 logger = structlog.get_logger()
 
@@ -44,14 +43,14 @@ class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaT
         company_id: str,
         pagination: PaginationParams,
         sort: SortParams,
-        where: WhereInput | None = None,
+        where: dict[str, Any] | None = None,
     ) -> tuple[list[ResponseSchemaType], int]:
         """List records with pagination, sorting, and filtering"""
         where_clause = {"companyId": company_id}
         if where:
             where_clause.update(where)
 
-        order_by: OrderByInput = {}
+        order_by: dict[str, Any] = {}
         if sort.sort_by:
             order_by[sort.sort_by] = sort.sort_order
 
@@ -97,3 +96,4 @@ class BaseService[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaT
         """Check if record exists"""
         count = await self.model.count(where={"id": id, "companyId": company_id})
         return count > 0  # type: ignore[no-any-return]
+

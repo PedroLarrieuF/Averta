@@ -74,3 +74,15 @@ docker-compose.override.yml
 
 # Editor
 .vscode/settings.json
+
+# Backup local do backend
+/backend/_import_backup/
+
+# Docker Desktop WSL - backups, imagens e dados locais
+/DockerDesktopWSL/
+
+# Arquivos de backup temporários
+*.backup
+*.backup-*
+*.bak
+*.bak-*

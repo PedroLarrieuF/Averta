@@ -17,8 +17,8 @@ from app.modules.notifications.schemas import (
     NotificationType,
 )
 from app.services.email_service import email_service
-from prisma import Prisma
-from prisma.models import Notification as NotificationModel
+from generated.prisma import Prisma
+from generated.prisma.models import Notification as NotificationModel
 
 logger = structlog.get_logger()
 
@@ -266,8 +266,8 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.DISCREPANCY_FOUND,
-                    title="Nova Divergência Detectada",
-                    message=f"Divergência de {discrepancy_type} no valor de R$ {value:,.2f} foi detectada.",
+                    title="Nova DivergÃªncia Detectada",
+                    message=f"DivergÃªncia de {discrepancy_type} no valor de R$ {value:,.2f} foi detectada.",
                     data={
                         "discrepancy_id": discrepancy_id,
                         "type": discrepancy_type,
@@ -291,8 +291,8 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.CONTEST_APPROVED,
-                    title="Contestação Aprovada",
-                    message=f"Contestação {contest_number} foi aprovada. Valor: R$ {value:,.2f}",
+                    title="ContestaÃ§Ã£o Aprovada",
+                    message=f"ContestaÃ§Ã£o {contest_number} foi aprovada. Valor: R$ {value:,.2f}",
                     data={"contest_id": contest_id, "number": contest_number, "value": value},
                     channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
                 )
@@ -312,8 +312,8 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.CONTEST_SENT,
-                    title="Contestação Enviada",
-                    message=f"Contestação {contest_number} enviada para {carrier}.",
+                    title="ContestaÃ§Ã£o Enviada",
+                    message=f"ContestaÃ§Ã£o {contest_number} enviada para {carrier}.",
                     data={"contest_id": contest_id, "number": contest_number, "carrier": carrier},
                     channels=[NotificationChannel.IN_APP],
                 )
@@ -333,8 +333,8 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.RECOVERY_CONFIRMED,
-                    title="Recuperação Confirmada",
-                    message=f"Contestação {contest_number}: R$ {recovered:,.2f} recuperados.",
+                    title="RecuperaÃ§Ã£o Confirmada",
+                    message=f"ContestaÃ§Ã£o {contest_number}: R$ {recovered:,.2f} recuperados.",
                     data={
                         "contest_id": contest_id,
                         "number": contest_number,
@@ -369,7 +369,7 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.CONTRACT_EXPIRING,
-                    title="Contrato Próximo ao Vencimento",
+                    title="Contrato PrÃ³ximo ao Vencimento",
                     message=f"Contrato {contract_number} com {carrier} vence em {days} dias.",
                     data={
                         "contract_id": contract_id,
@@ -402,10 +402,10 @@ class NotificationsService:
                     client_id=client_id,
                     user_id=user.id,
                     type=NotificationType.WEEKLY_REPORT,
-                    title="Relatório Semanal",
+                    title="RelatÃ³rio Semanal",
                     message=(
-                        f"Resumo da semana: {len(discrepancies)} divergências, "
-                        f"{len(contests)} contestações, "
+                        f"Resumo da semana: {len(discrepancies)} divergÃªncias, "
+                        f"{len(contests)} contestaÃ§Ãµes, "
                         f"R$ {sum(c.totalRecovered for c in contests):,.2f} recuperados."
                     ),
                     data={

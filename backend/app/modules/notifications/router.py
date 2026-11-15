@@ -22,7 +22,7 @@ from app.modules.notifications.schemas import (
     NotificationType,
 )
 from app.modules.notifications.service import NotificationsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 

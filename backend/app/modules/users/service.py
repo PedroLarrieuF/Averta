@@ -14,8 +14,8 @@ from app.modules.users.schemas import (
     UserResponse,
     UserUpdate,
 )
-from prisma import Prisma
-from prisma.models import User as UserModel
+from generated.prisma import Prisma
+from generated.prisma.models import User as UserModel
 
 logger = structlog.get_logger()
 

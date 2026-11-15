@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from prisma import Prisma
-from prisma.models import Rule as RuleModel
+from generated.prisma import Prisma
+from generated.prisma.models import Rule as RuleModel
 
 
 class RulesService:

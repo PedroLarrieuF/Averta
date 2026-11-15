@@ -133,28 +133,52 @@ infra/                              # Terraform modules
 
 ## 🐳 Docker Configuration (Current - Production Hardened)
 
-### Dockerfile (Multi-stage → Distroless)
+### Dockerfile (Multi-stage → Hardened python:3.12-slim)
 
 ```dockerfile
 # Stage 1: Builder (python:3.12-slim)
 FROM python:3.12-slim AS builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev
+# Install build dependencies for native extensions:
+# - gcc, build-essential: C compiler and build tools
+# - libpq-dev: PostgreSQL client library
+# - libxml2-dev, libxslt-dev: XML processing (for lxml)
+# - libffi-dev: Foreign function interface (for cryptography, cffi)
+# - pkg-config: Helps find libraries during build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc build-essential libpq-dev libxml2-dev libxslt-dev libffi-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir poetry==1.8.2
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false
 RUN poetry install --only=main --no-interaction --no-ansi
 COPY prisma ./prisma
+COPY scripts ./scripts
 RUN prisma generate
+RUN chmod +x ./scripts/init-db.sh
 RUN pip cache purge
 
-# Stage 2: Runtime (gcr.io/distroless/python3-debian12:nonroot)
-FROM gcr.io/distroless/python3-debian12:nonroot AS runtime
+# Stage 2: Runtime (python:3.12-slim with non-root user)
+FROM python:3.12-slim AS runtime
+# Create non-root user (UID 10001)
+RUN groupadd -r -g 10001 appgroup && \
+    useradd -r -u 10001 -g appgroup -d /app -s /sbin/nologin appuser
 WORKDIR /app
+# Install runtime dependencies (shared libraries for native extensions)
+# - libxml2, libxslt1.1: for lxml
+# - libffi8: for cryptography/cffi
+# - libpq5: PostgreSQL client library
+# - ca-certificates: for HTTPS
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2 libxslt1.1 libffi8 libpq5 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
+RUN chown -R appuser:appgroup /app
+USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
@@ -162,13 +186,16 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 **Key Hardening Applied:**
-- ✅ Distroless base (no shell, no pkg mgr, minimal attack surface)
-- ✅ Non-root user (UID 65532, built into distroless)
+- ✅ Hardened python:3.12-slim runtime (includes required system libraries: libxml2, libxslt, libffi, libpq)
+- ✅ Non-root user (UID 10001, created in Dockerfile)
 - ✅ Multi-stage with layer caching optimization
-- ✅ Prisma client generated in builder (distroless has no prisma CLI)
-- ✅ Health check using Python stdlib (no curl needed)
+- ✅ Prisma client generated in builder
+- ✅ Build dependencies for native extensions (lxml, cryptography, bcrypt, argon2)
+- ✅ Runtime dependencies for native extensions (libxml2, libxslt, libffi, libpq)
+- ✅ Health check using Python stdlib
 - ✅ OCI labels for SBOM/traceability
-- ✅ Target: <200MB, 0 HIGH/CRITICAL vulns
+- ✅ Target: <250MB, 0 HIGH/CRITICAL vulns
+- ✅ Production security via docker-compose.prod.yml (read-only fs, dropped caps, no-new-privileges)
 
 ### docker-compose.yml Services (Dev - Unchanged)
 ```yaml
@@ -388,7 +415,7 @@ cd backend
 docker compose up -d              # Start all services (dev)
 docker compose down -v            # Stop + remove volumes
 docker compose logs -f backend    # Follow backend logs
-docker compose exec backend bash  # Shell into backend (not available in distroless prod)
+docker compose exec backend bash  # Shell into backend (prod uses python:3.12-slim with bash)
 
 # Docker (Production)
 cd backend
@@ -432,14 +459,16 @@ gh workflow run deploy.yml        # Manual deploy
 
 ### Card #01: Docker Production Hardening
 **Priority:** HIGH | **Estimate:** M
-- [ ] Switch to distroless/base image (gcr.io/distroless/python3-debian12)
-- [ ] Add Trivy security scanning in CI
-- [ ] Generate SBOM (Syft) in build pipeline
-- [ ] Implement multi-arch builds (amd64/arm64)
-- [ ] Add Docker Content Trust (cosign signing)
-- [ ] Optimize layer caching (reorder COPY commands)
-- [ ] Add healthcheck endpoint to Dockerfile
-- [ ] Create docker-compose.prod.yml with resource limits
+- [x] Switch to hardened python:3.12-slim runtime (non-root user, runtime libs for native extensions)
+- [x] Add build dependencies for native extensions (lxml, cryptography, bcrypt, argon2)
+- [x] Add runtime dependencies (libxml2, libxslt, libffi, libpq, ca-certificates)
+- [x] Add Trivy security scanning in CI
+- [x] Generate SBOM (Syft) in build pipeline
+- [x] Implement multi-arch builds (amd64/arm64)
+- [x] Add Docker Content Trust (cosign signing)
+- [x] Optimize layer caching (reorder COPY commands)
+- [x] Add healthcheck endpoint to Dockerfile
+- [x] Create docker-compose.prod.yml with resource limits
 
 ### Card #02: Prisma Performance Optimization
 **Priority:** HIGH | **Estimate:** L

@@ -27,7 +27,7 @@ from app.modules.auth.schemas import (
     TokenResponse,
     UserResponse,
 )
-from prisma import Prisma
+from generated.prisma import Prisma
 
 logger = structlog.get_logger()
 

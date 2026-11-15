@@ -13,7 +13,7 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.security import TokenPayload, decode_access_token
 
 if TYPE_CHECKING:
-    from prisma import Prisma
+    from generated.prisma import Prisma
 
 logger = structlog.get_logger()
 

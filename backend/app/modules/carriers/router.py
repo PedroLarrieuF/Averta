@@ -17,7 +17,7 @@ from app.modules.carriers.schemas import (
     CarrierUpdate,
 )
 from app.modules.carriers.service import CarriersService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/carriers", tags=["Carriers"])
 

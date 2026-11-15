@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from prisma import Prisma
+from generated.prisma import Prisma
 
 # Feature columns in the order expected by the model
 FEATURE_COLUMNS = [

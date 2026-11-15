@@ -1,8 +1,8 @@
-"""Reports module router"""
+﻿"""Reports module router"""
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.core.dependencies import (
     CompanyIdDep,
@@ -20,7 +20,7 @@ from app.modules.reports.schemas import (
     SuccessFeeReport,
 )
 from app.modules.reports.service import ReportsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -37,6 +37,7 @@ def get_reports_service(db: Prisma = Depends(get_database)) -> ReportsService:
 )
 @reports_limiter
 async def get_dashboard(
+    request: Request,
     current_user: RequireManager,
     company_id: CompanyIdDep,
     reports_service: ReportsService = Depends(get_reports_service),
@@ -53,6 +54,7 @@ async def get_dashboard(
 )
 @reports_limiter
 async def get_recovery_report(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -79,6 +81,7 @@ async def get_recovery_report(  # noqa: PLR0913, PLR0917
 )
 @reports_limiter
 async def get_success_fee_report(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -104,6 +107,7 @@ async def get_success_fee_report(  # noqa: PLR0913, PLR0917
 )
 @reports_limiter
 async def get_discrepancy_stats(
+    request: Request,
     current_user: RequireManager,
     company_id: CompanyIdDep,
     reports_service: ReportsService = Depends(get_reports_service),
@@ -120,6 +124,7 @@ async def get_discrepancy_stats(
 )
 @reports_limiter
 async def export_report(
+    request: Request,
     data: ExportRequest,
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -127,3 +132,4 @@ async def export_report(
 ) -> ExportResponse:
     """Export report to Excel (returns presigned download URL)"""
     return await reports_service.export_report(company_id, data)
+

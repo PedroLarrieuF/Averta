@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 
 from passlib.context import CryptContext
 
-from prisma import Prisma
+from generated.prisma import Prisma
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -47,7 +47,7 @@ SCALE = {
 }
 
 # Password for all test users (including admin)
-DEFAULT_PASSWORD = "admin"
+DEFAULT_PASSWORD = "Incorreta1@"
 
 # =============================================================================
 # HELPER FUNCTIONS

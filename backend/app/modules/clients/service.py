@@ -13,8 +13,8 @@ from app.modules.clients.schemas import (
     ClientResponse,
     ClientUpdate,
 )
-from prisma import Prisma
-from prisma.models import Client as ClientModel
+from generated.prisma import Prisma
+from generated.prisma.models import Client as ClientModel
 
 logger = structlog.get_logger()
 

@@ -1,8 +1,8 @@
-"""Discrepancies module router"""
+﻿"""Discrepancies module router"""
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.core.dependencies import (
     ClientIdDep,
@@ -24,7 +24,7 @@ from app.modules.discrepancies.schemas import (
     DiscrepancyUpdate,
 )
 from app.modules.discrepancies.service import DiscrepanciesService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/discrepancies", tags=["Discrepancies"])
 
@@ -58,6 +58,7 @@ async def create_discrepancy(
 )
 @discrepancies_limiter
 async def list_discrepancies(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -97,6 +98,7 @@ async def list_discrepancies(  # noqa: PLR0913, PLR0917
 )
 @discrepancies_limiter
 async def get_summary(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
     client_id: ClientIdDep,
@@ -119,6 +121,7 @@ async def get_summary(  # noqa: PLR0913, PLR0917
 )
 @discrepancies_limiter
 async def get_discrepancy(
+    request: Request,
     discrepancy_id: str,
     current_user: CurrentUserDep,
     company_id: CompanyIdDep,
@@ -156,6 +159,7 @@ async def update_discrepancy(
 )
 @discrepancies_limiter
 async def bulk_update_status(
+    request: Request,
     discrepancy_ids: list[str],
     status: DiscrepancyStatus,
     current_user: RequireAuditor,
@@ -167,3 +171,5 @@ async def bulk_update_status(
         discrepancy_ids, company_id, status, current_user.sub
     )
     return {"updated": count}
+
+

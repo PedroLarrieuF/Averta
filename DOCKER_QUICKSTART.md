@@ -50,7 +50,7 @@ curl http://localhost:8000/health
 
 ### 5. Default Login
 - **Email:** `admin@admin`
-- **Password:** `admin`
+- **Password:** `Incorreta1@`
 
 ## 📖 Quick Start Variants
 
@@ -78,7 +78,7 @@ curl http://localhost:8000/health
 On first startup, the backend automatically:
 1. Runs Prisma migrations
 2. Seeds database with comprehensive test data:
-   - Admin user (admin@admin / admin)
+   - Admin user (admin@admin / Incorreta1@)
    - 5 companies with full hierarchy
    - Clients, carriers, branches per company
    - Contracts with freight tables
@@ -130,7 +130,7 @@ docker compose --env-file .env.docker up -d
 ├── docker-compose.yml          # Main compose file (all services)
 ├── .env.docker                 # Environment template
 ├── backend/
-│   ├── Dockerfile              # Multi-stage build (builder → distroless)
+│   ├── Dockerfile              # Multi-stage build (builder → hardened python:3.12-slim)
 │   ├── scripts/
 │   │   └── init-db.sh          # DB initialization (migrate + seed)
 │   ├── init-scripts/
@@ -151,7 +151,7 @@ The backend uses the **builder stage** of the Dockerfile which includes:
 - Volume mounts for live code changes
 
 ### Production Build
-For production, use the **runtime stage** (distroless):
+For production, use the **runtime stage** (hardened python:3.12-slim):
 ```bash
 docker build --target runtime -t averta/backend:prod ./backend
 ```

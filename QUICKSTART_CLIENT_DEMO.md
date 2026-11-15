@@ -20,7 +20,7 @@ pnpm dev
 
 # 3. Acessar
 # Frontend:     http://localhost:3000
-# Login:        admin@admin / admin
+# Login:        admin@admin / Incorreta1@
 # API Docs:     http://localhost:8000/docs
 # MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
 # Flower:       http://localhost:5555 (admin/admin)
@@ -33,11 +33,11 @@ pnpm dev
 
 | Usuário | Email | Senha | Role | Empresa |
 |---------|-------|-------|------|---------|
-| **Admin Principal** | `admin@admin` | `admin` | **ADMIN** | Averta Admin |
-| **Manager** | `user1@<cnpj>.com.br` | `admin` | MANAGER | Empresa 001 |
-| **Auditor** | `user2@<cnpj>.com.br` | `admin` | AUDITOR | Empresa 001 |
-| **Cliente** | `user3@<cnpj>.com.br` | `admin` | CLIENT | Empresa 001 |
-| **Transportadora** | `user4@<cnpj>.com.br` | `admin` | CARRIER | Empresa 001 |
+| **Admin Principal** | `admin@admin` | `Incorreta1@` | **ADMIN** | Averta Admin |
+| **Manager** | `user1@<cnpj>.com.br` | `Incorreta1@` | MANAGER | Empresa 001 |
+| **Auditor** | `user2@<cnpj>.com.br` | `Incorreta1@` | AUDITOR | Empresa 001 |
+| **Cliente** | `user3@<cnpj>.com.br` | `Incorreta1@` | CLIENT | Empresa 001 |
+| **Transportadora** | `user4@<cnpj>.com.br` | `Incorreta1@` | CARRIER | Empresa 001 |
 
 > **Dica**: Após login como `admin@admin`, use o seletor de empresa (canto superior direito) para trocar entre as 5 empresas criadas.
 
@@ -101,7 +101,7 @@ pnpm dev
 ### 1. **Login & Dashboard** (2 min)
 ```
 → http://localhost:3000
-→ Login: admin@admin / admin
+→ Login: admin@admin / Incorreta1@
 → Mostrar: KPIs cards, gráficos evolução, top 5 transportadoras com discrepâncias
 → Trocar empresa no seletor (canto sup. dir.) → Mostrar multi-tenancy
 ```
@@ -209,7 +209,7 @@ docker compose --env-file .env.docker up -d --build
 - [ ] `docker compose ps` → Todos 8 containers `Up (healthy)`
 - [ ] `curl http://localhost:8000/health` → `{"status":"ok"}`
 - [ ] Frontend carrega em http://localhost:3000
-- [ ] Login `admin@admin` / `admin` funciona
+- [ ] Login `admin@admin` / `Incorreta1@` funciona
 - [ ] Dashboard mostra KPIs > 0 (não vazio)
 - [ ] Discrepâncias lista > 1000 itens
 - [ ] Contestações lista > 50 itens

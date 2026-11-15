@@ -22,7 +22,7 @@ from app.modules.contracts.schemas import (
     FreightTableUpdate,
 )
 from app.modules.contracts.service import ContractsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
 

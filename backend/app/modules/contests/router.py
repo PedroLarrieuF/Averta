@@ -1,9 +1,9 @@
-"""Contests module router"""
+﻿"""Contests module router"""
 
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import Response
 
 from app.core.dependencies import (
@@ -34,7 +34,7 @@ from app.modules.contests.schemas import (
     PaymentResponse,
 )
 from app.modules.contests.service import ContestsService
-from prisma import Prisma
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/contests", tags=["Contests"])
 
@@ -56,6 +56,7 @@ def get_contests_service(db: Prisma = Depends(get_database)) -> ContestsService:
 )
 @contests_limiter
 async def create_contest(
+    request: Request,
     data: ContestCreate,
     current_user: RequireAuditor,
     company_id: CompanyIdDep,
@@ -73,6 +74,7 @@ async def create_contest(
 )
 @contests_limiter
 async def list_contests(  # noqa: PLR0913, PLR0917
+    request: Request,
     current_user: RequireManager,
     company_id: CompanyIdDep,
     pagination: PaginationDep,
@@ -102,6 +104,7 @@ async def list_contests(  # noqa: PLR0913, PLR0917
 )
 @contests_limiter
 async def get_contest(
+    request: Request,
     contest_id: str,
     current_user: RequireManager,
     company_id: CompanyIdDep,
@@ -141,6 +144,7 @@ async def update_contest(
 )
 @contests_limiter
 async def generate_pdf(
+    request: Request,
     contest_id: str,
     data: ContestGeneratePDFRequest,
     current_user: RequireAuditor,
@@ -167,6 +171,7 @@ async def generate_pdf(
 )
 @contests_limiter
 async def send_contest(
+    request: Request,
     contest_id: str,
     data: ContestSendRequest,
     current_user: RequireAuditor,
@@ -328,3 +333,5 @@ async def recalculate_fee(
 ) -> ContestResponse:
     """Recalculate success fee based on progressive pricing model (month 1: 5%, month 2+: 10%)"""
     return await contests_service.recalculate_success_fee(contest_id, company_id)
+
+

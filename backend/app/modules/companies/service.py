@@ -13,8 +13,8 @@ from app.modules.companies.schemas import (
     CompanyResponse,
     CompanyUpdate,
 )
-from prisma import Prisma
-from prisma.models import Company as CompanyModel
+from generated.prisma import Prisma
+from generated.prisma.models import Company as CompanyModel
 
 logger = structlog.get_logger()
 

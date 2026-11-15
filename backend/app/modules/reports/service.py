@@ -25,7 +25,7 @@ from app.modules.reports.schemas import (
     SuccessFeeReportItem,
 )
 from app.services.storage import get_presigned_url, upload_file
-from prisma import Prisma
+from generated.prisma import Prisma
 
 logger = structlog.get_logger()
 
