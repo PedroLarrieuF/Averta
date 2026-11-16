@@ -56,7 +56,7 @@ export type NotificationChannel = 'EMAIL' | 'IN_APP' | 'PUSH' | 'SMS';
 
 export type FreightTableStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 
-export type ContractStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
+export type ContractStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'PENDING';
 
 export type FreightType = 'NORMAL' | 'EXPRESS' | 'FRACIONADO' | 'CARGA_FECHADA';
 

@@ -12,7 +12,7 @@ export interface ContractFormData {
   number: string;
   client_id: string;
   carrier_id: string;
-  status: 'ACTIVE' | 'EXPIRED' | 'PENDING';
+  status: 'ACTIVE' | 'EXPIRED' | 'PENDING' | 'DRAFT' | 'CANCELLED';
   start_date: string;
   end_date?: string;
   success_fee_pct: string;
@@ -53,9 +53,11 @@ interface ContractFormProps {
 }
 
 const STATUS_OPTIONS = [
+  { value: 'DRAFT', label: 'Rascunho' },
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'EXPIRED', label: 'Expirado' },
   { value: 'PENDING', label: 'Pendente' },
+  { value: 'CANCELLED', label: 'Cancelado' },
 ] as const;
 
 export function ContractForm({

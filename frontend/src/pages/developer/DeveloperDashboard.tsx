@@ -1,5 +1,5 @@
-import { KPICard, KPIValue, KPILabel } from '../../components'
-import { formatNumber, formatPercent, cn } from '../../utils/helpers'
+import { KPICard } from '../../components'
+import { formatNumber, formatPercent } from '../../utils/helpers'
 import { Plus, Book, Key, Webhook } from 'lucide-react'
 import { Button, Card, CardHeader, CardBody } from '../../components'
 import { useNavigate } from 'react-router-dom'
@@ -38,22 +38,34 @@ export function DeveloperDashboard() {
 
       {/* KPI Row */}
       <div className="grid-kpi">
-        <KPICard>
-          <KPILabel>Active Keys</KPILabel>
-          <KPIValue>{mockKeys.filter(k => k.is_active).length}</KPIValue>
-        </KPICard>
-        <KPICard>
-          <KPILabel>Requests (30d)</KPILabel>
-          <KPIValue>{formatNumber(mockUsage.total_requests)}</KPIValue>
-        </KPICard>
-        <KPICard>
-          <KPILabel>Error Rate</KPILabel>
-          <KPIValue>{formatPercent(mockUsage.error_rate)}</KPIValue>
-        </KPICard>
-        <KPICard>
-          <KPILabel>Avg Latency</KPILabel>
-          <KPIValue>{`${mockUsage.avg_latency_ms}ms`}</KPIValue>
-        </KPICard>
+        <KPICard
+          title="Active Keys"
+          value={mockKeys.filter(k => k.is_active).length}
+          icon={<Key className="h-5 w-5" />}
+          iconBgClass="bg-primary-50"
+          iconColorClass="text-primary-600"
+        />
+        <KPICard
+          title="Requests (30d)"
+          value={formatNumber(mockUsage.total_requests)}
+          icon={<Plus className="h-5 w-5" />}
+          iconBgClass="bg-emerald-50"
+          iconColorClass="text-emerald-600"
+        />
+        <KPICard
+          title="Error Rate"
+          value={formatPercent(mockUsage.error_rate)}
+          icon={<Book className="h-5 w-5" />}
+          iconBgClass="bg-warning-50"
+          iconColorClass="text-warning-600"
+        />
+        <KPICard
+          title="Avg Latency"
+          value={`${mockUsage.avg_latency_ms}ms`}
+          icon={<Webhook className="h-5 w-5" />}
+          iconBgClass="bg-secondary-50"
+          iconColorClass="text-secondary-600"
+        />
       </div>
 
       {/* Quick Actions */}
@@ -73,7 +85,7 @@ export function DeveloperDashboard() {
       </Card>
 
       {/* Recent Keys & Usage Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Recent Keys */}
         <Card>
           <CardHeader className="flex justify-between items-center">
@@ -95,12 +107,13 @@ export function DeveloperDashboard() {
                       <p className="text-sm text-secondary-500">Criada em {new Date(key.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
-                  <span className={cn(
-                    'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-                    key.is_active
-                      ? 'bg-success-100 text-success-700'
+                  <span className={`
+                    inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                    ${key.is_active
+                      ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-secondary-100 text-secondary-700'
-                  )}>
+                    }
+                  `}>
                     {key.is_active ? 'Ativa' : 'Inativa'}
                   </span>
                 </div>

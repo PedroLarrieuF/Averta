@@ -1,28 +1,36 @@
 // Contracts & Freight Tables Types
 // Card #24: Contracts Page - CRUD + FreightTable Editor
 
-export type ContractStatus = 'ACTIVE' | 'EXPIRED' | 'PENDING';
+export type ContractStatus = 'ACTIVE' | 'EXPIRED' | 'PENDING' | 'DRAFT' | 'CANCELLED';
 export type FreightTableStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 export type FreightModal = 'RODOVIARIO' | 'AEREO' | 'MARITIMO' | 'FERROVIARIO';
+export type FreightType = 'NORMAL' | 'EXPRESS' | 'FRACIONADO' | 'CARGA_FECHADA';
+export type FreightValueType = 'FIXED' | 'PER_KG' | 'PER_VOLUME';
 
 export interface Contract {
   id: string;
+  companyId: string;
   number: string;
-  client_id: string;
-  client_name?: string;
-  carrier_id: string;
-  carrier_name?: string;
+  name: string;
+  clientId: string;
+  clientName?: string;
+  client?: { id: string; name: string; cnpj: string };
+  carrierId: string;
+  carrierName?: string;
+  carrier?: { id: string; name: string; cnpj: string };
   status: ContractStatus;
-  start_date: string;
-  end_date: string | null;
-  success_fee_pct: number;
+  version: number;
+  startDate: string;
+  endDate: string | null;
+  successFeePct: number;
   description: string | null;
-  freight_tables_count: number;
-  documents_count: number;
-  discrepancies_count: number;
-  contests_count: number;
-  created_at: string;
-  updated_at: string;
+  freightTablesCount: number;
+  documentsCount: number;
+  discrepanciesCount: number;
+  contestsCount: number;
+  freightTables?: FreightTable[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ContractListParams {
@@ -30,10 +38,10 @@ export interface ContractListParams {
   size?: number;
   search?: string;
   status?: ContractStatus;
-  client_id?: string;
-  carrier_id?: string;
-  date_from?: string;
-  date_to?: string;
+  clientId?: string;
+  carrierId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface PaginatedContracts {
@@ -42,74 +50,140 @@ export interface PaginatedContracts {
     page: number;
     size: number;
     total: number;
-    total_pages: number;
+    totalPages: number;
   };
 }
 
-export interface CreateContractData {
-  number: string;
-  client_id: string;
-  carrier_id: string;
-  status: ContractStatus;
-  start_date: string;
-  end_date: string | null;
-  success_fee_pct: number;
-  description: string;
+export interface ContractListResponse extends PaginatedContracts {}
+
+export interface ContractFilters {
+  search?: string;
+  status?: ContractStatus;
+  clientId?: string;
+  carrierId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
-export interface UpdateContractData extends Partial<CreateContractData> {}
+export interface ContractCreateRequest {
+  number: string;
+  name: string;
+  clientId: string;
+  carrierId: string;
+  status: ContractStatus;
+  version?: number;
+  startDate: string;
+  endDate: string | null;
+  successFeePct: number;
+  description?: string;
+}
+
+export interface ContractUpdateRequest extends Partial<ContractCreateRequest> {}
+
+export interface FreightTableEntry {
+  id: string;
+  originCity: string;
+  originState: string;
+  destinationCity: string;
+  destinationState: string;
+  freightType: FreightType;
+  weightMin: number;
+  weightMax: number;
+  volumeMin?: number;
+  volumeMax?: number;
+  value: number;
+  valueType: FreightValueType;
+  icms?: number;
+  tolls?: number;
+}
 
 // Freight Table Types
 export interface FreightTable {
   id: string;
-  contract_id: string;
+  contractId: string;
   version: number;
   status: FreightTableStatus;
-  effective_from: string;
-  effective_to: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
   rates: FreightRate[];
-  created_at: string;
-  updated_at: string;
+  entries?: FreightTableEntry[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FreightRate {
   id: string;
-  freight_table_id: string;
-  weight_min: number | null;
-  weight_max: number | null;
-  cubage_min: number | null;
-  cubage_max: number | null;
-  distance_min: number | null;
-  distance_max: number | null;
+  freightTableId: string;
+  weightMin: number | null;
+  weightMax: number | null;
+  cubageMin: number | null;
+  cubageMax: number | null;
+  distanceMin: number | null;
+  distanceMax: number | null;
   modal: FreightModal;
-  uf_origin: string | null;
-  uf_dest: string | null;
-  rate_per_kg: number | null;
-  rate_per_m3: number | null;
-  rate_per_km: number | null;
-  minimum_value: number | null;
+  ufOrigin: string | null;
+  ufDest: string | null;
+  ratePerKg: number | null;
+  ratePerM3: number | null;
+  ratePerKm: number | null;
+  minimumValue: number | null;
 }
 
-export interface FreightRateInput extends Omit<FreightRate, 'id' | 'freight_table_id'> {}
+export interface FreightRateInput extends Omit<FreightRate, 'id' | 'freightTableId'> {}
 
 export interface CreateFreightTableData {
-  contract_id: string;
+  contractId: string;
   version?: number;
   status: FreightTableStatus;
-  effective_from: string;
-  effective_to: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
   rates: FreightRateInput[];
+  entries?: FreightTableEntry[];
 }
 
 export interface UpdateFreightTableData {
   status?: FreightTableStatus;
-  effective_from?: string;
-  effective_to?: string | null;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
   rates?: FreightRateInput[];
+  entries?: FreightTableEntry[];
 }
 
 export interface FreightTableListParams {
-  contract_id: string;
+  contractId: string;
+}
+
+export interface FreightTableCreateRequest {
+  contractId: string;
+  version?: number;
+  status: FreightTableStatus;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  rates: FreightRateInput[];
+  entries?: FreightTableEntry[];
+}
+
+export interface FreightTableUpdateRequest {
+  status?: FreightTableStatus;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  rates?: FreightRateInput[];
+  entries?: FreightTableEntry[];
+}
+
+export interface FreightTableActivateRequest {
+  status: 'ACTIVE';
+}
+
+export interface FreightTableVersionResponse {
+  id: string;
+  contractId: string;
+  version: number;
+  status: FreightTableStatus;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SimpleSelectOption {
@@ -128,12 +202,27 @@ export const CONTRACT_STATUSES: { value: ContractStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'EXPIRED', label: 'Expirado' },
   { value: 'PENDING', label: 'Pendente' },
+  { value: 'DRAFT', label: 'Rascunho' },
+  { value: 'CANCELLED', label: 'Cancelado' },
 ];
 
 export const FREIGHT_TABLE_STATUSES: { value: FreightTableStatus; label: string }[] = [
   { value: 'DRAFT', label: 'Rascunho' },
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'ARCHIVED', label: 'Arquivado' },
+];
+
+export const FREIGHT_TYPES: { value: FreightType; label: string }[] = [
+  { value: 'NORMAL', label: 'Normal' },
+  { value: 'EXPRESS', label: 'Expresso' },
+  { value: 'FRACIONADO', label: 'Fracionado' },
+  { value: 'CARGA_FECHADA', label: 'Carga Fechada' },
+];
+
+export const FREIGHT_VALUE_TYPES: { value: FreightValueType; label: string }[] = [
+  { value: 'FIXED', label: 'Fixo' },
+  { value: 'PER_KG', label: 'Por kg' },
+  { value: 'PER_VOLUME', label: 'Por volume' },
 ];
 
 export const BRAZILIAN_STATES = [

@@ -112,7 +112,7 @@ export function MainLayout() {
               <Avatar
                 src={user?.avatarUrl}
                 alt={user?.fullName || 'Usuário'}
-                fallback={user?.fullName}
+                fallback="AD"
                 size="md"
               />
               <div className="flex-1 min-w-0">
@@ -163,7 +163,7 @@ export function MainLayout() {
                 aria-label="Notificações"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-danger-500" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
               </button>
 
               {/* User menu */}
@@ -176,10 +176,10 @@ export function MainLayout() {
                     <Avatar
                       src={user?.avatarUrl}
                       alt={user?.fullName || 'Usuário'}
-                      fallback={user?.fullName}
+                      fallback="AD"
                       size="sm"
                     />
-                    <span className="hidden sm:block text-sm font-medium text-secondary-700">
+                    <span className="hidden sm:block text-sm font-medium text-secondary-700 truncate max-w-[150px]">
                       {user?.fullName}
                     </span>
                     <ChevronDown className="h-4 w-4 text-secondary-500 hidden sm:block" />
@@ -189,7 +189,7 @@ export function MainLayout() {
                   <DropdownMenuLabel className="font-normal text-secondary-900">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{user?.fullName}</span>
-                      <span className="text-xs text-secondary-500">{user?.email}</span>
+                      <span className="text-xs text-secondary-500 truncate">{user?.email}</span>
                       <Badge variant="secondary" className="mt-1 w-fit">{user?.role}</Badge>
                     </div>
                   </DropdownMenuLabel>
@@ -215,7 +215,7 @@ export function MainLayout() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => logout()}
-                    className="text-danger-600 focus:text-danger-600"
+                    className="text-rose-600 focus:text-rose-600"
                     inset
                   >
                     <LogOut className="h-4 w-4" />

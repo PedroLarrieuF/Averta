@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { formatNumber, formatPercent, cn } from '../../utils/helpers'
+import { formatNumber, formatPercent } from '../../utils/helpers'
 import { Download, TrendingUp, AlertCircle, Shield } from 'lucide-react'
-import { Button, Card, CardHeader, CardBody, Badge, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, KPICard, KPIValue, KPILabel, KPITrend } from '../../components'
+import { Button, Card, CardHeader, CardBody, Badge, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, KPICard } from '../../components'
 
 interface UsageMetrics {
   total_requests: number
@@ -132,30 +132,46 @@ export function DeveloperAnalytics() {
 
       {/* KPI Cards */}
       <div className="grid-kpi">
-        <KPICard>
-          <KPILabel>Total de Requisições</KPILabel>
-          <KPIValue>{formatNumber(mockMetrics.total_requests)}</KPIValue>
-          <KPITrend trend="up">+12.5% vs período anterior</KPITrend>
-        </KPICard>
-        <KPICard>
-          <KPILabel>Taxa de Sucesso</KPILabel>
-          <KPIValue>{formatPercent(1 - mockMetrics.error_rate)}</KPIValue>
-          <KPITrend trend="down">-0.3% vs período anterior</KPITrend>
-        </KPICard>
-        <KPICard>
-          <KPILabel>Latência Média</KPILabel>
-          <KPIValue>{`${mockMetrics.avg_latency_ms}ms`}</KPIValue>
-          <KPITrend trend="down">+5.2% vs período anterior</KPITrend>
-        </KPICard>
-        <KPICard>
-          <KPILabel>P95 Latência</KPILabel>
-          <KPIValue>{`${mockMetrics.p95_latency_ms}ms`}</KPIValue>
-          <KPITrend trend="down">+8.1% vs período anterior</KPITrend>
-        </KPICard>
+        <KPICard
+          title="Total de Requisições"
+          value={formatNumber(mockMetrics.total_requests)}
+          trend="+12.5% vs período anterior"
+          trendUp={true}
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBgClass="bg-primary-50"
+          iconColorClass="text-primary-600"
+        />
+        <KPICard
+          title="Taxa de Sucesso"
+          value={formatPercent(1 - mockMetrics.error_rate)}
+          trend="-0.3% vs período anterior"
+          trendUp={false}
+          icon={<Shield className="h-5 w-5" />}
+          iconBgClass="bg-emerald-50"
+          iconColorClass="text-emerald-600"
+        />
+        <KPICard
+          title="Latência Média"
+          value={`${mockMetrics.avg_latency_ms}ms`}
+          trend="+5.2% vs período anterior"
+          trendUp={false}
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBgClass="bg-warning-50"
+          iconColorClass="text-warning-600"
+        />
+        <KPICard
+          title="P95 Latência"
+          value={`${mockMetrics.p95_latency_ms}ms`}
+          trend="+8.1% vs período anterior"
+          trendUp={false}
+          icon={<AlertCircle className="h-5 w-5" />}
+          iconBgClass="bg-rose-50"
+          iconColorClass="text-rose-600"
+        />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Requests Volume Chart */}
         <Card>
           <CardHeader>Volume de Requisições</CardHeader>
@@ -174,7 +190,7 @@ export function DeveloperAnalytics() {
       </div>
 
       {/* Error Rate & Status Codes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Error Rate Chart */}
         <Card>
           <CardHeader>Taxa de Erro</CardHeader>
@@ -218,7 +234,7 @@ export function DeveloperAnalytics() {
                       </Badge>
                     </td>
                     <td className="text-right font-mono">{formatNumber(ep.requests)}</td>
-                    <td className="text-right font-mono text-danger-600">{formatNumber(ep.errors)}</td>
+                    <td className="text-right font-mono text-rose-600">{formatNumber(ep.errors)}</td>
                     <td className="text-right">
                       <Badge variant={ep.errors / ep.requests > 0.05 ? 'danger' : 'success'}>
                         {formatPercent(ep.errors / ep.requests)}
@@ -441,13 +457,13 @@ function HealthIndicator({ label, value, icon: Icon, variant, description }: {
   description: string
 }) {
   const variantStyles = {
-    success: 'bg-success-50 border-success-200 text-success-700',
+    success: 'bg-emerald-50 border-emerald-200 text-emerald-700',
     warning: 'bg-warning-50 border-warning-200 text-warning-700',
-    danger: 'bg-danger-50 border-danger-200 text-danger-700',
+    danger: 'bg-rose-50 border-rose-200 text-rose-700',
   }
 
   return (
-    <Card className={cn('p-4', variantStyles[variant])}>
+    <Card className={`${variantStyles[variant]} p-4 border`}>
       <div className="flex items-center gap-3">
         <Icon className="h-6 w-6" />
         <div>

@@ -28,6 +28,8 @@ export function DiscrepanciesPage() {
   const [filters, setFilters] = useState<Record<string, unknown>>(getInitialFilters)
   const [selectedDiscrepancy, setSelectedDiscrepancy] = useState<Discrepancy | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string | undefined>()
+  const [activeSeverityFilter, setActiveSeverityFilter] = useState<string | undefined>()
 
   // Sync filters with URL
   const updateFilters = useCallback((newFilters: Record<string, unknown>) => {
@@ -44,6 +46,8 @@ export function DiscrepanciesPage() {
   const clearFilters = useCallback(() => {
     const newFilters = { page: 1, size: 20 }
     updateFilters(newFilters)
+    setActiveStatusFilter(undefined)
+    setActiveSeverityFilter(undefined)
   }, [updateFilters])
 
   const hasActiveFilters = useCallback(() => {
@@ -108,30 +112,52 @@ export function DiscrepanciesPage() {
     navigate(`/contests/create?discrepancyIds=${ids.join(',')}`)
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <PageHeader>
-        <div>
-          <PageTitle>Discrepâncias</PageTitle>
-          <PageSubtitle>Gerencie e analise discrepâncias encontradas nas auditorias</PageSubtitle>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" className="hidden sm:flex">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-          </Button>
-          <Button variant="primary" className="hidden sm:flex">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
-      </PageHeader>
+  const handleStatusFilterChange = (status: string | undefined) => {
+    setActiveStatusFilter(status)
+    updateFilters({ ...filters, status, page: 1 })
+  }
 
-      {/* Summary Cards */}
+  const handleSeverityFilterChange = (severity: string | undefined) => {
+    setActiveSeverityFilter(severity)
+    updateFilters({ ...filters, severity, page: 1 })
+  }
+
+  return (
+    <div className="space-y-6 animate-in">
+      {/* Page Header */}
+      <div className="space-y-4">
+        <nav className="breadcrumb" aria-label="Navegação">
+          <span className="breadcrumb-item text-secondary-500">AvertaSaaS</span>
+          <span className="breadcrumb-separator" aria-hidden="true">/</span>
+          <span className="breadcrumb-item font-medium text-secondary-900">Discrepâncias</span>
+        </nav>
+
+        <PageHeader>
+          <div>
+            <PageTitle>Discrepâncias</PageTitle>
+            <PageSubtitle>Gerencie e analise discrepâncias encontradas nas auditorias</PageSubtitle>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" className="hidden sm:flex">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+            <Button variant="primary" className="hidden sm:flex">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
+        </PageHeader>
+      </div>
+
+      {/* Summary Cards with new layout */}
       <DiscrepancySummaryCards
         summary={summaryData ?? null}
         isLoading={isLoadingSummary}
+        activeStatusFilter={activeStatusFilter}
+        activeSeverityFilter={activeSeverityFilter}
+        onStatusFilterChange={handleStatusFilterChange}
+        onSeverityFilterChange={handleSeverityFilterChange}
       />
 
       {/* Filters */}

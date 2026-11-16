@@ -1,0 +1,1269 @@
+# Configurações Principais da Automação de Leads Averta
+
+# ============================================
+# CONFIGURAÇÕES GERAIS
+# ============================================
+general:
+  project_name: "Averta Lead Generation"
+  version: "1.0.0"
+  timezone: "America/Sao_Paulo"
+  language: "pt-BR"
+
+  # Modo de execução
+  mode: "full"  # full | generate-queries | scrape | qualify-export | continuous
+
+  # Execução contínua
+  continuous:
+    enabled: false
+    interval_hours: 24
+    max_runs_per_day: 1
+
+  # Diretórios
+  paths:
+    data_dir: "data"
+    queries_dir: "queries/generated"
+    output_dir: "output"
+    logs_dir: "logs"
+    cache_dir: "data/cache"
+    master_db: "data/master.db"
+
+# ============================================
+# CONFIGURAÇÕES DO SCRAPER (google-maps-scraper)
+# ============================================
+scraper:
+  # Modo de execução do scraper
+  execution_mode: "binary"  # binary | rest-api | docker
+
+  # Caminho do binário (se execution_mode: binary)
+  binary_path: "./google-maps-scraper"  # Será resolvido automaticamente
+
+  # REST API (se execution_mode: rest-api)
+  rest_api:
+    base_url: "http://localhost:8080"
+    timeout_seconds: 300
+
+  # Docker (se execution_mode: docker)
+  docker:
+    image: "gosom/google-maps-scraper:latest"
+    volumes:
+      - "./data/cache:/opt"
+      - "./queries/generated:/queries:ro"
+      - "./output:/out"
+
+  # Parâmetros de scraping
+  params:
+    depth: 2                    # Profundidade de scroll (1-3)
+    concurrency: 4              # Jobs paralelos (CPU/2 recomendado)
+    fast_mode: false            # Modo rápido (≤21 resultados/query)
+    extract_emails: true        # Extrair emails dos sites
+    extra_reviews: false        # Reviews extras (requer JSON)
+    exit_on_inactivity: "5m"    # Timeout de inatividade
+    grid_cell_km: 10            # Tamanho da célula do grid (km)
+    proxies: []                 # Lista de proxies (opcional)
+    user_agent: ""              # User agent customizado (opcional)
+
+  # Limites
+  limits:
+    max_results_per_query: 500
+    max_queries_per_run: 200
+    max_total_results: 50000
+    rate_limit_per_minute: 30
+
+  # Output do scraper
+  output_format: "json"  # json | csv
+
+# ============================================
+# CONFIGURAÇÕES DE QUALIFICAÇÃO (ICP)
+# ============================================
+qualification:
+  # Pesos do scoring (devem somar 1.0)
+  weights:
+    operational_fit: 0.40    # Fit Operacional
+    commercial_fit: 0.35     # Fit Comercial
+    data_confidence: 0.25    # Confiança dos Dados
+
+  # Thresholds de classificação
+  thresholds:
+    A_min: 85   # Excelente
+    B_min: 70   # Qualificado
+    C_min: 50   # Precisa enriquecimento
+    # D: < 50
+
+  # Critérios de Fit Operacional (40%)
+  operational_fit:
+    keywords_embarcadora:
+      weight: 0.30
+      terms:
+        - "transportadora"
+        - "fretes"
+        - "logística"
+        - "distribuição"
+        - "expedição"
+        - "embarcador"
+        - "carga"
+        - "entrega"
+        - "coleta"
+        - "roteirização"
+    keywords_volume:
+      weight: 0.25
+      terms:
+        - "frota"
+        - "veículos"
+        - "caminhões"
+        - "carretas"
+        - "volume"
+        - "toneladas"
+        - "paletes"
+        - "containers"
+    keywords_estrutura:
+      weight: 0.25
+      terms:
+        - "filial"
+        - "centro de distribuição"
+        - "cd "
+        - "armazém"
+        - "depósito"
+        - "cross docking"
+        - "última milha"
+    keywords_recorrencia:
+      weight: 0.20
+      terms:
+        - "regular"
+        - "diário"
+        - "semanal"
+        - "mensal"
+        - "contrato"
+        - "terceiriz"
+
+  # Critérios de Fit Comercial (35%)
+  commercial_fit:
+    porte_keywords:
+      weight: 0.30
+      grande:
+        - "s.a."
+        - "s/a"
+        - "ltda grande"
+        - "grupo"
+        - "holding"
+        - "conglomerado"
+      medio:
+        - "ltda"
+        - "me "
+        - "eireli"
+        - "industrial"
+        - "comercial"
+      pequeno:
+        - "mei"
+        - "micro"
+        - "pequeno"
+    estrutura_keywords:
+      weight: 0.25
+      terms:
+        - "matriz"
+        - "sede"
+        - "corporativo"
+        - "administrativo"
+        - "financeiro"
+        - "compras"
+        - "suprimentos"
+    decisores_keywords:
+      weight: 0.25
+      terms:
+        - "diretor"
+        - "gerente"
+        - "coordenador"
+        - "supervisor"
+        - "logística"
+        - "transportes"
+        - "supply chain"
+        - "operations"
+    canais_institucionais:
+      weight: 0.20
+      terms:
+        - "site"
+        - "linkedin"
+        - "institucional"
+        - "contato"
+        - "fale conosco"
+
+  # Critérios de Confiança dos Dados (25%)
+  data_confidence:
+    site_verificado:
+      weight: 0.35
+    telefone_verificado:
+      weight: 0.25
+    segmento_confirmado:
+      weight: 0.20
+    linkedin_verificavel:
+      weight: 0.10
+    fontes_registradas:
+      weight: 0.10
+
+# ============================================
+# COBERTURA NACIONAL - ESTADOS E CIDADES
+# ============================================
+coverage:
+  # Estratégia de cobertura
+  strategy: "comprehensive"  # comprehensive | focused | custom
+
+  # Prioridade por região (1=alta, 2=media, 3=baixa)
+  region_priority:
+    sudeste: 1
+    sul: 1
+    nordeste: 2
+    centro_oeste: 2
+    norte: 3
+
+  # Estados com cidades prioritárias
+  states:
+    SP:
+      priority: 1
+      cities:
+        - "São Paulo"
+        - "Campinas"
+        - "Ribeirão Preto"
+        - "São José dos Campos"
+        - "Sorocaba"
+        - "Santos"
+        - "Jundiaí"
+        - "Piracicaba"
+        - "Bauru"
+        - "São José do Rio Preto"
+        - "Presidente Prudente"
+        - "Araraquara"
+        - "Americana"
+        - "Sumaré"
+        - "Indaiatuba"
+        - "Vinhedo"
+        - "Valinhos"
+        - "Hortolândia"
+        - "Paulínia"
+        - "Atibaia"
+        - "Bragança Paulista"
+        - "Franca"
+        - "Marília"
+        - "Assis"
+        - "Ourinhos"
+        - "Tupã"
+        - "Adamantina"
+        - "Osvaldo Cruz"
+        - "Presidente Venceslau"
+        - "Dracena"
+      industrial_poles:
+        - "ABC Paulista"
+        - "Vale do Paraíba"
+        - "Campinas"
+        - "Ribeirão Preto"
+        - "São José dos Campos"
+        - "Sorocaba"
+        - "Jundiaí"
+
+    RJ:
+      priority: 1
+      cities:
+        - "Rio de Janeiro"
+        - "Niterói"
+        - "Duque de Caxias"
+        - "Nova Iguaçu"
+        - "São Gonçalo"
+        - "Petrópolis"
+        - "Volta Redonda"
+        - "Campos dos Goytacazes"
+        - "Macaé"
+        - "Resende"
+        - "Barra Mansa"
+        - "Angra dos Reis"
+        - "Cabo Frio"
+        - "Macaé"
+      industrial_poles:
+        - "Região Metropolitana RJ"
+        - "Sul Fluminense"
+        - "Norte Fluminense"
+
+    MG:
+      priority: 1
+      cities:
+        - "Belo Horizonte"
+        - "Contagem"
+        - "Betim"
+        - "Uberlândia"
+        - "Juiz de Fora"
+        - "Montes Claros"
+        - "Ribeirão das Neves"
+        - "Uberaba"
+        - "Governador Valadares"
+        - "Ipatinga"
+        - "Divinópolis"
+        - "Sete Lagoas"
+        - "Poços de Caldas"
+        - "Patos de Minas"
+        - "Teófilo Otoni"
+        - "Varginha"
+      industrial_poles:
+        - "Grande BH"
+        - "Triângulo Mineiro"
+        - "Vale do Aço"
+        - "Zona da Mata"
+
+    RS:
+      priority: 1
+      cities:
+        - "Porto Alegre"
+        - "Caxias do Sul"
+        - "Pelotas"
+        - "Canoas"
+        - "Santa Maria"
+        - "Gravataí"
+        - "Viamão"
+        - "Novo Hamburgo"
+        - "São Leopoldo"
+        - "Rio Grande"
+        - "Alvorada"
+        - "Passo Fundo"
+        - "Sapucaia do Sul"
+        - "Uruguaiana"
+        - "Santa Cruz do Sul"
+      industrial_poles:
+        - "Grande Porto Alegre"
+        - "Serra Gaúcha"
+        - "Sul do RS"
+        - "Fronteira Oeste"
+
+    PR:
+      priority: 1
+      cities:
+        - "Curitiba"
+        - "Londrina"
+        - "Maringá"
+        - "Ponta Grossa"
+        - "Cascavel"
+        - "Foz do Iguaçu"
+        - "São José dos Pinhais"
+        - "Colombo"
+        - "Guarapuava"
+        - "Paranaguá"
+        - "Araucária"
+        - "Toledo"
+        - "Umuarama"
+        - "Piraquara"
+        - "Almirante Tamandaré"
+      industrial_poles:
+        - "Grande Curitiba"
+        - "Norte Pioneiro"
+        - "Oeste do Paraná"
+        - "Campos Gerais"
+
+    SC:
+      priority: 1
+      cities:
+        - "Florianópolis"
+        - "Joinville"
+        - "Blumenau"
+        - "São José"
+        - "Chapecó"
+        - "Itajaí"
+        - "Criciúma"
+        - "Jaraguá do Sul"
+        - "Lages"
+        - "Palhoça"
+        - "Balneário Camboriú"
+        - "Brusque"
+        - "Tubarão"
+        - "São Bento do Sul"
+        - "Concórdia"
+      industrial_poles:
+        - "Grande Florianópolis"
+        - "Vale do Itajaí"
+        - "Norte de SC"
+        - "Sul de SC"
+
+    BA:
+      priority: 2
+      cities:
+        - "Salvador"
+        - "Feira de Santana"
+        - "Vitória da Conquista"
+        - "Camaçari"
+        - "Itabuna"
+        - "Juazeiro"
+        - "Lauro de Freitas"
+        - "Ilhéus"
+        - "Jequié"
+        - "Teixeira de Freitas"
+        - "Alagoinhas"
+        - "Barreiras"
+        - "Porto Seguro"
+        - "Simões Filho"
+        - "Paulo Afonso"
+      industrial_poles:
+        - "Região Metropolitana Salvador"
+        - "Polo Industrial Camaçari"
+        - "Sudoeste Baiano"
+        - "Norte da Bahia"
+
+    PE:
+      priority: 2
+      cities:
+        - "Recife"
+        - "Jaboatão dos Guararapes"
+        - "Olinda"
+        - "Caruaru"
+        - "Petrolina"
+        - "Paulista"
+        - "Cabo de Santo Agostinho"
+        - "Garanhuns"
+        - "Abreu e Lima"
+        - "Ipojuca"
+        - "Escada"
+        - "Vitória de Santo Antão"
+        - "Goiana"
+        - "Moreno"
+        - "São Lourenço da Mata"
+      industrial_poles:
+        - "Grande Recife"
+        - "Agreste"
+        - "Sertão"
+        - "Zona da Mata Norte"
+
+    CE:
+      priority: 2
+      cities:
+        - "Fortaleza"
+        - "Caucaia"
+        - "Juazeiro do Norte"
+        - "Maracanaú"
+        - "Sobral"
+        - "Crato"
+        - "Itapipoca"
+        - "Maranguape"
+        - "Iguatu"
+        - "Quixadá"
+        - "Canindé"
+        - "Aracati"
+        - "Pacajus"
+        - "Horizonte"
+        - "Eusébio"
+      industrial_poles:
+        - "Grande Fortaleza"
+        - "Cariri"
+        - "Norte do Ceará"
+        - "Litoral Leste"
+
+    GO:
+      priority: 2
+      cities:
+        - "Goiânia"
+        - "Aparecida de Goiânia"
+        - "Anápolis"
+        - "Rio Verde"
+        - "Águas Lindas"
+        - "Valparaíso de Goiás"
+        - "Trindade"
+        - "Formosa"
+        - "Novo Gama"
+        - "Luziânia"
+        - "Itumbiara"
+        - "Catalão"
+        - "Jataí"
+        - "Goianésia"
+        - "Mineiros"
+      industrial_poles:
+        - "Grande Goiânia"
+        - "Anápolis"
+        - "Sudoeste Goiano"
+        - "Entorno do DF"
+
+    DF:
+      priority: 2
+      cities:
+        - "Brasília"
+        - "Ceilândia"
+        - "Taguatinga"
+        - "Samambaia"
+        - "Planaltina"
+        - "Gama"
+        - "Sobradinho"
+        - "Santa Maria"
+        - "Recanto das Emas"
+        - "Riacho Fundo"
+      industrial_poles:
+        - "Plano Piloto"
+        - "Cidades Satélites"
+        - "Polo Industrial Santa Maria"
+
+    ES:
+      priority: 2
+      cities:
+        - "Vitória"
+        - "Vila Velha"
+        - "Cariacica"
+        - "Serra"
+        - "Cachoeiro de Itapemirim"
+        - "Linhares"
+        - "São Mateus"
+        - "Colatina"
+        - "Guarapari"
+        - "Aracruz"
+        - "Venda Nova do Imigrante"
+        - "Ibatiba"
+        - "Iconha"
+        - "Itapemirim"
+        - "Piúma"
+      industrial_poles:
+        - "Grande Vitória"
+        - "Sul do ES"
+        - "Norte do ES"
+        - "Região Serrana"
+
+    # Demais estados com prioridade 2-3
+    AM:
+      priority: 3
+      cities:
+        - "Manaus"
+        - "Parintins"
+        - "Manacapuru"
+        - "Itacoatiara"
+        - "Coari"
+        - "Tefé"
+      industrial_poles:
+        - "Polo Industrial Manaus"
+        - "Interior do AM"
+
+    PA:
+      priority: 3
+      cities:
+        - "Belém"
+        - "Ananindeua"
+        - "Santarém"
+        - "Marabá"
+        - "Parauapebas"
+        - "Castanhal"
+        - "Abaetetuba"
+        - "Cametá"
+        - "Bragança"
+        - "Tucuruí"
+      industrial_poles:
+        - "Grande Belém"
+        - "Sudeste do Pará"
+        - "Baixo Amazonas"
+
+    # Estados restantes (configuração simplificada)
+    MT:
+      priority: 2
+      cities:
+        - "Cuiabá"
+        - "Várzea Grande"
+        - "Rondonópolis"
+        - "Sinop"
+        - "Tangará da Serra"
+        - "Cáceres"
+      industrial_poles:
+        - "Grande Cuiabá"
+        - "Sudeste MT"
+        - "Norte MT"
+
+    MS:
+      priority: 2
+      cities:
+        - "Campo Grande"
+        - "Dourados"
+        - "Três Lagoas"
+        - "Corumbá"
+        - "Ponta Porã"
+        - "Naviraí"
+      industrial_poles:
+        - "Grande Campo Grande"
+        - "Leste MS"
+        - "Pantanal"
+
+    RO:
+      priority: 3
+      cities:
+        - "Porto Velho"
+        - "Ji-Paraná"
+        - "Ariquemes"
+        - "Vilhena"
+        - "Cacoal"
+        - "Rolim de Moura"
+      industrial_poles:
+        - "Grande Porto Velho"
+        - "Vale do Jamari"
+        - "Cone Sul"
+
+    AC:
+      priority: 3
+      cities:
+        - "Rio Branco"
+        - "Cruzeiro do Sul"
+        - "Sena Madureira"
+        - "Tarauacá"
+        - "Feijó"
+      industrial_poles:
+        - "Vale do Acre"
+        - "Juruá"
+
+    RR:
+      priority: 3
+      cities:
+        - "Boa Vista"
+        - "Rorainópolis"
+        - "Caracaraí"
+      industrial_poles:
+        - "Grande Boa Vista"
+
+    AP:
+      priority: 3
+      cities:
+        - "Macapá"
+        - "Santana"
+        - "Laranjal do Jari"
+      industrial_poles:
+        - "Grande Macapá"
+
+    TO:
+      priority: 3
+      cities:
+        - "Palmas"
+        - "Araguaína"
+        - "Gurupi"
+        - "Porto Nacional"
+        - "Paraíso do Tocantins"
+      industrial_poles:
+        - "Grande Palmas"
+        - "Norte TO"
+        - "Sul TO"
+
+    MA:
+      priority: 3
+      cities:
+        - "São Luís"
+        - "Imperatriz"
+        - "São José de Ribamar"
+        - "Timon"
+        - "Caxias"
+        - "Codó"
+        - "Paço do Lumiar"
+        - "Açailândia"
+        - "Bacabal"
+        - "Balsas"
+      industrial_poles:
+        - "Grande São Luís"
+        - "Sudoeste MA"
+        - "Centro MA"
+
+    PI:
+      priority: 3
+      cities:
+        - "Teresina"
+        - "Parnaíba"
+        - "Picos"
+        - "Piripiri"
+        - "Floriano"
+        - "Campo Maior"
+      industrial_poles:
+        - "Grande Teresina"
+        - "Norte PI"
+        - "Sul PI"
+
+    RN:
+      priority: 3
+      cities:
+        - "Natal"
+        - "Mossoró"
+        - "Parnamirim"
+        - "Assu"
+        - "Caicó"
+        - "Currais Novos"
+      industrial_poles:
+        - "Grande Natal"
+        - "Oeste RN"
+        - "Seridó"
+
+    PB:
+      priority: 3
+      cities:
+        - "João Pessoa"
+        - "Campina Grande"
+        - "Santa Rita"
+        - "Patos"
+        - "Bayeux"
+        - "Sousa"
+        - "Cajazeiras"
+        - "Guarabira"
+        - "Mamanguape"
+        - "Queimadas"
+      industrial_poles:
+        - "Grande João Pessoa"
+        - "Agreste PB"
+        - "Sertão PB"
+
+    AL:
+      priority: 3
+      cities:
+        - "Maceió"
+        - "Arapiraca"
+        - "Rio Largo"
+        - "Palmeira dos Índios"
+        - "União dos Palmares"
+        - "Penedo"
+      industrial_poles:
+        - "Grande Maceió"
+        - "Agreste AL"
+        - "Sertão AL"
+
+    SE:
+      priority: 3
+      cities:
+        - "Aracaju"
+        - "Nossa Senhora do Socorro"
+        - "Lagarto"
+        - "Itabaiana"
+        - "São Cristóvão"
+        - "Estância"
+      industrial_poles:
+        - "Grande Aracaju"
+        - "Agreste SE"
+        - "Sertão SE"
+
+# ============================================
+# CONFIGURAÇÕES DE EXPORT
+# ============================================
+export:
+  # Formato de saída
+  format: "xlsx"  # xlsx | csv | both
+
+  # Arquivos de saída
+  files:
+    leads_ab: "output/leads_A_B.xlsx"
+    leads_c: "output/leads_C.xlsx"
+    daily_report: "output/reports/daily_{date}.xlsx"
+    whatsapp_ready: "output/whatsapp_ready/leads_whatsapp_{date}.xlsx"
+    coverage_report: "output/reports/coverage_{date}.xlsx"
+    decision_makers_report: "output/reports/decision_makers_{date}.xlsx"
+
+  # Colunas para leads A/B (consolidado)
+  leads_ab_columns:
+    - "id"
+    - "classification"  # A ou B
+    - "score"
+    - "company_name"
+    - "trade_name"
+    - "segment"
+    - "address"
+    - "city"
+    - "state"
+    - "postal_code"
+    - "phone"
+    - "phone_verified"
+    - "whatsapp"
+    - "whatsapp_verified"
+    - "email"
+    - "email_verified"
+    - "website"
+    - "website_verified"
+    - "linkedin"
+    - "linkedin_verified"
+    - "rating"
+    - "reviews_count"
+    - "latitude"
+    - "longitude"
+    - "operational_fit_score"
+    - "commercial_fit_score"
+    - "data_confidence_score"
+    - "decision_makers"  # JSON string
+    - "institutional_contacts"  # JSON string
+    - "source_query"
+    - "scraped_at"
+    - "qualified_at"
+    - "notes"
+
+  # Colunas para leads C (enriquecimento)
+  leads_c_columns:
+    - "id"
+    - "score"
+    - "company_name"
+    - "trade_name"
+    - "segment"
+    - "address"
+    - "city"
+    - "state"
+    - "phone"
+    - "email"
+    - "website"
+    - "linkedin"
+    - "missing_fields"  # JSON string
+    - "source_query"
+    - "scraped_at"
+    - "enrichment_priority"  # high | medium | low
+    - "notes"
+
+  # Colunas para WhatsApp ready
+  whatsapp_columns:
+    - "id"
+    - "company_name"
+    - "contact_name"
+    - "contact_role"
+    - "phone"
+    - "whatsapp"
+    - "email"
+    - "segment"
+    - "city"
+    - "state"
+    - "score"
+    - "template_suggested"  # template de mensagem sugerido
+    - "opt_in_status"  # unknown | opted_in | opted_out
+    - "last_contact_at"
+    - "notes"
+
+# ============================================
+# CONFIGURAÇÕES DE LOGGING
+# ============================================
+logging:
+  level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
+  rotation: "10 MB"
+  retention: "30 days"
+  compression: "zip"
+  file: "logs/automation.log"
+  console: true
+
+# ============================================
+# CONFIGURAÇÕES DE PERFORMANCE
+# ============================================
+performance:
+  # Batch sizes
+  batch_size_queries: 50
+  batch_size_scrape: 100
+  batch_size_qualify: 500
+  batch_size_export: 1000
+
+  # Paralelismo
+  max_workers_scraper: 4
+  max_workers_qualification: 8
+  max_workers_enrichment: 4
+
+  # Timeouts
+  scraper_timeout_seconds: 300
+  enrichment_timeout_seconds: 60
+  api_timeout_seconds: 30
+
+  # Retry
+  max_retries: 3
+  retry_delay_seconds: 5
+  retry_backoff_factor: 2
+
+# ============================================
+# CONFIGURAÇÕES WHATSAPP BUSINESS
+# ============================================
+whatsapp:
+  # Habilitar integração WhatsApp
+  enabled: false  # Habilitar quando credenciais estiverem configuradas
+
+  # Provedor principal
+  provider: "cloud_api"  # cloud_api | web_automation | on_premise
+
+  # Meta WhatsApp Business Cloud API
+  cloud_api:
+    api_version: "v18.0"
+    business_account_id: ""  # ID da conta de negócios Meta
+    phone_number_id: ""      # ID do número de telefone WhatsApp
+    access_token: ""         # Token de acesso permanente (System User)
+    webhook_verify_token: "" # Token para verificação do webhook
+    app_secret: ""           # App Secret (para validar assinaturas webhook)
+
+  # On-Premise WhatsApp Business API (opcional)
+  on_premise:
+    base_url: "https://your-whatsapp-api.com"
+    username: ""
+    password: ""
+
+  # Web Automation (fallback via Playwright)
+  web_automation:
+    headless: true
+    session_file: "whatsapp_session.json"
+    qr_timeout_seconds: 120
+    login_timeout_seconds: 180
+    message_delay_seconds: 2
+    use_persistent_context: true
+
+  # Templates aprovados no Meta
+  templates:
+    - name: "initial_contact"
+      language: "pt_BR"
+      category: "MARKETING"
+      header_text: "Oportunidade para {{company_name}}"
+      body_text: "Olá {{contact_name}}! Tudo bem?\n\nSou da {{our_company}} e vi que a {{company_name}} atua em {{segment}} na região de {{city}}/{{state}}.\n\nAjudamos empresas do seu segmento a {{value_prop_1}}.\n\n{{case_study}}.\n\nGostaria de apresentar como podemos ajudar a {{company_name}}? Tenho um case muito relevante para compartilhar.\n\nDisponível para uma conversa rápida de 15 min?"
+      buttons:
+        - type: "QUICK_REPLY"
+          title: "Sim, agendar"
+          payload: "schedule_meeting"
+        - type: "QUICK_REPLY"
+          title: "Enviar material"
+          payload: "send_material"
+        - type: "QUICK_REPLY"
+          title: "Não tenho interesse"
+          payload: "not_interested"
+
+    - name: "follow_up_1"
+      language: "pt_BR"
+      category: "UTILITY"
+      header_text: "Seguimento: {{our_company}} x {{company_name}}"
+      body_text: "Oi {{contact_name}}, passando para dar seguimento à minha mensagem anterior.\n\nEntendo que o dia a dia é corrido, mas queria reforçar que a {{our_company}} já ajudou {{competitor_reference}} a {{value_prop_2}}.\n\nSe agora não for o momento, sem problemas! Me avisa quando fizer sentido conversarmos."
+      buttons:
+        - type: "QUICK_REPLY"
+          title: "Agendar para depois"
+          payload: "schedule_later"
+        - type: "QUICK_REPLY"
+          title: "Me liga"
+          payload: "call_me"
+        - type: "QUICK_REPLY"
+          title: "Não tenho interesse"
+          payload: "not_interested"
+
+    - name: "follow_up_2"
+      language: "pt_BR"
+      category: "UTILITY"
+      header_text: "Case de sucesso: {{segment}}"
+      body_text: "{{contact_name}}, compartilhando um case rápido:\n\n{{case_study}}.\n\nFoi implementado em 30 dias e o ROI apareceu no primeiro mês.\n\nSe quiser, te envio o case completo por aqui mesmo ou marcamos 15 min para eu explicar os detalhes.\n\nO que prefere?"
+      buttons:
+        - type: "QUICK_REPLY"
+          title: "Enviar case"
+          payload: "send_case"
+        - type: "QUICK_REPLY"
+          title: "Marcar 15 min"
+          payload: "schedule_15min"
+        - type: "QUICK_REPLY"
+          title: "Não tenho interesse"
+          payload: "not_interested"
+
+    - name: "value_proposition"
+      language: "pt_BR"
+      category: "MARKETING"
+      header_text: "Como a {{our_company}} ajuda {{segment}}"
+      body_text: "Oi {{contact_name}}!\n\nResumindo o que a {{our_company}} entrega para empresas como a {{company_name}}:\n\n✅ {{value_prop_1}}\n✅ {{value_prop_2}}\n✅ {{value_prop_3}}\n\nTudo em uma plataforma única, com integração nativa via API.\n\nQuer ver uma demo rápida (15 min)?"
+      buttons:
+        - type: "QUICK_REPLY"
+          title: "Ver demo"
+          payload: "see_demo"
+        - type: "QUICK_REPLY"
+          title: "Enviar proposta"
+          payload: "send_proposal"
+        - type: "QUICK_REPLY"
+          title: "Não tenho interesse"
+          payload: "not_interested"
+
+    - name: "case_study"
+      language: "pt_BR"
+      category: "UTILITY"
+      header_text: "Case: {{case_study}}"
+      body_text: "{{contact_name}}, como prometido, o case completo:\n\n[Link para case study PDF/landing page]\n\nPrincipais resultados:\n• Redução de {{value_prop_1}}\n• Implementação em 30 dias\n• ROI no primeiro mês\n\nQuer agendar para ver como aplicar na {{company_name}}?"
+      buttons:
+        - type: "QUICK_REPLY"
+          title: "Agendar aplicação"
+          payload: "schedule_apply"
+        - type: "QUICK_REPLY"
+          title: "Mais detalhes"
+          payload: "more_details"
+        - type: "QUICK_REPLY"
+          title: "Não tenho interesse"
+          payload: "not_interested"
+
+    - name: "meeting_confirmation"
+      language: "pt_BR"
+      category: "UTILITY"
+      header_text: "Reunião confirmada: {{date}} às {{time}}"
+      body_text: "Perfeito, {{contact_name}}!\n\nReunião agendada para {{date}} às {{time}}.\n\nVou enviar o link da videochamada e a pauta por e-mail.\n\nAté lá! 🤝"
+      buttons: []
+
+    - name: "not_interested"
+      language: "pt_BR"
+      category: "UTILITY"
+      header_text: "Entendido!"
+      body_text: "Sem problemas, {{contact_name}}!\n\nRespeito sua decisão. Se no futuro a {{company_name}} precisar otimizar a logística, estaremos aqui.\n\nObrigado pelo tempo! 🙏"
+      buttons: []
+
+  # Configurações de campanha
+  campaigns:
+    # Campanha padrão
+    default:
+      name: "Prospecção Ativa Averta"
+      description: "Prospecção de leads A e B qualificados"
+      lead_classifications: ["A", "B"]
+      min_score: 70
+      max_messages_per_lead: 3
+      segments: []
+      states: []
+
+      # Sequência de mensagens
+      initial_template: "initial_contact"
+      follow_up_templates:
+        - "follow_up_1"
+        - "follow_up_2"
+        - "value_proposition"
+      follow_up_intervals_hours:
+        - 24    # 1 dia
+        - 72    # 3 dias
+        - 168   # 7 dias
+
+      # Agendamento
+      business_hours_only: true
+      business_hours_start: 8
+      business_hours_end: 18
+      timezone: "America/Sao_Paulo"
+
+      # Rate limiting (Meta limits)
+      rate_limit_per_minute: 20
+      rate_limit_per_hour: 500
+      rate_limit_per_day: 2000
+
+      # Opt-out
+      respect_opt_out: true
+      opt_out_keywords:
+        - "não quero"
+        - "nao quero"
+        - "parar"
+        - "cancelar"
+        - "remover"
+        - "não tenho interesse"
+        - "nao tenho interesse"
+        - "descadastrar"
+        - "opt out"
+        - "unsubscribe"
+
+  # Configurações de envio gerais
+  sending:
+    # Rate limiting
+    rate_limit_per_minute: 20
+    rate_limit_per_hour: 500
+    rate_limit_per_day: 2000
+
+    # Opt-in
+    opt_in_required: true
+    opt_in_method: "explicit"  # explicit | inferred | template_reply
+
+    # Horário comercial
+    business_hours_only: true
+    business_hours_start: "08:00"
+    business_hours_end: "18:00"
+    timezone: "America/Sao_Paulo"
+
+    # Personalização
+    use_personalization: true
+    fallback_to_generic: true
+    max_custom_variables: 20
+
+    # Mídia
+    allow_media: false
+    media_types: ["image", "document"]
+    max_media_size_mb: 16
+
+    # Tracking
+    track_delivery: true
+    track_read: true
+    track_clicks: false
+
+    # Retry
+    max_retries: 3
+    retry_delay_seconds: 30
+    retry_backoff_factor: 2
+
+  # Webhook (para receber mensagens)
+  webhook:
+    enabled: false
+    url: ""  # URL pública para receber webhooks (ex: ngrok, cloudflare tunnel)
+    verify_token: ""
+    events:
+      - "messages"
+      - "message_deliveries"
+      - "message_reads"
+      - "message_template_status"
+    # Processamento de mensagens recebidas
+    auto_reply: false
+    auto_reply_message: "Obrigado pela mensagem! Nossa equipe entrará em contato em breve."
+    process_opt_out: true
+    process_replies: true
+
+  # Enriquecimento de contatos
+  enrichment:
+    # Buscar decisores via LinkedIn/APIs externas
+    find_decision_makers: true
+    linkedin_search: false  # Requer API paga
+    hunter_io_api_key: ""
+    apollo_api_key: ""
+    clearbit_api_key: ""
+
+    # Validar WhatsApp
+    validate_whatsapp_numbers: true
+    validation_method: "api"  # api | web_check
+
+    # Score mínimo para enriquecer
+    min_score_for_enrichment: 50
+
+# ============================================
+# CONFIGURAÇÕES EMAIL OUTREACH
+# ============================================
+email:
+  # Habilitar integração Email
+  enabled: true  # Habilitado - credenciais configuradas
+
+  # Provedor principal
+  provider: "smtp"  # smtp | sendgrid
+
+  # SMTP (Zoho, Gmail, Outlook, custom)
+  smtp:
+    host: "smtppro.zoho.com"  # smtppro.zoho.com, smtp.gmail.com, smtp.office365.com
+    port: 465  # 465 (SSL), 587 (TLS), 25 (plain)
+    user: "pedrolarrieuceo@avertabrasil.com.br"   # Usuário SMTP
+    password: "aV6PB8.x7mywd!N"  # App password / SMTP password
+    from_email: "contato@avertabrasil.com.br"  # Email remetente
+    from_name: "Averta Logística Inteligente"
+    use_tls: false
+    use_ssl: true
+    timeout: 30
+
+  # SendGrid API (alternativa)
+  sendgrid:
+    api_key: ""  # SG.xxx
+    from_email: "noreply@averta.com"
+    from_name: "Averta Logística"
+
+  # SendGrid API (alternativa)
+  sendgrid:
+    api_key: ""  # SG.xxx
+    from_email: "noreply@averta.com"
+    from_name: "Averta Logística"
+
+  # Configurações de campanha
+  campaigns:
+    # Campanha padrão
+    default:
+      name: "Prospecção Ativa Averta - Email"
+      description: "Prospecção de leads A e B qualificados via email"
+      lead_classifications: ["A", "B"]
+      min_score: 70
+      max_emails_per_lead: 4
+      segments: []
+      states: []
+      has_email_only: true
+
+      # Sequência de emails (template, delay_days, stage)
+      sequence:
+        - template: "initial_outreach"
+          delay_days: 0
+          stage: "initial"
+        - template: "follow_up_1"
+          delay_days: 3
+          stage: "follow_up_1"
+        - template: "follow_up_2"
+          delay_days: 7
+          stage: "follow_up_2"
+        - template: "value_proposition"
+          delay_days: 14
+          stage: "follow_up_3"
+        - template: "case_study"
+          delay_days: 21
+          stage: "follow_up_3"
+        - template: "meeting_request"
+          delay_days: 30
+          stage: "follow_up_3"
+        - template: "breakup"
+          delay_days: 45
+          stage: "follow_up_3"
+
+      # Agendamento
+      business_hours_only: true
+      business_hours_start: 8
+      business_hours_end: 18
+      timezone: "America/Sao_Paulo"
+      days_of_week: [0, 1, 2, 3, 4]  # Seg-Sex
+
+      # Rate limiting (conservador para email)
+      rate_limit_per_minute: 10
+      rate_limit_per_hour: 200
+      rate_limit_per_day: 1000
+
+      # Opt-out (LGPD)
+      respect_opt_out: true
+      opt_out_keywords:
+        - "não quero"
+        - "nao quero"
+        - "parar"
+        - "cancelar"
+        - "remover"
+        - "não tenho interesse"
+        - "nao tenho interesse"
+        - "descadastrar"
+        - "unsubscribe"
+        - "opt out"
+        - "pare de mandar"
+
+  # Configurações de envio gerais
+  sending:
+    # Rate limiting
+    rate_limit_per_minute: 10
+    rate_limit_per_hour: 200
+    rate_limit_per_day: 1000
+
+    # Opt-in (LGPD)
+    opt_in_required: true
+    opt_in_method: "explicit"  # explicit | inferred
+
+    # Horário comercial
+    business_hours_only: true
+    business_hours_start: 8
+    business_hours_end: 18
+    timezone: "America/Sao_Paulo"
+    days_of_week: [0, 1, 2, 3, 4]  # Seg-Sex
+
+    # Personalização
+    use_personalization: true
+    fallback_to_generic: true
+    max_custom_variables: 20
+
+    # Anexos
+    allow_attachments: false
+    attachment_types: ["pdf"]
+    max_attachment_size_mb: 5
+
+    # Tracking
+    track_opens: true
+    track_clicks: true
+    track_replies: true
+
+    # Retry
+    max_retries: 3
+    retry_delay_seconds: 60
+    retry_backoff_factor: 2
+
+  # Webhook (para receber eventos SendGrid, etc.)
+  webhook:
+    enabled: false
+    url: ""  # URL pública para receber webhooks
+    secret: ""  # Secret para validar assinatura
+    events:
+      - "delivered"
+      - "open"
+      - "click"
+      - "bounce"
+      - "spam_report"
+      - "unsubscribe"
+    # Processamento automático
+    process_bounces: true
+    process_unsubscribes: true
+    process_spam_reports: true
+    process_replies: false  # Requer inbound email parsing
+
+  # Enriquecimento de contatos
+  enrichment:
+    # Validar emails
+    validate_emails: true
+    validation_method: "smtp"  # smtp | api | regex
+
+    # Buscar decisores
+    find_decision_makers: true
+    hunter_io_api_key: ""
+    apollo_api_key: ""
+    clearbit_api_key: ""
+
+    # Score mínimo para enriquecer
+    min_score_for_enrichment: 50

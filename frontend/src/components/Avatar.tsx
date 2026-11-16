@@ -19,7 +19,17 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
       xl: 'h-16 w-16 text-lg',
     }
 
-    const fallbackText = fallback || alt?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+    // Generate initials from fallback or alt
+    const getInitials = (name: string) => {
+      return name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    }
+
+    const fallbackText = fallback || getInitials(alt || 'AD')
 
     return (
       <AvatarPrimitive.Root
@@ -32,11 +42,17 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
           alt={alt || ''}
           className="aspect-square h-full w-full object-cover"
         />
-        <AvatarPrimitive.Fallback className={cn('flex h-full w-full items-center justify-center rounded-full bg-secondary-100', sizeClasses[size])}>
+        <AvatarPrimitive.Fallback
+          className={cn(
+            'flex h-full w-full items-center justify-center rounded-full font-semibold',
+            sizeClasses[size],
+            'bg-blue-100 text-blue-700 border border-blue-200/50'
+          )}
+        >
           {src ? (
             <User className={cn('text-secondary-400', size === 'sm' && 'h-4 w-4', size === 'md' && 'h-5 w-5', size === 'lg' && 'h-6 w-6', size === 'xl' && 'h-8 w-8')} />
           ) : (
-            <span className={cn('font-medium text-secondary-600')}>{fallbackText}</span>
+            <span>{fallbackText}</span>
           )}
         </AvatarPrimitive.Fallback>
       </AvatarPrimitive.Root>

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "production"
+    },
+    "appName": {
+      "value": "averta"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "customDomain": {
+      "value": "averta.com.br"
+    },
+    "enableWaf": {
+      "value": true
+    },
+    "pgAdminLogin": {
+      "value": "avertaadmin"
+    },
+    "pgAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "pg-admin-password"
+      }
+    },
+    "redisAccessKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "redis-access-key"
+      }
+    },
+    "jwtSecretKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "jwt-secret-key"
+      }
+    },
+    "jwtRefreshSecretKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "jwt-refresh-secret-key"
+      }
+    },
+    "sendgridApiKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "sendgrid-api-key"
+      }
+    },
+    "smtpPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-production/providers/Microsoft.KeyVault/vaults/averta-kv-production"
+        },
+        "secretName": "smtp-password"
+      }
+    },
+    "frontendUrl": {
+      "value": "https://app.averta.com.br"
+    },
+    "tags": {
+      "value": {
+        "Project": "AvertaSaaS",
+        "Environment": "production",
+        "ManagedBy": "Bicep",
+        "Owner": "Platform Team",
+        "CostCenter": "Engineering",
+        "Compliance": "PCI-DSS",
+        "DataClassification": "Confidential"
+      }
+    }
+  }
+}

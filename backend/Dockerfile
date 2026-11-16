@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     libatomic1 \
     pkg-config \
+    curl \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 # Install Poetry with pinned version
 RUN pip install --no-cache-dir poetry==1.8.2
@@ -38,8 +41,19 @@ RUN poetry config virtualenvs.create false
 # Copy only dependency files first (layer caching)
 COPY pyproject.toml poetry.lock ./
 
-# Install production dependencies only
+# Update lock file to match pyproject.toml (bcrypt version constraint added)
+# This is needed because the lock file was generated without the explicit bcrypt constraint
+RUN poetry lock --no-update
+
+# Install bcrypt < 5.0.0,>=4.0.0 BEFORE poetry install to ensure passlib compatibility
+# (bcrypt 5.0.0+ breaks passlib's __about__ version detection and 72-byte limit detection)
+RUN pip install --no-cache-dir "bcrypt<5.0.0,>=4.0.0"
+
+# Install production dependencies only (will use pre-installed bcrypt)
 RUN poetry install --only=main --no-interaction --no-ansi
+
+# Copy application code (needed for celery to find app module)
+COPY app ./app
 
 # Generate Prisma client in builder (runtime has no prisma CLI)
 COPY prisma ./prisma
@@ -96,6 +110,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/generated ./generated
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app

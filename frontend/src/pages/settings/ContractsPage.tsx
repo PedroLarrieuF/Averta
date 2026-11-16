@@ -15,6 +15,7 @@ const STATUS_BADGES: Record<ContractStatus, 'success' | 'warning' | 'danger' | '
   ACTIVE: 'success',
   EXPIRED: 'warning',
   CANCELLED: 'danger',
+  PENDING: 'warning',
 }
 
 const STATUS_LABELS: Record<ContractStatus, string> = {
@@ -22,6 +23,7 @@ const STATUS_LABELS: Record<ContractStatus, string> = {
   ACTIVE: 'Ativo',
   EXPIRED: 'Expirado',
   CANCELLED: 'Cancelado',
+  PENDING: 'Pendente',
 }
 
 export function ContractsPage() {
@@ -82,7 +84,7 @@ export function ContractsPage() {
 
   const handleFreightTableSave = async (rules: Record<string, unknown>[]) => {
     if (!selectedContractForFreight) return
-    await updateContract.mutateAsync({ id: selectedContractForFreight.id, data: { freightTable: rules as any } })
+    await updateContract.mutateAsync({ id: selectedContractForFreight.id, data: { freightTables: rules as any } })
     toast.success('Tabela de frete atualizada!')
     setShowFreightTableModal(false)
     setSelectedContractForFreight(null)
@@ -235,6 +237,7 @@ export function ContractsPage() {
                 <SelectItem value="ACTIVE">Ativo</SelectItem>
                 <SelectItem value="EXPIRED">Expirado</SelectItem>
                 <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                <SelectItem value="PENDING">Pendente</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -319,7 +322,7 @@ export function ContractsPage() {
       {/* Freight Table Modal */}
       {showFreightTableModal && selectedContractForFreight && (
         <FreightTableEditor
-          initialRules={selectedContractForFreight?.freightTable as unknown as Record<string, unknown>[] || []}
+          initialRules={selectedContractForFreight?.freightTables as unknown as Record<string, unknown>[] || []}
           onSave={handleFreightTableSave}
           onCancel={() => { setShowFreightTableModal(false); setSelectedContractForFreight(null); }}
           isSubmitting={updateContract.isPending}

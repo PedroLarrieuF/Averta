@@ -19,18 +19,18 @@ export interface FreightTableEditorProps {
 }
 
 const DEFAULT_RATE: Omit<FreightRateInput, 'modal'> = {
-  weight_min: null,
-  weight_max: null,
-  cubage_min: null,
-  cubage_max: null,
-  distance_min: null,
-  distance_max: null,
-  uf_origin: null,
-  uf_dest: null,
-  rate_per_kg: null,
-  rate_per_m3: null,
-  rate_per_km: null,
-  minimum_value: null,
+  weightMin: null,
+  weightMax: null,
+  cubageMin: null,
+  cubageMax: null,
+  distanceMin: null,
+  distanceMax: null,
+  ufOrigin: null,
+  ufDest: null,
+  ratePerKg: null,
+  ratePerM3: null,
+  ratePerKm: null,
+  minimumValue: null,
 };
 
 export function FreightTableEditor({
@@ -63,8 +63,8 @@ export function FreightTableEditor({
       setActiveModal(freightTable.rates[0]?.modal || 'RODOVIARIO');
       setRates(freightTable.rates.map((r, i) => ({ ...r, id: r.id || `temp-${i}` })));
       setStatus(freightTable.status);
-      setEffectiveFrom(freightTable.effective_from.split('T')[0]);
-      setEffectiveTo(freightTable.effective_to ? freightTable.effective_to.split('T')[0] : '');
+      setEffectiveFrom(freightTable.effectiveFrom.split('T')[0]);
+      setEffectiveTo(freightTable.effectiveTo ? freightTable.effectiveTo.split('T')[0] : '');
       setVersion(freightTable.version);
     } else if (!isEditing) {
       // New table - start with one empty rate per modal
@@ -133,10 +133,10 @@ export function FreightTableEditor({
     try {
       const ratesData = getAllRatesForSubmit();
       const data: CreateFreightTableData | UpdateFreightTableData = {
-        contract_id: contractId,
+        contractId: contractId,
         status: activate ? 'ACTIVE' : status,
-        effective_from: effectiveFrom,
-        effective_to: effectiveTo || null,
+        effectiveFrom: effectiveFrom,
+        effectiveTo: effectiveTo || null,
         rates: ratesData,
       };
 

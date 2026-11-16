@@ -14,11 +14,14 @@ pydantic = "^2.6.0"
 pydantic-settings = "^2.2.0"
 pydantic-extra-types = "^2.4.0"
 prisma = "^0.12.0"
-redis = "^5.0.0"
+redis = "^6.1.0"
 celery = "^5.3.0"
 flower = "^2.0.0"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+# bcrypt < 5.0.0 required for passlib compatibility (bcrypt 5.0.0+ breaks __about__ and 72-byte detection)
+# This constraint must be honored by poetry lock
+bcrypt = "<5.0.0,>=4.0.0"
 python-multipart = "^0.0.6"
 email-validator = "^2.1.0"
 sendgrid = "^6.10.0"
@@ -26,14 +29,16 @@ jinja2 = "^3.1.0"
 lxml = "^5.0.0"
 reportlab = "^4.0.0"
 openpyxl = "^3.1.0"
-boto3 = "^1.34.0"
-minio = "^7.2.0"
+# Azure SDK dependencies (replacing boto3 and minio)
+azure-identity = "^1.16.0"
+azure-keyvault-secrets = "^4.8.0"
+azure-storage-blob = "^12.23.0"
 structlog = "^24.1.0"
 python-json-logger = "^2.0.0"
 httpx = "^0.26.0"
 tenacity = "^8.2.0"
 prometheus-client = "^0.19.0"
-slowapi = "^0.1.0"
+slowapi = "^0.1.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

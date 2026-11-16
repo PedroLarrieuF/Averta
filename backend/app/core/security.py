@@ -12,7 +12,10 @@ from app.core.config import settings
 logger = structlog.get_logger()
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use bcrypt_sha256 for new passwords (supports > 72 bytes via internal SHA-256 pre-hashing)
+# Fall back to bcrypt for backward compatibility with existing hashes
+# This handles the bcrypt 72-byte limit and provides seamless migration
+pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 
 
 class TokenPayload(BaseModel):
@@ -34,12 +37,16 @@ class TokenData(BaseModel):
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against its hash"""
+    """Verify a plain password against its hash.
+
+    Supports both new bcrypt-sha256 hashes (for passwords > 72 bytes)
+    and legacy bcrypt hashes (for backward compatibility).
+    """
     return pwd_context.verify(plain_password, hashed_password)  # type: ignore[no-any-return]
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
+    """Hash a password using bcrypt-sha256 (supports passwords longer than 72 bytes)."""
     return pwd_context.hash(password)  # type: ignore[no-any-return]
 
 

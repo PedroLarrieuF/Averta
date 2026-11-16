@@ -1,60 +1,69 @@
 import { cn } from '../utils/helpers'
+import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 
 interface KPICardProps {
-  children: React.ReactNode
+  title: string
+  value: string | number
+  trend?: string
+  trendUp?: boolean | null
+  icon?: React.ReactNode
+  iconBgClass?: string
+  iconColorClass?: string
   className?: string
 }
 
-export function KPICard({ children, className }: KPICardProps) {
+export function KPICard({
+  title,
+  value,
+  trend,
+  trendUp = null,
+  icon,
+  iconBgClass = 'bg-primary-50',
+  iconColorClass = 'text-primary-600',
+  className,
+}: KPICardProps) {
   return (
-    <div className={cn('card p-4', className)}>
-      {children}
+    <div className={cn('kpi-card', className)}>
+      <div className="flex items-start justify-between">
+        <div className="min-w-0">
+          <p className="kpi-label">{title}</p>
+          <p className="kpi-value truncate tabular-nums">{value}</p>
+          {trend && (
+            <div className="kpi-trend">
+              {trendUp === true ? (
+                <span className="trend-pill-positive">
+                  <ArrowUpRight className="h-3 w-3" />
+                  {trend}
+                </span>
+              ) : trendUp === false ? (
+                <span className="trend-pill-negative">
+                  <ArrowDownRight className="h-3 w-3" />
+                  {trend}
+                </span>
+              ) : (
+                <span className="trend-pill-neutral">
+                  <Minus className="h-3 w-3" />
+                  {trend}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {icon && (
+          <div className={cn('kpi-icon flex-shrink-0 ml-4', iconBgClass, iconColorClass)}>
+            {icon}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-interface KPIValueProps {
+interface KPICardSimpleProps {
   children: React.ReactNode
   className?: string
 }
 
-export function KPIValue({ children, className }: KPIValueProps) {
-  return (
-    <p className={cn('text-2xl font-bold text-secondary-900', className)}>
-      {children}
-    </p>
-  )
-}
-
-interface KPILabelProps {
-  children: React.ReactNode
-  className?: string
-}
-
-export function KPILabel({ children, className }: KPILabelProps) {
-  return (
-    <p className={cn('text-sm text-secondary-500', className)}>
-      {children}
-    </p>
-  )
-}
-
-interface KPITrendProps {
-  children: React.ReactNode
-  className?: string
-  trend?: 'up' | 'down' | 'neutral'
-}
-
-export function KPITrend({ children, className, trend = 'neutral' }: KPITrendProps) {
-  const trendColors = {
-    up: 'text-success-600',
-    down: 'text-danger-600',
-    neutral: 'text-secondary-500',
-  }
-
-  return (
-    <span className={cn('text-sm font-medium', trendColors[trend], className)}>
-      {children}
-    </span>
-  )
+export function KPICardSimple({ children, className }: KPICardSimpleProps) {
+  return <div className={cn('kpi-card', className)}>{children}</div>
 }

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "staging"
+    },
+    "appName": {
+      "value": "averta"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "customDomain": {
+      "value": ""
+    },
+    "enableWaf": {
+      "value": false
+    },
+    "pgAdminLogin": {
+      "value": "avertaadmin"
+    },
+    "pgAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "pg-admin-password"
+      }
+    },
+    "redisAccessKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "redis-access-key"
+      }
+    },
+    "jwtSecretKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "jwt-secret-key"
+      }
+    },
+    "jwtRefreshSecretKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "jwt-refresh-secret-key"
+      }
+    },
+    "sendgridApiKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "sendgrid-api-key"
+      }
+    },
+    "smtpPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-averta-staging/providers/Microsoft.KeyVault/vaults/averta-kv-staging"
+        },
+        "secretName": "smtp-password"
+      }
+    },
+    "frontendUrl": {
+      "value": "https://staging.averta.com.br"
+    },
+    "tags": {
+      "value": {
+        "Project": "AvertaSaaS",
+        "Environment": "staging",
+        "ManagedBy": "Bicep",
+        "Owner": "Platform Team",
+        "CostCenter": "Engineering"
+      }
+    }
+  }
+}

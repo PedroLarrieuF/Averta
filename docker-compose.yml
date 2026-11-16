@@ -195,8 +195,8 @@ services:
         sleep 5 &&
         echo 'Running database initialization...' &&
         /app/scripts/init-db.sh &&
-        echo 'Starting backend server...' &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        echo 'Starting backend server in production mode...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
       "
     restart: unless-stopped
     networks:
@@ -245,6 +245,8 @@ services:
       sh -c "
         echo 'Waiting for backend to initialize database...' &&
         sleep 10 &&
+        echo 'Waiting for MinIO...' &&
+        until curl -sf http://minio:9000/minio/health/live; do sleep 2; done &&
         celery -A app.core.celery_app worker --loglevel=info --concurrency=4
       "
     restart: unless-stopped
@@ -261,6 +263,11 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:6432/${POSTGRES_DB:-averta}
       - DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-averta}
       - REDIS_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/0
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - S3_BUCKET=${MINIO_BUCKET:-averta-documents}
+      - S3_REGION=us-east-1
       - CELERY_BROKER_URL=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/1
       - CELERY_RESULT_BACKEND=redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379/2
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-min-32-chars-long-here}
@@ -274,6 +281,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
       pgbouncer:
         condition: service_healthy
     volumes:
@@ -285,6 +294,8 @@ services:
       sh -c "
         echo 'Waiting for backend to initialize database...' &&
         sleep 10 &&
+        echo 'Waiting for MinIO...' &&
+        until curl -sf http://minio:9000/minio/health/live; do sleep 2; done &&
         celery -A app.core.celery_app beat --loglevel=info
       "
     restart: unless-stopped

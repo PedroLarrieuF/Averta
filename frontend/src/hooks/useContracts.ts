@@ -7,8 +7,8 @@ import type {
   Contract,
   ContractListParams,
   PaginatedContracts,
-  CreateContractData,
-  UpdateContractData,
+  ContractCreateRequest,
+  ContractUpdateRequest,
   FreightTable,
   CreateFreightTableData,
   UpdateFreightTableData,
@@ -26,10 +26,10 @@ export function useContracts(params: ContractListParams = {}) {
       if (params.size) searchParams.set('size', String(params.size));
       if (params.search) searchParams.set('search', params.search);
       if (params.status) searchParams.set('status', params.status);
-      if (params.client_id) searchParams.set('client_id', params.client_id);
-      if (params.carrier_id) searchParams.set('carrier_id', params.carrier_id);
-      if (params.date_from) searchParams.set('date_from', params.date_from);
-      if (params.date_to) searchParams.set('date_to', params.date_to);
+      if (params.clientId) searchParams.set('clientId', params.clientId);
+      if (params.carrierId) searchParams.set('carrierId', params.carrierId);
+      if (params.dateFrom) searchParams.set('dateFrom', params.dateFrom);
+      if (params.dateTo) searchParams.set('dateTo', params.dateTo);
 
       const response = await api.get<PaginatedContracts>(`/contracts?${searchParams.toString()}`);
       return response.data;
@@ -54,7 +54,7 @@ export function useCreateContract() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateContractData) => {
+    mutationFn: async (data: ContractCreateRequest) => {
       const response = await api.post<Contract>('/contracts', data);
       return response.data;
     },
@@ -68,7 +68,7 @@ export function useUpdateContract() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateContractData }) => {
+    mutationFn: async ({ id, data }: { id: string; data: ContractUpdateRequest }) => {
       const response = await api.patch<Contract>(`/contracts/${id}`, data);
       return response.data;
     },
@@ -123,11 +123,11 @@ export function useCreateFreightTable() {
 
   return useMutation({
     mutationFn: async (data: CreateFreightTableData) => {
-      const response = await api.post<FreightTable>(`/contracts/${data.contract_id}/freight-tables`, data);
+      const response = await api.post<FreightTable>(`/contracts/${data.contractId}/freight-tables`, data);
       return response.data;
     },
-    onSuccess: (_, { contract_id }) => {
-      queryClient.invalidateQueries({ queryKey: ['freight-tables', contract_id] });
+    onSuccess: (_, { contractId }) => {
+      queryClient.invalidateQueries({ queryKey: ['freight-tables', contractId] });
     },
   });
 }

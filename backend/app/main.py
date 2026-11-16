@@ -103,6 +103,7 @@ app.add_middleware(
 )
 
 # Initialize rate limiter (must be before exception handlers)
+# Custom FixedSlowAPIMiddleware is added inside init_rate_limiter
 init_rate_limiter(app)
 
 # Exception Handlers

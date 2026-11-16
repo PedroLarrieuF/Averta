@@ -4,6 +4,19 @@ import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, Select
 import toast from 'react-hot-toast'
 import type { Contract, Client, Carrier, FreightTableEntry, FreightType, ContractStatus } from '@/types'
 
+// Form data type with FreightTableEntry[] for freightTables (not full FreightTable[])
+interface ContractFormDataInternal {
+  name: string;
+  number: string;
+  clientId: string;
+  carrierId: string;
+  status: ContractStatus;
+  startDate: string;
+  endDate: string;
+  version: number;
+  freightTables: FreightTableEntry[];
+}
+
 interface ContractFormProps {
   initialData?: Partial<Contract> | null
   clients: Client[]
@@ -25,11 +38,12 @@ const CONTRACT_STATUSES: { value: ContractStatus; label: string }[] = [
   { value: 'DRAFT', label: 'Rascunho' },
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'EXPIRED', label: 'Expirado' },
+  { value: 'PENDING', label: 'Pendente' },
   { value: 'CANCELLED', label: 'Cancelado' },
 ]
 
 export function ContractForm({ initialData, clients, carriers, onSubmit, onCancel, isSubmitting = false, mode }: ContractFormProps) {
-  const [formData, setFormData] = useState<Partial<Contract>>({
+  const [formData, setFormData] = useState<ContractFormDataInternal>({
     name: '',
     number: '',
     clientId: '',
@@ -38,7 +52,7 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
     startDate: '',
     endDate: '',
     version: 1,
-    freightTable: [],
+    freightTables: [],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showFreightTable, setShowFreightTable] = useState(false)
@@ -48,6 +62,8 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
 
   useEffect(() => {
     if (initialData) {
+      // Extract FreightTableEntry[] from FreightTable[] if entries exist
+      const entries = initialData.freightTables?.flatMap(ft => ft.entries || []) || [];
       setFormData({
         name: initialData.name || '',
         number: initialData.number || '',
@@ -57,7 +73,7 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
         startDate: initialData.startDate ? initialData.startDate.split('T')[0] : '',
         endDate: initialData.endDate ? initialData.endDate.split('T')[0] : '',
         version: initialData.version || 1,
-        freightTable: initialData.freightTable || [],
+        freightTables: entries,
       })
     } else {
       setFormData({
@@ -69,7 +85,7 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
         startDate: '',
         endDate: '',
         version: 1,
-        freightTable: [],
+        freightTables: [],
       })
     }
   }, [initialData])
@@ -96,14 +112,15 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
     e.preventDefault()
     if (!validateForm()) return
 
-    const submitData = {
-      ...formData,
+    // Exclude freightTables from submit - they're managed separately via FreightTableEditor
+    const { freightTables: _freightTables, ...submitData } = formData;
+    const finalData = {
+      ...submitData,
       version: mode === 'create' ? 1 : (formData.version || 1),
-      freightTable: formData.freightTable || [],
-    }
+    };
 
     try {
-      await onSubmit(submitData)
+      await onSubmit(finalData)
       toast.success(mode === 'create' ? 'Contrato criado com sucesso!' : 'Contrato atualizado com sucesso!')
       onCancel()
     } catch (_error) {
@@ -167,9 +184,9 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
 
     setFormData((prev) => ({
       ...prev,
-      freightTable: editingFreightEntry
-        ? prev.freightTable?.map((e) => (e.id === entry.id ? entry : e)) || []
-        : [...(prev.freightTable || []), entry]
+      freightTables: editingFreightEntry
+        ? prev.freightTables?.map((e) => (e.id === entry.id ? entry : e)) || []
+        : [...(prev.freightTables || []), entry]
     }))
 
     setEditingFreightEntry(null)
@@ -181,7 +198,7 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
     if (!confirm('Excluir esta regra de frete?')) return
     setFormData((prev) => ({
       ...prev,
-      freightTable: prev.freightTable?.filter((e) => e.id !== id) || []
+      freightTables: prev.freightTables?.filter((e) => e.id !== id) || []
     }))
   }
 
@@ -333,9 +350,9 @@ export function ContractForm({ initialData, clients, carriers, onSubmit, onCance
 
               {showFreightTable && (
                 <CardBody className="space-y-4">
-                  {formData.freightTable && formData.freightTable.length > 0 ? (
+                  {formData.freightTables && formData.freightTables.length > 0 ? (
                     <div className="space-y-2">
-                      {formData.freightTable.map((entry) => (
+                      {formData.freightTables.map((entry) => (
                         <div key={entry.id} className="p-3 bg-secondary-50 rounded-lg border border-secondary-200 flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-secondary-900 truncate">

@@ -1,6 +1,8 @@
+'use client'
+
 import { useMemo } from 'react'
 import { X, Filter } from 'lucide-react'
-import { Badge, Button, Input } from '@/components'
+import { Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components'
 
 interface DiscrepancyFiltersProps {
   filters: DiscrepancyFilters
@@ -57,6 +59,39 @@ const ruleOptions = [
   { value: 'OTHER', label: 'Outro' },
 ]
 
+const getBadgeVariant = (variant: string): 'success' | 'warning' | 'danger' | 'primary' | 'secondary' => {
+  switch (variant) {
+    case 'badge-primary': return 'primary'
+    case 'badge-warning': return 'warning'
+    case 'badge-danger': return 'danger'
+    case 'badge-success': return 'success'
+    default: return 'secondary'
+  }
+}
+
+const getStatusBadgeConfig = (status: string) => {
+  const statusMap: Record<string, { variant: string; label: string }> = {
+    OPEN: { variant: 'badge-primary', label: 'Aberta' },
+    IN_REVIEW: { variant: 'badge-warning', label: 'Em Análise' },
+    CONTESTED: { variant: 'badge-warning', label: 'Contestada' },
+    APPROVED: { variant: 'badge-success', label: 'Aprovada' },
+    REJECTED: { variant: 'badge-danger', label: 'Rejeitada' },
+    PAID: { variant: 'badge-success', label: 'Paga' },
+    CLOSED: { variant: 'badge-secondary', label: 'Fechada' },
+  }
+  return statusMap[status] || { variant: 'badge-secondary', label: status }
+}
+
+const getSeverityBadgeConfig = (severity: string) => {
+  const severityMap: Record<string, { variant: string; label: string }> = {
+    LOW: { variant: 'badge-secondary', label: 'Baixa' },
+    MEDIUM: { variant: 'badge-primary', label: 'Média' },
+    HIGH: { variant: 'badge-warning', label: 'Alta' },
+    CRITICAL: { variant: 'badge-danger', label: 'Crítica' },
+  }
+  return severityMap[severity] || { variant: 'badge-secondary', label: severity }
+}
+
 export function DiscrepancyFilters({
   filters,
   onFiltersChange,
@@ -75,85 +110,46 @@ export function DiscrepancyFilters({
     return count
   }, [filters])
 
+  const renderActiveFilter = (key: string, label: string, variant: string = 'secondary') => (
+    <span className="flex items-center gap-1.5">
+      <Badge variant={variant as any}>{label}</Badge>
+      <button
+        onClick={() => onFiltersChange({ ...filters, [key]: undefined })}
+        className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
+        aria-label={`Remover filtro ${label}`}
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  )
+
   return (
     <div className="card">
       <div className="card-body p-4">
         {/* Active Filters Tags */}
         {(activeFiltersCount > 0 || hasActiveFilters) && (
-          <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-secondary-200">
+          <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-secondary-200/60">
             <span className="text-xs font-medium text-secondary-500 uppercase tracking-wide">Filtros ativos:</span>
             {filters.status && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">{statusOptions.find((s) => s.value === filters.status)?.label || String(filters.status)}</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, status: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro status"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
+              <>
+                {(() => {
+                  const config = getStatusBadgeConfig(String(filters.status))
+                  return renderActiveFilter('status', config.label, getBadgeVariant(config.variant))
+                })()}
+              </>
             )}
             {filters.severity && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">{severityOptions.find((s) => s.value === filters.severity)?.label || String(filters.severity)}</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, severity: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro severidade"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
+              <>
+                {(() => {
+                  const config = getSeverityBadgeConfig(String(filters.severity))
+                  return renderActiveFilter('severity', config.label, getBadgeVariant(config.variant))
+                })()}
+              </>
             )}
-            {filters.rule && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">{ruleOptions.find((r) => r.value === filters.rule)?.label || String(filters.rule)}</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, rule: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro regra"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {filters.carrier && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">Transportadora: {String(filters.carrier).slice(0, 8)}...</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, carrier: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro transportadora"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {filters.dateFrom && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">De: {String(filters.dateFrom)}</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, dateFrom: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro data inicial"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {filters.dateTo && (
-              <span className="flex items-center gap-1.5">
-                <Badge variant="secondary">Até: {String(filters.dateTo)}</Badge>
-                <button
-                  onClick={() => onFiltersChange({ ...filters, dateTo: undefined })}
-                  className="p-0.5 rounded hover:bg-secondary-200 transition-colors"
-                  aria-label="Remover filtro data final"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
+            {filters.rule && renderActiveFilter('rule', ruleOptions.find((r) => r.value === filters.rule)?.label || String(filters.rule))}
+            {filters.carrier && renderActiveFilter('carrier', `Transportadora: ${String(filters.carrier).slice(0, 8)}...`)}
+            {filters.dateFrom && renderActiveFilter('dateFrom', `De: ${String(filters.dateFrom)}`)}
+            {filters.dateTo && renderActiveFilter('dateTo', `Até: ${String(filters.dateTo)}`)}
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearFilters} className="ml-2">
                 Limpar todos
@@ -162,83 +158,123 @@ export function DiscrepancyFilters({
           </div>
         )}
 
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex gap-4 flex-wrap">
+        {/* Filter Controls - Compact horizontal layout */}
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="flex flex-wrap gap-3 flex-1">
             {/* Status Filter */}
-            <select
-              className="input w-auto"
-              value={filters.status || ''}
-              onChange={(e) => onFiltersChange({ ...filters, status: e.target.value || undefined, page: 1 })}
-            >
-              <option value="">Todos os status</option>
-              {statusOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label} {summary?.by_status?.[opt.value] !== undefined && ` (${summary.by_status[opt.value]})`}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Select
+                value={filters.status || ''}
+                onValueChange={(value) => onFiltersChange({ ...filters, status: value || undefined, page: 1 })}
+              >
+                <SelectTrigger className="w-[160px] min-w-0">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={5}>
+                  <SelectItem value="">Todos os status</SelectItem>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{opt.label}</span>
+                        {summary?.by_status?.[opt.value] !== undefined && (
+                          <Badge variant="secondary" className="ml-2">
+                            {summary.by_status[opt.value]}
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Severity Filter */}
-            <select
-              className="input w-auto"
-              value={filters.severity || ''}
-              onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value || undefined, page: 1 })}
-            >
-              <option value="">Todas as severidades</option>
-              {severityOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label} {summary?.by_severity?.[opt.value] !== undefined && ` (${summary.by_severity[opt.value]})`}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Select
+                value={filters.severity || ''}
+                onValueChange={(value) => onFiltersChange({ ...filters, severity: value || undefined, page: 1 })}
+              >
+                <SelectTrigger className="w-[140px] min-w-0">
+                  <SelectValue placeholder="Todas severidades" />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={5}>
+                  <SelectItem value="">Todas as severidades</SelectItem>
+                  {severityOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{opt.label}</span>
+                        {summary?.by_severity?.[opt.value] !== undefined && (
+                          <Badge variant="secondary" className="ml-2">
+                            {summary.by_severity[opt.value]}
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Rule Filter */}
-            <select
-              className="input w-auto min-w-[200px]"
-              value={filters.rule || ''}
-              onChange={(e) => onFiltersChange({ ...filters, rule: e.target.value || undefined, page: 1 })}
-            >
-              <option value="">Todas as regras</option>
-              {ruleOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label} {summary?.by_rule?.[opt.value] !== undefined && ` (${summary.by_rule[opt.value]})`}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Select
+                value={filters.rule || ''}
+                onValueChange={(value) => onFiltersChange({ ...filters, rule: value || undefined, page: 1 })}
+              >
+                <SelectTrigger className="w-[180px] min-w-0">
+                  <SelectValue placeholder="Todas as regras" />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={5}>
+                  <SelectItem value="">Todas as regras</SelectItem>
+                  {ruleOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{opt.label}</span>
+                        {summary?.by_rule?.[opt.value] !== undefined && (
+                          <Badge variant="secondary" className="ml-2">
+                            {summary.by_rule[opt.value]}
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Carrier Filter */}
             <Input
               type="text"
               placeholder="Transportadora (ID)"
-              className="w-[180px]"
+              className="w-[160px] min-w-0"
               value={filters.carrier || ''}
               onChange={(e) => onFiltersChange({ ...filters, carrier: e.target.value || undefined, page: 1 })}
             />
 
-            {/* Date Range */}
-            <div className="flex items-center gap-2">
-              <span className="text-secondary-400 self-center">De</span>
+            {/* Date Range - Compact */}
+            <div className="flex items-center gap-1.5">
               <Input
                 type="date"
-                className="w-[140px]"
+                className="w-[130px] min-w-0"
                 value={filters.dateFrom || ''}
                 onChange={(e) => onFiltersChange({ ...filters, dateFrom: e.target.value || undefined, page: 1 })}
+                aria-label="Data inicial"
               />
-              <span className="text-secondary-400 self-center">até</span>
+              <span className="text-secondary-400 text-xs hidden sm:inline">até</span>
               <Input
                 type="date"
-                className="w-[140px]"
+                className="w-[130px] min-w-0"
                 value={filters.dateTo || ''}
                 onChange={(e) => onFiltersChange({ ...filters, dateTo: e.target.value || undefined, page: 1 })}
+                aria-label="Data final"
               />
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:ml-auto">
             <Button variant="secondary" onClick={onClearFilters} disabled={activeFiltersCount === 0 && !hasActiveFilters}>
               <Filter className="h-4 w-4 mr-2" />
-              Limpar filtros
+              Limpar
             </Button>
           </div>
         </div>

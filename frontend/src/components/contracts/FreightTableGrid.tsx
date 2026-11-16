@@ -10,18 +10,18 @@ import { BRAZILIAN_STATES } from '../../types/contracts';
 export interface FreightRateRow {
   id: string;
   modal: 'RODOVIARIO' | 'AEREO' | 'MARITIMO' | 'FERROVIARIO';
-  weight_min: number | null;
-  weight_max: number | null;
-  cubage_min: number | null;
-  cubage_max: number | null;
-  distance_min: number | null;
-  distance_max: number | null;
-  uf_origin: string | null;
-  uf_dest: string | null;
-  rate_per_kg: number | null;
-  rate_per_m3: number | null;
-  rate_per_km: number | null;
-  minimum_value: number | null;
+  weightMin: number | null;
+  weightMax: number | null;
+  cubageMin: number | null;
+  cubageMax: number | null;
+  distanceMin: number | null;
+  distanceMax: number | null;
+  ufOrigin: string | null;
+  ufDest: string | null;
+  ratePerKg: number | null;
+  ratePerM3: number | null;
+  ratePerKm: number | null;
+  minimumValue: number | null;
 }
 
 interface FreightTableGridProps {
@@ -45,48 +45,48 @@ const MODAL_LABELS: Record<string, string> = {
 
 const MODAL_FIELDS: Record<string, { key: keyof FreightRateRow; label: string; type: 'number' | 'select' | 'text'; step?: number; placeholder?: string; options?: { value: string; label: string }[] }[]> = {
   RODOVIARIO: [
-    { key: 'uf_origin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'uf_dest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'weight_min', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'weight_max', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'cubage_min', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'cubage_max', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'rate_per_kg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'rate_per_m3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'minimum_value', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ufOrigin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'ufDest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'weightMin', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'weightMax', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'cubageMin', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'cubageMax', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'ratePerKg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ratePerM3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'minimumValue', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
   ],
   AEREO: [
-    { key: 'uf_origin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'uf_dest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'weight_min', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'weight_max', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'cubage_min', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'cubage_max', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'rate_per_kg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'rate_per_m3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'minimum_value', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ufOrigin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'ufDest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'weightMin', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'weightMax', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'cubageMin', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'cubageMax', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'ratePerKg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ratePerM3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'minimumValue', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
   ],
   MARITIMO: [
-    { key: 'uf_origin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'uf_dest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'weight_min', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'weight_max', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'cubage_min', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'cubage_max', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'rate_per_kg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'rate_per_m3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'minimum_value', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ufOrigin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'ufDest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'weightMin', label: 'Peso Mín (kg)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'weightMax', label: 'Peso Máx (kg)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'cubageMin', label: 'Cubagem Mín (m³)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'cubageMax', label: 'Cubagem Máx (m³)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'ratePerKg', label: 'R$/kg', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ratePerM3', label: 'R$/m³', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'minimumValue', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
   ],
   FERROVIARIO: [
-    { key: 'uf_origin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'uf_dest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
-    { key: 'distance_min', label: 'Dist Mín (km)', type: 'number', step: 1, placeholder: '0' },
-    { key: 'distance_max', label: 'Dist Máx (km)', type: 'number', step: 1, placeholder: '∞' },
-    { key: 'weight_min', label: 'Peso Mín (ton)', type: 'number', step: 0.01, placeholder: '0' },
-    { key: 'weight_max', label: 'Peso Máx (ton)', type: 'number', step: 0.01, placeholder: '∞' },
-    { key: 'rate_per_km', label: 'R$/km', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'rate_per_kg', label: 'R$/ton', type: 'number', step: 0.01, placeholder: '0.00' },
-    { key: 'minimum_value', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ufOrigin', label: 'UF Origem', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'ufDest', label: 'UF Destino', type: 'select', options: BRAZILIAN_STATES.map((s) => ({ value: s, label: s })) },
+    { key: 'distanceMin', label: 'Dist Mín (km)', type: 'number', step: 1, placeholder: '0' },
+    { key: 'distanceMax', label: 'Dist Máx (km)', type: 'number', step: 1, placeholder: '∞' },
+    { key: 'weightMin', label: 'Peso Mín (ton)', type: 'number', step: 0.01, placeholder: '0' },
+    { key: 'weightMax', label: 'Peso Máx (ton)', type: 'number', step: 0.01, placeholder: '∞' },
+    { key: 'ratePerKm', label: 'R$/km', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'ratePerKg', label: 'R$/ton', type: 'number', step: 0.01, placeholder: '0.00' },
+    { key: 'minimumValue', label: 'Valor Mínimo', type: 'number', step: 0.01, placeholder: '0.00' },
   ],
 };
 

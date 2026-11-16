@@ -53,10 +53,10 @@ export function ContractsPage() {
       id: ft.id,
       version: ft.version,
       status: ft.status,
-      effective_from: ft.effective_from,
-      effective_to: ft.effective_to,
+      effective_from: ft.effectiveFrom,
+      effective_to: ft.effectiveTo,
       rates_count: ft.rates.length,
-      created_at: ft.created_at,
+      created_at: ft.createdAt,
     }));
   }, [freightTablesData]);
 
@@ -110,11 +110,24 @@ export function ContractsPage() {
 
   const handleFormSubmit = async (data: any) => {
     try {
+      // Convert snake_case from form to camelCase for API
+      const apiData = {
+        number: data.number,
+        name: data.number, // Use number as name since form doesn't have name field
+        clientId: data.client_id,
+        carrierId: data.carrier_id,
+        status: data.status,
+        startDate: data.start_date,
+        endDate: data.end_date || null,
+        successFeePct: parseFloat(data.success_fee_pct),
+        description: data.description || '',
+      };
+
       if (editingContract) {
-        await updateContract.mutateAsync({ id: editingContract.id, data });
+        await updateContract.mutateAsync({ id: editingContract.id, data: apiData });
         toast.success('Contrato atualizado com sucesso!');
       } else {
-        await createContract.mutateAsync(data);
+        await createContract.mutateAsync(apiData);
         toast.success('Contrato criado com sucesso!');
       }
       setShowFormModal(false);
@@ -137,15 +150,15 @@ export function ContractsPage() {
   };
 
   const contracts = data?.data || [];
-  const totalPages = data?.meta?.total_pages || 1;
+  const totalPages = data?.meta?.totalPages || 1;
   const totalItems = data?.meta?.total || 0;
 
   // Transform contracts for the table
   const tableContracts = contracts.map((c) => ({
     ...c,
-    client_name: c.client_name,
-    carrier_name: c.carrier_name,
-    freight_tables_count: c.freight_tables_count,
+    clientName: c.clientName,
+    carrierName: c.carrierName,
+    freightTablesCount: c.freightTablesCount,
   }));
 
   return (
@@ -225,12 +238,12 @@ export function ContractsPage() {
           carriers={carriers || []}
           initialData={editingContract ? {
             number: editingContract.number,
-            client_id: editingContract.client_id,
-            carrier_id: editingContract.carrier_id,
+            client_id: editingContract.clientId,
+            carrier_id: editingContract.carrierId,
             status: editingContract.status,
-            start_date: editingContract.start_date.split('T')[0],
-            end_date: editingContract.end_date?.split('T')[0] || '',
-            success_fee_pct: editingContract.success_fee_pct.toString(),
+            start_date: editingContract.startDate.split('T')[0],
+            end_date: editingContract.endDate?.split('T')[0] || '',
+            success_fee_pct: editingContract.successFeePct.toString(),
             description: editingContract.description || '',
           } : null}
           isSubmitting={createContract.isPending || updateContract.isPending}

@@ -47,16 +47,17 @@ from generated.prisma.fields import Json
 
 # Scale multipliers - adjust for performance testing
 # 1x escala original (valores de teste)
+# Reduced for development to avoid seed script bugs and speed up initialization
 SCALE = {
-    "companies": 5,
-    "clients_per_company": 10,
-    "carriers_per_company": 8,
-    "branches_per_client": 3,
-    "contracts_per_client": 2,
-    "documents_per_client": 50,
-    "discrepancies_per_document": 3,
-    "contests_per_client": 5,
-    "contest_items_per_contest": 4,
+    "companies": 1,
+    "clients_per_company": 2,
+    "carriers_per_company": 2,
+    "branches_per_client": 1,
+    "contracts_per_client": 1,
+    "documents_per_client": 5,
+    "discrepancies_per_document": 1,
+    "contests_per_client": 1,
+    "contest_items_per_contest": 2,
 }
 
 # Pre-computed bcrypt hash for "admin123" (cost=12)
@@ -629,47 +630,50 @@ async def create_documents_and_discrepancies(
             freight_value = round(total_value * random.uniform(0.05, 0.25), 2)
             icms_value = round(total_value * random.uniform(0.12, 0.18), 2)
 
-            document = await prisma.document.create(
-                data={
-                    "companyId": company.id,
-                    "clientId": client.id,
-                    "branchId": branch.id if branch else None,
-                    "carrierId": carrier.id,
-                    "contractId": contract.id if contract else None,
-                    "type": doc_type,
-                    "status": status,
-                    "originalName": f"{doc_type}_{client.name}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
-                    "storedName": f"docs/{company.id}/{client.id}/{doc_type.lower()}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
-                    "s3Key": f"docs/{company.id}/{client.id}/{doc_type.lower()}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
-                    "s3Bucket": "averta-documents",
-                    "mimeType": "application/xml",
-                    "fileSize": random.randint(10000, 5000000),
-                    "accessKey": random_nfe_key()
-                    if doc_type in ["NFE", "NFE_COMPLEMENTAR"]
-                    else random_cte_key(),
-                    "issueDate": issue_date,
-                    "totalValue": total_value,
-                    "freightValue": freight_value,
-                    "icmsValue": icms_value,
-                    "weight": round(random.uniform(100.0, 50000.0), 2),
-                    "volume": round(random.uniform(1.0, 100.0), 2),
-                    "createdAt": created_at,
-                    "processedAt": created_at + timedelta(hours=random.randint(1, 24))
-                    if status == "COMPLETED"
-                    else None,
-                    "processingTime": random.randint(1000, 60000)
-                    if status == "COMPLETED"
-                    else None,
-                }
-            )
+            # Use transaction to ensure document and discrepancies are created atomically
+            # This avoids ForeignKeyViolationError when creating discrepancies
+            async with prisma.tx() as tx:
+                document = await tx.document.create(
+                    data={
+                        "companyId": company.id,
+                        "clientId": client.id,
+                        "branchId": branch.id if branch else None,
+                        "carrierId": carrier.id,
+                        "contractId": contract.id if contract else None,
+                        "type": doc_type,
+                        "status": status,
+                        "originalName": f"{doc_type}_{client.name}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
+                        "storedName": f"docs/{company.id}/{client.id}/{doc_type.lower()}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
+                        "s3Key": f"docs/{company.id}/{client.id}/{doc_type.lower()}_{issue_date.strftime('%Y%m%d')}_{random.randint(1000, 9999)}.xml",
+                        "s3Bucket": "averta-documents",
+                        "mimeType": "application/xml",
+                        "fileSize": random.randint(10000, 5000000),
+                        "accessKey": random_nfe_key()
+                        if doc_type in ["NFE", "NFE_COMPLEMENTAR"]
+                        else random_cte_key(),
+                        "issueDate": issue_date,
+                        "totalValue": total_value,
+                        "freightValue": freight_value,
+                        "icmsValue": icms_value,
+                        "weight": round(random.uniform(100.0, 50000.0), 2),
+                        "volume": round(random.uniform(1.0, 100.0), 2),
+                        "createdAt": created_at,
+                        "processedAt": created_at + timedelta(hours=random.randint(1, 24))
+                        if status == "COMPLETED"
+                        else None,
+                        "processingTime": random.randint(1000, 60000)
+                        if status == "COMPLETED"
+                        else None,
+                    }
+                )
 
-            # Create discrepancies for this document
-            if status in ["COMPLETED", "PROCESSING"]:
-                num_discrepancies = random.randint(0, SCALE["discrepancies_per_document"])
-                for _ in range(num_discrepancies):
-                    await create_discrepancy(
-                        prisma, document, company, client, carrier, contract, branch
-                    )
+                # Create discrepancies for this document within the same transaction
+                if status in ["COMPLETED", "PROCESSING"]:
+                    num_discrepancies = random.randint(0, SCALE["discrepancies_per_document"])
+                    for _ in range(num_discrepancies):
+                        await create_discrepancy(
+                            tx, document, company, client, carrier, contract, branch
+                        )
 
 
 async def create_discrepancy(prisma: Prisma, document, company, client, carrier, contract, branch):

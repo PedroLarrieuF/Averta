@@ -56,7 +56,7 @@ export { Switch } from './Switch'
 
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs'
 
-export { KPICard, KPIValue, KPILabel, KPITrend } from './KPICard'
+export { KPICard, KPICardSimple } from './KPICard'
 
 // Data Grid components
 export { FreightTable } from './data-grid'
@@ -73,6 +73,10 @@ export { DiscrepancyFilters } from './discrepancies/DiscrepancyFilters'
 export { DiscrepancySummaryCards } from './discrepancies/DiscrepancySummaryCards'
 export { DiscrepancyDetailModal } from './discrepancies/DiscrepancyDetailModal'
 export { BulkActionBar } from './discrepancies/BulkActionBar'
+export { StatusFilterGroup } from './discrepancies/StatusFilterGroup'
+
+// Charts components
+export { AnalyticsChart } from './charts/AnalyticsChart'
 
 // Contests components
 export { ContestCreateStepper } from './contests/ContestCreateStepper'

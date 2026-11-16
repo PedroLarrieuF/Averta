@@ -14,9 +14,6 @@ celery_app = Celery(
     include=[
         "app.tasks.documents",
         "app.tasks.discrepancies",
-        "app.tasks.contests",
-        "app.tasks.reports",
-        "app.tasks.notifications",
     ],
 )
 
@@ -37,23 +34,12 @@ celery_app.conf.update(
     task_routes={
         "app.tasks.documents.*": {"queue": "documents"},
         "app.tasks.discrepancies.*": {"queue": "rules"},
-        "app.tasks.contests.*": {"queue": "contests"},
-        "app.tasks.reports.*": {"queue": "reports"},
-        "app.tasks.notifications.*": {"queue": "notifications"},
     },
     # Beat schedule (periodic tasks)
     beat_schedule={
         "check-stale-documents": {
             "task": "app.tasks.documents.check_stale_documents",
             "schedule": 300.0,  # every 5 minutes
-        },
-        "generate-daily-reports": {
-            "task": "app.tasks.reports.generate_daily_reports",
-            "schedule": 86400.0,  # daily
-        },
-        "send-weekly-summary": {
-            "task": "app.tasks.notifications.send_weekly_summary",
-            "schedule": 604800.0,  # weekly
         },
         "recalculate-progressive-fees": {
             "task": "app.tasks.discrepancies.recalculate_progressive_success_fees",

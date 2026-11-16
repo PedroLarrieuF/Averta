@@ -18,11 +18,11 @@ interface FreightTableVersion {
   id: string;
   version: number;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
-  effective_from: string;
-  effective_to: string | null;
-  rates_count: number;
-  created_at: string;
-  updated_at: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  ratesCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -61,11 +61,11 @@ export function FreightTableVersionManager({
         id: ft.id,
         version: ft.version,
         status: ft.status,
-        effective_from: ft.effective_from,
-        effective_to: ft.effective_to,
-        rates_count: ft.rates.length,
-        created_at: ft.created_at,
-        updated_at: ft.updated_at,
+        effectiveFrom: ft.effectiveFrom,
+        effectiveTo: ft.effectiveTo,
+        ratesCount: ft.rates.length,
+        createdAt: ft.createdAt,
+        updatedAt: ft.updatedAt,
       }))
       .sort((a, b) => b.version - a.version);
   }, [freightTables]);
@@ -91,33 +91,33 @@ export function FreightTableVersionManager({
       ),
     },
     {
-      key: 'effective_from',
+      key: 'effectiveFrom',
       header: 'Início Vigência',
       render: (v: FreightTableVersion) => (
-        <span className="text-sm text-secondary-900">{formatDate(v.effective_from)}</span>
+        <span className="text-sm text-secondary-900">{formatDate(v.effectiveFrom)}</span>
       ),
     },
     {
-      key: 'effective_to',
+      key: 'effectiveTo',
       header: 'Fim Vigência',
       render: (v: FreightTableVersion) => (
         <span className="text-sm text-secondary-500">
-          {v.effective_to ? formatDate(v.effective_to) : 'Indeterminado'}
+          {v.effectiveTo ? formatDate(v.effectiveTo) : 'Indeterminado'}
         </span>
       ),
     },
     {
-      key: 'rates_count',
+      key: 'ratesCount',
       header: 'Taxas',
       render: (v: FreightTableVersion) => (
-        <span className="text-sm text-secondary-900">{v.rates_count}</span>
+        <span className="text-sm text-secondary-900">{v.ratesCount}</span>
       ),
     },
     {
-      key: 'created_at',
+      key: 'createdAt',
       header: 'Criado em',
       render: (v: FreightTableVersion) => (
-        <span className="text-sm text-secondary-500">{formatDate(v.created_at)}</span>
+        <span className="text-sm text-secondary-500">{formatDate(v.createdAt)}</span>
       ),
     },
     {

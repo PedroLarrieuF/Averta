@@ -64,7 +64,7 @@ export function useFreightTable(props: FreightTableProps) {
     () => Object.fromEntries(initialColumns.map((c) => [c.id, c.width ?? defaultColumnWidth]))
   );
 
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMount = useRef(true);
 
   // Persistence functions (defined early for use in auto-save effect)
